@@ -1,94 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_screen"
     android:clipChildren="false"
     android:clipToPadding="false"
-    android:keepScreenOn="true"
-    android:paddingStart="@dimen/tv_safe_horizontal"
-    android:paddingTop="@dimen/tv_safe_top"
-    android:paddingEnd="@dimen/tv_safe_horizontal"
-    android:paddingBottom="@dimen/tv_safe_bottom">
+    android:keepScreenOn="true">
 
-    <FrameLayout
-        android:id="@+id/contentDisplayGroup"
+    <!-- Full-bleed blurred album art. Sits behind the safe-area padded content so
+         it reaches every edge of the TV. Alpha is animated by BlurredBackgroundBinder
+         and stays low enough that foreground text remains comfortably readable. -->
+    <ImageView
+        android:id="@+id/imageHomeBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/pageIndicatorGroup"
-        android:clipChildren="false"
-        android:clipToPadding="false">
+        android:alpha="0"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop" />
 
-        <androidx.viewpager2.widget.ViewPager2
-            android:id="@+id/dashboardPager"
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/tv_safe_horizontal"
+        android:paddingTop="@dimen/tv_safe_top"
+        android:paddingEnd="@dimen/tv_safe_horizontal"
+        android:paddingBottom="@dimen/tv_safe_bottom">
+
+        <FrameLayout
+            android:id="@+id/contentDisplayGroup"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_gravity="center" />
-    </FrameLayout>
+            android:layout_above="@+id/pageIndicatorGroup"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-    <LinearLayout
-        android:id="@+id/pageIndicatorGroup"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingTop="8dp"
-        android:paddingBottom="4dp">
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/dashboardPager"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center" />
+        </FrameLayout>
 
-        <TextView
-            android:id="@+id/textPageHome"
+        <LinearLayout
+            android:id="@+id/pageIndicatorGroup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:paddingStart="12dp"
-            android:paddingTop="4dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="4dp"
-            android:text="@string/page_home"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp" />
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="·"
-            android:textColor="@color/text_tertiary"
-            android:textSize="13sp" />
+            <TextView
+                android:id="@+id/textPageHome"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_home"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp" />
 
-        <TextView
-            android:id="@+id/textPageCalendar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-light"
-            android:paddingStart="12dp"
-            android:paddingTop="4dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="4dp"
-            android:text="@string/page_calendar"
-            android:textColor="@color/text_tertiary"
-            android:textSize="13sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="·"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="·"
-            android:textColor="@color/text_tertiary"
-            android:textSize="13sp" />
+            <TextView
+                android:id="@+id/textPageCalendar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_calendar"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
 
-        <TextView
-            android:id="@+id/textPageMusic"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-light"
-            android:paddingStart="12dp"
-            android:paddingTop="4dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="4dp"
-            android:text="@string/page_music"
-            android:textColor="@color/text_tertiary"
-            android:textSize="13sp" />
-    </LinearLayout>
-</RelativeLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="·"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/textPageMusic"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_music"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </RelativeLayout>
+</FrameLayout>

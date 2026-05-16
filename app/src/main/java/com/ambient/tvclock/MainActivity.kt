@@ -8,8 +8,8 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -18,13 +18,14 @@ import kotlin.random.Random
 
 class MainActivity : Activity() {
 
-    private lateinit var rootContainer: RelativeLayout
     private lateinit var contentDisplayGroup: FrameLayout
     private lateinit var dashboardPager: ViewPager2
     private lateinit var pageIndicatorGroup: LinearLayout
     private lateinit var textPageHome: TextView
     private lateinit var textPageCalendar: TextView
     private lateinit var textPageMusic: TextView
+    private lateinit var imageHomeBackground: ImageView
+    private lateinit var backgroundBinder: BlurredBackgroundBinder
 
     private var homeBinder: HomeScreenBinder? = null
     private var calendarBinder: CalendarScreenBinder? = null
@@ -57,13 +58,14 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        rootContainer = findViewById(R.id.rootContainer)
         contentDisplayGroup = findViewById(R.id.contentDisplayGroup)
         dashboardPager = findViewById(R.id.dashboardPager)
         pageIndicatorGroup = findViewById(R.id.pageIndicatorGroup)
         textPageHome = findViewById(R.id.textPageHome)
         textPageCalendar = findViewById(R.id.textPageCalendar)
         textPageMusic = findViewById(R.id.textPageMusic)
+        imageHomeBackground = findViewById(R.id.imageHomeBackground)
+        backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
 
         dashboardPager.isUserInputEnabled = false
         dashboardPager.offscreenPageLimit = 1
@@ -169,6 +171,7 @@ class MainActivity : Activity() {
     private fun applyNowPlaying(info: NowPlayingInfo?) {
         homeBinder?.bindNowPlaying(info)
         musicBinder?.bindNowPlaying(info)
+        backgroundBinder.bind(info)
     }
 
     private fun applyCalendar(snapshot: CalendarSnapshot) {
@@ -258,6 +261,7 @@ class MainActivity : Activity() {
     private val clockRunnable = object : Runnable {
         override fun run() {
             homeBinder?.updateClock()
+            homeBinder?.refreshAmbient()
             calendarBinder?.updateDateLine()
             mainHandler.postDelayed(this, 1000)
         }
@@ -308,6 +312,10 @@ class MainActivity : Activity() {
 
     private val enterAmbientRunnable = Runnable { enterAmbientMode() }
 
+    private val fadeSecondsRunnable = Runnable {
+        homeBinder?.setSecondsVisible(false)
+    }
+
     private fun enterAmbientMode() {
         if (ambientMode) return
         ambientMode = true
@@ -317,7 +325,12 @@ class MainActivity : Activity() {
             dashboardPager.setCurrentItem(DashboardPage.HOME.index, false)
         }
 
+        // Seconds always fade well before ambient kicks in (90s vs minutes),
+        // but force-hide here so re-entering ambient after a brief tap doesn't
+        // leave the second indicator stranded at full brightness.
+        homeBinder?.setSecondsVisible(false)
         homeBinder?.setWidgetsAmbient(true)
+        backgroundBinder.setAmbient(true)
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
             .alpha(0f)
@@ -333,6 +346,7 @@ class MainActivity : Activity() {
         ambientMode = false
 
         homeBinder?.setWidgetsAmbient(false)
+        backgroundBinder.setAmbient(false)
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
             .alpha(1f)
@@ -349,6 +363,10 @@ class MainActivity : Activity() {
 
     private fun resetInactivityWatchdog() {
         exitAmbientMode()
+
+        homeBinder?.setSecondsVisible(true)
+        mainHandler.removeCallbacks(fadeSecondsRunnable)
+        mainHandler.postDelayed(fadeSecondsRunnable, SECONDS_VISIBLE_AFTER_INPUT_MS)
 
         mainHandler.removeCallbacks(enterAmbientRunnable)
         if (AmbientPreferences.isAmbientEnabled(this)) {
@@ -471,11 +489,17 @@ class MainActivity : Activity() {
 
         // Drift envelope (dp). Kept tight so even with the widgets fully visible
         // (briefly during fade-out) the contentDisplayGroup never overflows the
-        // safe area enough to clip card corners.
+        // safe area enough to clip card corners. Y is smaller than X because
+        // the ambient cluster sits in the lower half of the slot and downward
+        // drift is what risks clipping the music line against the safe area.
         private const val AMBIENT_DRIFT_X_DP = 32
-        private const val AMBIENT_DRIFT_Y_DP = 20
+        private const val AMBIENT_DRIFT_Y_DP = 14
 
         private const val DRIFT_ANIMATION_MS = 1_400L
         private const val DRIFT_RECENTER_MS = 360L
+
+        // Seconds remain visible for 90s after the last input, then crossfade
+        // away so the resting clock face is just h:mm AM/PM.
+        private const val SECONDS_VISIBLE_AFTER_INPUT_MS = 90_000L
     }
 }

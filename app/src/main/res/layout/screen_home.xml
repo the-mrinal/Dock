@@ -6,16 +6,49 @@
     android:orientation="vertical"
     android:paddingTop="24dp">
 
-    <TextView
-        android:id="@+id/textHomeClockTime"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/homeClockGroup"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-thin"
-        android:includeFontPadding="false"
-        android:text="00:00:00"
-        android:textColor="@color/text_primary"
-        android:textSize="80sp"
-        android:textStyle="bold" />
+        android:baselineAligned="true"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textHomeClockTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-thin"
+            android:includeFontPadding="false"
+            android:text="12:00"
+            android:textColor="@color/text_primary"
+            android:textSize="80sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textHomeClockSeconds"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
+            android:fontFamily="sans-serif-thin"
+            android:includeFontPadding="false"
+            android:text=":00"
+            android:textColor="@color/text_secondary"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textHomeClockAmPm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:fontFamily="sans-serif-medium"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.08"
+            android:text="AM"
+            android:textColor="@color/text_secondary"
+            android:textSize="26sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/textHomeClockDate"
@@ -27,14 +60,23 @@
         android:textColor="@color/text_secondary"
         android:textSize="22sp" />
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/homeContentSlot"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="40dp"
         android:layout_weight="1"
-        android:baselineAligned="false"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:id="@+id/homeWidgetsRow"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:baselineAligned="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
         <!-- Today widget -->
         <LinearLayout
@@ -44,7 +86,7 @@
             android:layout_marginEnd="16dp"
             android:layout_weight="1"
             android:background="@drawable/bg_widget_card"
-            android:minHeight="160dp"
+            android:minHeight="184dp"
             android:orientation="vertical"
             android:padding="24dp">
 
@@ -151,7 +193,7 @@
             android:layout_marginStart="16dp"
             android:layout_weight="1"
             android:background="@drawable/bg_widget_card"
-            android:minHeight="160dp"
+            android:minHeight="184dp"
             android:orientation="vertical"
             android:padding="24dp">
 
@@ -237,5 +279,191 @@
                 android:textSize="13sp"
                 android:visibility="gone" />
         </LinearLayout>
-    </LinearLayout>
+        </LinearLayout>
+
+        <!-- Ambient supplements: a calm read-only summary that crossfades in
+             when the dashboard goes idle. Music sits to the LEFT of a thin
+             vertical divider, calendar sits to the RIGHT, both balanced into
+             equal-weight columns. This reads as a single horizontal strip
+             below the clock rather than two separately positioned widgets,
+             which is easier on the eye than the previous centered-cluster +
+             bottom-corner-chip arrangement. -->
+        <LinearLayout
+            android:id="@+id/homeAmbientRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:alpha="0"
+            android:baselineAligned="false"
+            android:clipChildren="false"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <!-- Music column (LEFT). The chip ID stays homeAmbientMusicCorner
+                 so existing visibility logic in HomeScreenBinder still targets
+                 it; positioning has changed from bottom-corner to a first-class
+                 column. -->
+            <LinearLayout
+                android:id="@+id/homeAmbientMusicCorner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal"
+                android:paddingEnd="28dp"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:id="@+id/homeAmbientArtFrame"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_album_frame">
+
+                    <ImageView
+                        android:id="@+id/imageAmbientAlbumArt"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@null"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/imageAmbientAlbumPlaceholder"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_music_placeholder" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.18"
+                        android:text="@string/ambient_label_now_playing"
+                        android:textAllCaps="true"
+                        android:textColor="@color/accent_spotify"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/textAmbientTrackTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif"
+                        android:maxLines="1"
+                        android:maxWidth="320dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/textAmbientTrackArtist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:maxLines="1"
+                        android:maxWidth="320dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Slim divider between the two ambient columns. Translucent so it
+                 reads as a quiet seam, not a hard line. Hidden alongside the
+                 music column when nothing is playing so the calendar can
+                 centre itself naturally. -->
+            <View
+                android:id="@+id/homeAmbientDivider"
+                android:layout_width="1dp"
+                android:layout_height="72dp"
+                android:background="#22FFFFFF"
+                android:visibility="gone" />
+
+            <!-- Calendar column (RIGHT). -->
+            <LinearLayout
+                android:id="@+id/homeAmbientCluster"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:gravity="start|center_vertical"
+                android:orientation="vertical"
+                android:paddingStart="28dp">
+
+                <LinearLayout
+                    android:id="@+id/homeAmbientNowGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="start"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/textAmbientNowLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.18"
+                        android:text="@string/ambient_label_now"
+                        android:textAllCaps="true"
+                        android:textColor="@color/accent_spotify"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/textAmbientNowTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:gravity="start"
+                        android:maxLines="2"
+                        android:maxWidth="420dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/homeAmbientNextGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="start"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/textAmbientNextLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.18"
+                        android:text="@string/ambient_label_next"
+                        android:textAllCaps="true"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/textAmbientNextTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:gravity="start"
+                        android:maxLines="2"
+                        android:maxWidth="420dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="18sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 </LinearLayout>

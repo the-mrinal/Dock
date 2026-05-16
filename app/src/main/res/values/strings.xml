@@ -27,6 +27,13 @@
     <string name="calendar_more_today">+%1$d more today</string>
     <string name="calendar_happening_now">Now</string>
     <string name="calendar_all_day">All day</string>
+
+    <string name="ambient_label_now">Now</string>
+    <string name="ambient_label_now_until">Now · Until %1$s</string>
+    <string name="ambient_label_next">Next</string>
+    <string name="ambient_label_next_at">Next · %1$s</string>
+    <string name="ambient_label_all_day">All day</string>
+    <string name="ambient_label_now_playing">Now playing</string>
     <string name="calendar_source_personal">Personal</string>
     <string name="calendar_source_work">Work</string>
     <string name="calendar_last_updated">Updated %1$s</string>
