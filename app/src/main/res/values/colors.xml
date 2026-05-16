@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#050505</color>
+    <color name="bg_screen">#050505</color>
+    <color name="bg_album_frame">#141414</color>
+    <color name="stroke_album">#2A2A2A</color>
+    <color name="text_primary">#F5F5F5</color>
+    <color name="text_secondary">#B3B3B3</color>
+    <color name="text_tertiary">#707070</color>
+    <color name="text_clock_dim">#3D3D3D</color>
+    <color name="accent_now_playing">#FFFFFF</color>
+    <color name="accent_spotify">#1DB954</color>
+</resources>

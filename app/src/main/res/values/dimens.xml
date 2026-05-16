@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TV overscan safe zones -->
+    <dimen name="tv_safe_top">32dp</dimen>
+    <dimen name="tv_safe_bottom">64dp</dimen>
+    <dimen name="tv_safe_horizontal">56dp</dimen>
+
+    <dimen name="screen_padding_horizontal">56dp</dimen>
+    <dimen name="album_art_size">260dp</dimen>
+    <dimen name="album_art_radius">18dp</dimen>
+    <dimen name="now_playing_header_time_size">44sp</dimen>
+    <dimen name="now_playing_header_date_size">18sp</dimen>
+    <dimen name="media_button_size">56dp</dimen>
+    <dimen name="media_button_size_large">68dp</dimen>
+    <dimen name="media_button_spacing">28dp</dimen>
+    <dimen name="media_controls_bottom_padding">12dp</dimen>
+</resources>

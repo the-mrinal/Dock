@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_screen"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:keepScreenOn="true"
+    android:paddingStart="@dimen/tv_safe_horizontal"
+    android:paddingTop="@dimen/tv_safe_top"
+    android:paddingEnd="@dimen/tv_safe_horizontal"
+    android:paddingBottom="@dimen/tv_safe_bottom">
+
+    <FrameLayout
+        android:id="@+id/contentDisplayGroup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:id="@+id/clockDisplayGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textClockTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-thin"
+                android:text="00:00:00"
+                android:textColor="@color/text_primary"
+                android:textSize="90sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textClockDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="sans-serif-light"
+                android:text="Monday, January 1"
+                android:textColor="@color/text_secondary"
+                android:textSize="24sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nowPlayingGroup"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Time / date: top-left status strip -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="20dp">
+
+                <TextView
+                    android:id="@+id/textNowPlayingTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-thin"
+                    android:includeFontPadding="false"
+                    android:text="00:00:00"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/now_playing_header_time_size"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textNowPlayingDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="sans-serif-light"
+                    android:includeFontPadding="false"
+                    android:text="Monday, January 1"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="@dimen/now_playing_header_date_size" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/bg_now_playing_header_rule" />
+            </LinearLayout>
+
+            <!-- Album + track: vertically centered in remaining space -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipChildren="false"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <FrameLayout
+                    android:id="@+id/albumArtContainer"
+                    android:layout_width="@dimen/album_art_size"
+                    android:layout_height="@dimen/album_art_size"
+                    android:background="@drawable/bg_album_frame"
+                    android:clipToOutline="true">
+
+                    <ImageView
+                        android:id="@+id/imageAlbumArt"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/cd_album_art"
+                        android:scaleType="centerCrop" />
+
+                    <ImageView
+                        android:id="@+id/imageAlbumPlaceholder"
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_music_placeholder"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="40dp"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:orientation="vertical"
+                    android:paddingEnd="8dp">
+
+                    <TextView
+                        android:id="@+id/textNowPlayingBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.12"
+                        android:text="@string/now_playing_badge"
+                        android:textAllCaps="true"
+                        android:textColor="@color/accent_now_playing"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/textTrackTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:maxLines="2"
+                        android:textColor="@color/text_primary"
+                        android:textSize="34sp" />
+
+                    <TextView
+                        android:id="@+id/textTrackArtist"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:maxLines="1"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="24sp" />
+
+                    <TextView
+                        android:id="@+id/textTrackAlbum"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:maxLines="1"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="18sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Controls: pinned above bottom safe area -->
+            <LinearLayout
+                android:id="@+id/mediaControlsGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingTop="16dp"
+                android:paddingBottom="@dimen/media_controls_bottom_padding">
+
+                <ImageButton
+                    android:id="@+id/buttonSkipPrevious"
+                    android:layout_width="@dimen/media_button_size"
+                    android:layout_height="@dimen/media_button_size"
+                    android:background="@drawable/bg_media_button"
+                    android:contentDescription="@string/cd_skip_previous"
+                    android:focusable="true"
+                    android:nextFocusRight="@+id/buttonPlayPause"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_skip_previous" />
+
+                <ImageButton
+                    android:id="@+id/buttonPlayPause"
+                    android:layout_width="@dimen/media_button_size_large"
+                    android:layout_height="@dimen/media_button_size_large"
+                    android:layout_marginStart="@dimen/media_button_spacing"
+                    android:layout_marginEnd="@dimen/media_button_spacing"
+                    android:background="@drawable/bg_media_button"
+                    android:contentDescription="@string/cd_play_pause"
+                    android:focusable="true"
+                    android:nextFocusLeft="@+id/buttonSkipPrevious"
+                    android:nextFocusRight="@+id/buttonSkipNext"
+                    android:padding="16dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_pause" />
+
+                <ImageButton
+                    android:id="@+id/buttonSkipNext"
+                    android:layout_width="@dimen/media_button_size"
+                    android:layout_height="@dimen/media_button_size"
+                    android:background="@drawable/bg_media_button"
+                    android:contentDescription="@string/cd_skip_next"
+                    android:focusable="true"
+                    android:nextFocusLeft="@+id/buttonPlayPause"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_skip_next" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+</RelativeLayout>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TV Awake Clock</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_menu_hint">Press Menu on the remote to open settings</string>
+
+    <string name="pref_category_sleep">Sleep timer</string>
+    <string name="pref_inactivity_timeout_title">Auto-exit after inactivity</string>
+    <string name="pref_inactivity_timeout_summary">Closes the app and allows Fire TV to sleep when no remote input is detected</string>
+
+    <string name="timeout_30_min">30 minutes</string>
+    <string name="timeout_1_hour">1 hour</string>
+    <string name="timeout_2_hours">2 hours</string>
+    <string name="timeout_3_hours">3 hours (default)</string>
+    <string name="timeout_6_hours">6 hours</string>
+    <string name="timeout_never">Never (stay awake until you exit)</string>
+
+    <string name="pref_category_now_playing">Now playing</string>
+    <string name="pref_show_now_playing_title">Show Spotify / media while playing</string>
+    <string name="pref_show_now_playing_summary">When Spotify (or other media apps) are playing, show track title, artist, and album art like Android Auto</string>
+    <string name="pref_notification_access_title">Media access permission</string>
+    <string name="notification_access_required">Required once so the app can read active media sessions. Tap to open settings, or grant via ADB on Fire TV.</string>
+    <string name="notification_access_granted">Granted — now playing will appear when Spotify is playing.</string>
+
+    <string name="now_playing_badge">Now playing</string>
+    <string name="unknown_artist">Unknown artist</string>
+    <string name="cd_album_art">Album art</string>
+    <string name="cd_skip_previous">Previous track</string>
+    <string name="cd_play_pause">Play or pause</string>
+    <string name="cd_skip_next">Next track</string>
+</resources>
