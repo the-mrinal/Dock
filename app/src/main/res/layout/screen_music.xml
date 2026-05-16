@@ -7,13 +7,13 @@
     android:clipToPadding="false"
     android:descendantFocusability="afterDescendants"
     android:orientation="horizontal"
-    android:paddingTop="4dp">
+    android:paddingTop="8dp">
 
     <LinearLayout
         android:id="@+id/panelBrowse"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_marginEnd="12dp"
+        android:layout_marginEnd="20dp"
         android:layout_weight="0.56"
         android:orientation="vertical"
         android:paddingStart="4dp"
@@ -29,6 +29,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.04"
                 android:text="@string/music_section_up_next"
                 android:textColor="@color/text_primary"
                 android:textSize="22sp"
@@ -38,7 +39,7 @@
                 android:id="@+id/textQueueHint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:fontFamily="sans-serif"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
@@ -48,7 +49,7 @@
                 android:id="@+id/upNextContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:background="@drawable/bg_track_row_focus"
                 android:clickable="true"
                 android:focusable="true"
@@ -56,9 +57,9 @@
                 android:minHeight="72dp"
                 android:nextFocusRight="@+id/buttonPlayPause"
                 android:orientation="horizontal"
-                android:paddingStart="4dp"
+                android:paddingStart="6dp"
                 android:paddingTop="8dp"
-                android:paddingEnd="8dp"
+                android:paddingEnd="10dp"
                 android:paddingBottom="8dp"
                 android:visibility="gone">
 
@@ -105,7 +106,7 @@
             android:id="@+id/sectionRecent"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="28dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -114,6 +115,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.04"
                 android:text="@string/music_section_recent"
                 android:textColor="@color/text_primary"
                 android:textSize="22sp"
@@ -123,7 +125,7 @@
                 android:id="@+id/textRecentHint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:fontFamily="sans-serif"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
@@ -133,7 +135,7 @@
                 android:id="@+id/recyclerRecentlyPlayed"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:layout_weight="1"
                 android:clipToPadding="true"
                 android:nestedScrollingEnabled="true"
@@ -173,10 +175,10 @@
             android:clipChildren="false"
             android:clipToPadding="false"
             android:orientation="vertical"
-            android:paddingStart="14dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="8dp">
+            android:paddingStart="18dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="18dp"
+            android:paddingBottom="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -191,18 +193,20 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.08"
                     android:text="@string/now_playing_badge"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                    android:textAllCaps="true"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="11sp" />
 
                 <FrameLayout
                     android:id="@+id/albumArtContainer"
-                    android:layout_width="160dp"
-                    android:layout_height="160dp"
+                    android:layout_width="180dp"
+                    android:layout_height="180dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="14dp"
                     android:background="@drawable/bg_album_frame"
-                    android:elevation="4dp">
+                    android:elevation="6dp">
 
                     <ImageView
                         android:id="@+id/imageAlbumArt"
@@ -210,7 +214,7 @@
                         android:layout_height="match_parent"
                         android:contentDescription="@string/cd_album_art"
                         android:padding="2dp"
-                        android:scaleType="fitCenter" />
+                        android:scaleType="centerCrop" />
 
                     <ImageView
                         android:id="@+id/imageAlbumPlaceholder"
@@ -226,7 +230,7 @@
                     android:id="@+id/textTrackTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="16dp"
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
@@ -269,33 +273,35 @@
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:orientation="vertical"
-                android:paddingStart="14dp"
-                android:paddingTop="12dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="12dp">
+                android:paddingStart="16dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="14dp">
 
-                <ProgressBar
-                    android:id="@+id/progressPlayback"
-                    style="?android:attr/progressBarStyleHorizontal"
+                <com.ambient.tvclock.WaveformProgressView
+                    android:id="@+id/waveformPlayback"
                     android:layout_width="match_parent"
-                    android:layout_height="4dp"
-                    android:max="1000"
-                    android:progressDrawable="@drawable/bg_progress_spotify"
+                    android:layout_height="22dp"
                     android:visibility="gone" />
 
                 <LinearLayout
                     android:id="@+id/mediaControlsGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="6dp"
                     android:clipChildren="false"
-                    android:gravity="center"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
 
                     <ImageButton
                         android:id="@+id/buttonSkipPrevious"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
                         android:background="@drawable/bg_control_icon"
                         android:clickable="true"
                         android:contentDescription="@string/cd_skip_previous"
@@ -309,8 +315,8 @@
 
                     <ImageButton
                         android:id="@+id/buttonPlayPause"
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
+                        android:layout_width="68dp"
+                        android:layout_height="68dp"
                         android:layout_marginStart="14dp"
                         android:layout_marginEnd="14dp"
                         android:background="@drawable/bg_play_button_spotify"
@@ -320,45 +326,46 @@
                         android:nextFocusLeft="@+id/buttonSkipPrevious"
                         android:nextFocusRight="@+id/buttonSkipNext"
                         android:nextFocusUp="@+id/upNextContent"
-                        android:padding="18dp"
+                        android:padding="20dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_pause"
                         android:tint="#000000" />
 
                     <ImageButton
                         android:id="@+id/buttonSkipNext"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
                         android:background="@drawable/bg_control_icon"
                         android:clickable="true"
                         android:contentDescription="@string/cd_skip_next"
                         android:focusable="true"
                         android:nextFocusLeft="@+id/buttonPlayPause"
-                        android:nextFocusRight="@+id/recyclerRecentlyPlayed"
+                        android:nextFocusRight="@+id/buttonDeviceCast"
                         android:padding="12dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_skip_next"
                         android:tint="@color/text_primary" />
-                </LinearLayout>
 
-                <TextView
-                    android:id="@+id/textDeviceLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_track_row_focus"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:fontFamily="sans-serif-medium"
-                    android:nextFocusUp="@+id/buttonPlayPause"
-                    android:paddingStart="12dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="6dp"
-                    android:text="@string/music_playing_on_device"
-                    android:textColor="@color/accent_spotify"
-                    android:textSize="12sp" />
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <ImageButton
+                        android:id="@+id/buttonDeviceCast"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_cast_button"
+                        android:clickable="true"
+                        android:contentDescription="@string/cd_switch_device"
+                        android:focusable="true"
+                        android:nextFocusLeft="@+id/buttonSkipNext"
+                        android:nextFocusUp="@+id/buttonPlayPause"
+                        android:padding="9dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_cast"
+                        android:tint="@color/accent_spotify" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 

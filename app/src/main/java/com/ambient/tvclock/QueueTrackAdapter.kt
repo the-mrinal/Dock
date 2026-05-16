@@ -1,25 +1,24 @@
 package com.ambient.tvclock
 
+import android.graphics.Outline
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewOutlineProvider
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 
 class QueueTrackAdapter(
     private val onTrackSelected: (SpotifyQueueTrack) -> Unit
-) : RecyclerView.Adapter<QueueTrackAdapter.Holder>() {
-
-    private var tracks: List<SpotifyQueueTrack> = emptyList()
+) : ListAdapter<SpotifyQueueTrack, QueueTrackAdapter.Holder>(DIFF) {
 
     fun submit(tracks: List<SpotifyQueueTrack>) {
-        this.tracks = tracks
-        notifyDataSetChanged()
+        submitList(tracks)
     }
-
-    override fun getItemCount(): Int = tracks.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
         val view = LayoutInflater.from(parent.context)
@@ -28,16 +27,10 @@ class QueueTrackAdapter(
     }
 
     override fun onBindViewHolder(holder: Holder, position: Int) {
-        val track = tracks[position]
+        val track = getItem(position)
         holder.textTitle.text = track.title
         holder.textArtist.text = track.artist.ifEmpty { "—" }
         AlbumArtLoader.load(track.imageUrl, holder.imageArt)
-        holder.imageArt.clipToOutline = true
-        holder.imageArt.outlineProvider = object : android.view.ViewOutlineProvider() {
-            override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, 6f)
-            }
-        }
 
         val playTrack = {
             if (track.uri.isNotBlank()) {
@@ -61,5 +54,30 @@ class QueueTrackAdapter(
         val imageArt: ImageView = view.findViewById(R.id.imageQueueArt)
         val textTitle: TextView = view.findViewById(R.id.textQueueTitle)
         val textArtist: TextView = view.findViewById(R.id.textQueueArtist)
+
+        init {
+            imageArt.clipToOutline = true
+            imageArt.outlineProvider = ROUND_6
+        }
+    }
+
+    companion object {
+        private val ROUND_6 = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, 6f)
+            }
+        }
+
+        private val DIFF = object : DiffUtil.ItemCallback<SpotifyQueueTrack>() {
+            override fun areItemsTheSame(
+                oldItem: SpotifyQueueTrack,
+                newItem: SpotifyQueueTrack
+            ): Boolean = oldItem.uri == newItem.uri && oldItem.title == newItem.title
+
+            override fun areContentsTheSame(
+                oldItem: SpotifyQueueTrack,
+                newItem: SpotifyQueueTrack
+            ): Boolean = oldItem == newItem
+        }
     }
 }

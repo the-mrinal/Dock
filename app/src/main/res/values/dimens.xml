@@ -8,6 +8,7 @@
     <dimen name="screen_padding_horizontal">56dp</dimen>
     <dimen name="album_art_size">260dp</dimen>
     <dimen name="album_art_radius">18dp</dimen>
+    <dimen name="now_playing_card_radius">18dp</dimen>
     <dimen name="now_playing_header_time_size">44sp</dimen>
     <dimen name="now_playing_header_date_size">18sp</dimen>
     <dimen name="media_button_size">56dp</dimen>

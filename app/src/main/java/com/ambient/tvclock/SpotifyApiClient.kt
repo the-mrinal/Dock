@@ -4,10 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import okhttp3.FormBody
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 object SpotifyApiClient {
 
@@ -15,13 +13,18 @@ object SpotifyApiClient {
     private const val AUTH_URL = "https://accounts.spotify.com/authorize"
     private const val TOKEN_URL = "https://accounts.spotify.com/api/token"
     private const val QUEUE_URL = "https://api.spotify.com/v1/me/player/queue"
-    private const val RECENT_URL = "https://api.spotify.com/v1/me/player/recently-played?limit=8"
+    // Pull a deep window so we can dedupe consecutive replays of the same track
+    // and still surface a useful "recently played" list. 50 is the API max.
+    private const val RECENT_URL = "https://api.spotify.com/v1/me/player/recently-played?limit=50"
     private const val PLAYER_URL = "https://api.spotify.com/v1/me/player"
     private const val DEVICES_URL = "https://api.spotify.com/v1/me/player/devices"
     private const val REDIRECT_URI = "com.ambient.tvclock://spotify-callback"
     private const val SCOPES =
         "user-read-playback-state user-read-currently-playing user-read-recently-played user-modify-playback-state"
-    private const val RECENT_LIMIT = 5
+
+    // Headroom over the UI's display cap (5) so the poller can still filter the
+    // currently-playing track without leaving the recently-played list short.
+    private const val RECENT_LIMIT = 10
 
     data class QueueResult(
         val tracks: List<SpotifyQueueTrack>,
@@ -33,10 +36,7 @@ object SpotifyApiClient {
         val recent: QueueResult
     )
 
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val http = HttpClients.shared
 
     fun clientId(): String = BuildConfig.SPOTIFY_CLIENT_ID.trim()
 
@@ -236,11 +236,15 @@ object SpotifyApiClient {
                 val json = JSONObject(response.body?.string().orEmpty())
                 val items = json.optJSONArray("items") ?: return QueueResult(emptyList(), code)
                 val tracks = mutableListOf<SpotifyQueueTrack>()
+                val seen = HashSet<String>()
                 for (i in 0 until items.length()) {
                     if (tracks.size >= RECENT_LIMIT) break
                     val item = items.optJSONObject(i) ?: continue
                     val track = item.optJSONObject("track") ?: continue
-                    parseTrack(track)?.let { tracks.add(it) }
+                    val parsed = parseTrack(track) ?: continue
+                    val key = dedupeKey(parsed)
+                    if (!seen.add(key)) continue
+                    tracks.add(parsed)
                 }
                 QueueResult(tracks, code)
             }
@@ -258,6 +262,16 @@ object SpotifyApiClient {
             parseTrack(item)?.let { tracks.add(it) }
         }
         return tracks
+    }
+
+    /**
+     * Stable identity for collapsing duplicate rows: prefer the Spotify URI, fall
+     * back to a normalised title+artist pair when (rarely) the URI is missing.
+     */
+    fun dedupeKey(track: SpotifyQueueTrack): String {
+        val uri = track.uri.trim()
+        if (uri.isNotEmpty()) return uri
+        return "${track.title.trim().lowercase()}|${track.artist.trim().lowercase()}"
     }
 
     private fun parseTrack(item: JSONObject): SpotifyQueueTrack? {

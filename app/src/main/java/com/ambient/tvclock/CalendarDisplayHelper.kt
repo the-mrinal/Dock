@@ -10,13 +10,13 @@ object CalendarDisplayHelper {
     private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
     private val updatedFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
 
+    fun formatTime(millis: Long): String = timeFormat.format(Date(millis))
+
     fun formatEventTime(event: CalendarEvent): String {
         if (event.isAllDay) {
             return "All day"
         }
-        val start = timeFormat.format(Date(event.startMillis))
-        val end = timeFormat.format(Date(event.endMillis))
-        return "$start – $end"
+        return "${formatTime(event.startMillis)} – ${formatTime(event.endMillis)}"
     }
 
     fun formatUpdated(millis: Long): String =
@@ -34,8 +34,8 @@ object CalendarDisplayHelper {
         return happening ?: active.firstOrNull()
     }
 
+    /** Count of upcoming events excluding [excluding] (typically the one we already feature). */
     fun remainingCount(events: List<CalendarEvent>, now: Long, excluding: CalendarEvent?): Int {
-        val rest = events.filter { !it.isPast(now) && it != excluding }
-        return (rest.size - 1).coerceAtLeast(0)
+        return events.count { event -> !event.isPast(now) && event !== excluding }
     }
 }

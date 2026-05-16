@@ -10,11 +10,10 @@ import android.view.ViewOutlineProvider
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.concurrent.thread
+import java.util.concurrent.Executors
 
 class MusicScreenBinder(
     private val root: View,
@@ -31,7 +30,7 @@ class MusicScreenBinder(
     private val textArtist: TextView = root.findViewById(R.id.textTrackArtist)
     private val textAlbum: TextView = root.findViewById(R.id.textTrackAlbum)
     private val textEmpty: TextView = root.findViewById(R.id.textMusicEmpty)
-    private val progressPlayback: ProgressBar = root.findViewById(R.id.progressPlayback)
+    private val waveformPlayback: WaveformProgressView = root.findViewById(R.id.waveformPlayback)
     private val textQueueHint: TextView = root.findViewById(R.id.textQueueHint)
     private val textRecentHint: TextView = root.findViewById(R.id.textRecentHint)
     private val upNextContent: View = root.findViewById(R.id.upNextContent)
@@ -43,7 +42,7 @@ class MusicScreenBinder(
     private val buttonPrev: ImageButton = root.findViewById(R.id.buttonSkipPrevious)
     private val buttonPlay: ImageButton = root.findViewById(R.id.buttonPlayPause)
     private val buttonNext: ImageButton = root.findViewById(R.id.buttonSkipNext)
-    private val textDeviceLabel: TextView = root.findViewById(R.id.textDeviceLabel)
+    private val buttonDeviceCast: ImageButton = root.findViewById(R.id.buttonDeviceCast)
 
     private var upNextTrack: SpotifyQueueTrack? = null
     private val artworkState = NowPlayingArtwork.State()
@@ -51,16 +50,20 @@ class MusicScreenBinder(
     private val recentAdapter = QueueTrackAdapter { track -> playSelectedTrack(track) }
 
     init {
-        val radius = root.resources.getDimension(R.dimen.album_art_radius)
-        albumArtContainer.outlineProvider = roundOutline(radius)
+        val cardRadius = root.resources.getDimension(R.dimen.now_playing_card_radius)
+        albumArtContainer.outlineProvider = roundOutline(cardRadius)
         albumArtContainer.clipToOutline = true
-        panelNowPlaying.outlineProvider = roundOutline(16f)
+        panelNowPlaying.outlineProvider = roundOutline(cardRadius)
         panelNowPlaying.clipToOutline = true
+        imageAlbumBackground.outlineProvider = roundOutline(cardRadius)
+        imageAlbumBackground.clipToOutline = true
         imageUpNextArt.outlineProvider = roundOutline(6f)
         imageUpNextArt.clipToOutline = true
 
         recyclerRecentlyPlayed.layoutManager = LinearLayoutManager(root.context)
         recyclerRecentlyPlayed.adapter = recentAdapter
+        recyclerRecentlyPlayed.itemAnimator = null
+        recyclerRecentlyPlayed.setHasFixedSize(true)
 
         wireTransportButton(buttonPrev) { MediaTransport.skipToPrevious(root.context) }
         wireTransportButton(buttonPlay) { MediaTransport.playPause(root.context) }
@@ -89,8 +92,8 @@ class MusicScreenBinder(
                 }
             }
         }
-        textDeviceLabel.setOnClickListener { openDevices() }
-        textDeviceLabel.setOnKeyListener { _, keyCode, event ->
+        buttonDeviceCast.setOnClickListener { openDevices() }
+        buttonDeviceCast.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_UP &&
                 (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
             ) {
@@ -164,7 +167,7 @@ class MusicScreenBinder(
             nowPlayingContent.visibility = View.GONE
             textEmpty.visibility = View.VISIBLE
             imageAlbumBackground.visibility = View.GONE
-            progressPlayback.visibility = View.GONE
+            waveformPlayback.visibility = View.GONE
             NowPlayingArtwork.reset(artworkState)
             lastBackgroundKey = null
             return
@@ -186,7 +189,7 @@ class MusicScreenBinder(
 
         val spotify = MediaSessionHelper.isSpotify(track.packageName)
         mediaControls.visibility = if (spotify) View.VISIBLE else View.GONE
-        textDeviceLabel.visibility = if (spotify && SpotifyTokenStore.isConnected(context)) {
+        buttonDeviceCast.visibility = if (spotify && SpotifyTokenStore.isConnected(context)) {
             View.VISIBLE
         } else {
             View.GONE
@@ -216,7 +219,7 @@ class MusicScreenBinder(
         val key = track.mediaUri.ifBlank { "${track.title}|${track.artist}" }
         if (key == lastBackgroundKey) return
         lastBackgroundKey = key
-        thread(name = "album-blur") {
+        blurExecutor.execute {
             val blurred = try {
                 AlbumArtBlur.blur(art)
             } catch (_: Exception) {
@@ -234,17 +237,21 @@ class MusicScreenBinder(
         }
     }
 
+    companion object {
+        private val blurExecutor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "album-blur").apply { isDaemon = true }
+        }
+    }
+
     private fun bindProgress() {
         val controller = NowPlayingCenter.activeController
         val duration = controller?.metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
         val position = controller?.playbackState?.position ?: 0L
         if (duration > 0L) {
-            val max = duration.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-            progressPlayback.max = max
-            progressPlayback.progress = position.coerceIn(0L, duration.toLong()).toInt()
-            progressPlayback.visibility = View.VISIBLE
+            waveformPlayback.setProgress(position.coerceIn(0L, duration), duration)
+            waveformPlayback.visibility = View.VISIBLE
         } else {
-            progressPlayback.visibility = View.GONE
+            waveformPlayback.visibility = View.GONE
         }
     }
 
@@ -252,18 +259,17 @@ class MusicScreenBinder(
         val context = root.context
         bindUpNextPanel(context, snapshot.state, snapshot.upNext)
         bindRecentPanel(context, snapshot.recentState, snapshot.recentlyPlayed)
-        bindDeviceLabel(context, snapshot.activeDeviceName)
+        updateCastTint(snapshot.activeDeviceName)
     }
 
-    private fun bindDeviceLabel(context: android.content.Context, deviceName: String?) {
-        if (!SpotifyTokenStore.isConnected(context) ||
-            textDeviceLabel.visibility != View.VISIBLE
-        ) {
-            return
-        }
+    private fun updateCastTint(deviceName: String?) {
+        // Cast icon stays Spotify green; we just keep the content description in sync so
+        // TalkBack / focus hint reads the current device.
+        val context = root.context
         val label = deviceName?.takeIf { it.isNotBlank() }
             ?: context.getString(R.string.music_playing_on_tv)
-        textDeviceLabel.text = context.getString(R.string.music_playing_on_device, label)
+        buttonDeviceCast.contentDescription =
+            context.getString(R.string.music_playing_on_device, label)
     }
 
     private fun bindUpNextPanel(

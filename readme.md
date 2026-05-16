@@ -61,7 +61,8 @@ Or use `./scripts/install-firetv.sh`.
 ## Features
 
 - **Stay awake** while the app is visible
-- **Burn-in protection** on Home (clock drifts every 60s)
+- **Ambient mode** — after a configurable idle window (Settings → Fade widgets when idle, 90s default) the calendar / now playing widgets and page indicator fade out, leaving only the clock; any key brings them back. Set to **Off** to keep widgets visible.
+- **Burn-in protection** — once ambient, the clock translates within a small envelope every 60s (no card-corner clipping; drift is off in active mode)
 - **Sleep timer** — Settings → auto-exit after inactivity
 - **Calendar** — polls iCal feeds every 15 minutes
 - **Now playing** — MediaSession from Spotify TV app; queue + recently played via Web API when connected

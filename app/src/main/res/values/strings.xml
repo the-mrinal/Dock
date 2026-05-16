@@ -43,6 +43,16 @@
     <string name="timeout_6_hours">6 hours</string>
     <string name="timeout_never">Never (stay awake until you exit)</string>
 
+    <string name="pref_ambient_delay_title">Fade widgets when idle</string>
+    <string name="pref_ambient_delay_summary">After this much time without remote input, the calendar and now playing widgets fade out and the clock starts a slow drift to protect the screen</string>
+
+    <string name="ambient_off">Off (always show widgets)</string>
+    <string name="ambient_30_seconds">30 seconds</string>
+    <string name="ambient_1_minute">1 minute</string>
+    <string name="ambient_90_seconds">90 seconds (default)</string>
+    <string name="ambient_2_minutes">2 minutes</string>
+    <string name="ambient_5_minutes">5 minutes</string>
+
     <string name="pref_category_calendar">Calendar</string>
     <string name="pref_show_calendar_title">Show calendar</string>
     <string name="pref_show_calendar_summary">Display today\'s events on Home and Calendar screens</string>
@@ -88,4 +98,5 @@
     <string name="cd_skip_previous">Previous track</string>
     <string name="cd_play_pause">Play or pause</string>
     <string name="cd_skip_next">Next track</string>
+    <string name="cd_switch_device">Switch playback device</string>
 </resources>

@@ -6,9 +6,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
-import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -21,6 +21,7 @@ class MainActivity : Activity() {
     private lateinit var rootContainer: RelativeLayout
     private lateinit var contentDisplayGroup: FrameLayout
     private lateinit var dashboardPager: ViewPager2
+    private lateinit var pageIndicatorGroup: LinearLayout
     private lateinit var textPageHome: TextView
     private lateinit var textPageCalendar: TextView
     private lateinit var textPageMusic: TextView
@@ -31,8 +32,11 @@ class MainActivity : Activity() {
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val oneMinuteMs = 60 * 1000L
+    private val calendarScrollStep: Int
+        get() = (resources.displayMetrics.density * 140).toInt()
 
     private var currentPage = DashboardPage.HOME
+    private var ambientMode = false
     private lateinit var nowPlayingPoller: NowPlayingPoller
     private lateinit var calendarPoller: CalendarPoller
     private lateinit var spotifyQueuePoller: SpotifyQueuePoller
@@ -56,33 +60,46 @@ class MainActivity : Activity() {
         rootContainer = findViewById(R.id.rootContainer)
         contentDisplayGroup = findViewById(R.id.contentDisplayGroup)
         dashboardPager = findViewById(R.id.dashboardPager)
+        pageIndicatorGroup = findViewById(R.id.pageIndicatorGroup)
         textPageHome = findViewById(R.id.textPageHome)
         textPageCalendar = findViewById(R.id.textPageCalendar)
         textPageMusic = findViewById(R.id.textPageMusic)
 
         dashboardPager.isUserInputEnabled = false
-        dashboardPager.offscreenPageLimit = 3
-        dashboardPager.adapter = DashboardPagerAdapter { page, view ->
+        dashboardPager.offscreenPageLimit = 1
+        dashboardPager.adapter = DashboardPagerAdapter { page, view, isNew ->
             when (page) {
                 DashboardPage.HOME -> {
-                    homeBinder = HomeScreenBinder(view)
-                    homeBinder?.updateClock()
-                    homeBinder?.bindCalendar(CalendarCenter.current)
-                    homeBinder?.bindNowPlaying(NowPlayingCenter.current)
-                    homeBinder?.bindQueue(SpotifyQueueCenter.current)
+                    if (isNew || homeBinder == null) {
+                        homeBinder = HomeScreenBinder(view)
+                    }
+                    homeBinder?.apply {
+                        updateClock(force = true)
+                        bindCalendar(CalendarCenter.current)
+                        bindNowPlaying(NowPlayingCenter.current)
+                        bindQueue(SpotifyQueueCenter.current)
+                    }
                 }
                 DashboardPage.CALENDAR -> {
-                    calendarBinder = CalendarScreenBinder(view)
+                    if (isNew || calendarBinder == null) {
+                        calendarBinder = CalendarScreenBinder(view)
+                    }
                     calendarBinder?.bind(CalendarCenter.current)
                 }
                 DashboardPage.MUSIC -> {
-                    musicBinder = MusicScreenBinder(view) {
-                        resetInactivityWatchdog()
-                        spotifyQueuePoller.publishNow()
+                    if (isNew || musicBinder == null) {
+                        musicBinder = MusicScreenBinder(view) {
+                            resetInactivityWatchdog()
+                            spotifyQueuePoller.publishNow()
+                        }
                     }
-                    musicBinder?.bindNowPlaying(NowPlayingCenter.current)
-                    musicBinder?.bindQueue(SpotifyQueueCenter.current)
-                    musicBinder?.requestControlFocus()
+                    musicBinder?.apply {
+                        bindNowPlaying(NowPlayingCenter.current)
+                        bindQueue(SpotifyQueueCenter.current)
+                        if (isNew && currentPage == DashboardPage.MUSIC) {
+                            requestControlFocus()
+                        }
+                    }
                 }
             }
         }
@@ -91,9 +108,10 @@ class MainActivity : Activity() {
             override fun onPageSelected(position: Int) {
                 currentPage = DashboardPage.fromIndex(position)
                 updatePageIndicator()
-                updateDriftBehavior()
-                if (currentPage == DashboardPage.MUSIC) {
-                    musicBinder?.requestControlFocus()
+                when (currentPage) {
+                    DashboardPage.MUSIC -> musicBinder?.requestControlFocus()
+                    DashboardPage.CALENDAR -> calendarBinder?.requestScrollToCurrent()
+                    DashboardPage.HOME -> { /* nothing extra */ }
                 }
             }
         })
@@ -112,7 +130,6 @@ class MainActivity : Activity() {
         updatePageIndicator()
 
         startClockTicker()
-        startPixelDrifter()
         resetInactivityWatchdog()
     }
 
@@ -145,7 +162,7 @@ class MainActivity : Activity() {
         super.onResume()
         resetInactivityWatchdog()
         NotificationAccess.requestListenerReconnect(this)
-        nowPlayingPoller.start()
+        nowPlayingPoller.publishNow()
         calendarPoller.publishNow()
     }
 
@@ -206,25 +223,36 @@ class MainActivity : Activity() {
 
     private fun shouldNavigatePages(keyCode: Int): Boolean {
         val focused = currentFocus ?: return true
-        if (currentPage == DashboardPage.MUSIC || currentPage == DashboardPage.HOME) {
-            if (focused.id == R.id.buttonSkipPrevious ||
-                focused.id == R.id.buttonPlayPause ||
-                focused.id == R.id.buttonSkipNext ||
-                focused.id == R.id.upNextContent ||
-                focused.id == R.id.textDeviceLabel
-            ) {
-                return false
-            }
-            if (focused.parent is RecyclerView) {
-                return false
-            }
-        }
+
         if (focused is RecyclerView &&
             (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN)
         ) {
             return false
         }
-        return true
+
+        if (currentPage != DashboardPage.MUSIC) {
+            return true
+        }
+
+        // Music-page navigation contract:
+        //   - LEFT always escapes back to Calendar on the very first press,
+        //     no matter where focus is. The user reached Music with one RIGHT,
+        //     so one LEFT should symmetrically take them back.
+        //   - RIGHT stays "interior" inside the transport bar so users can
+        //     still sweep Play -> Skip Next -> Cast without leaving the page
+        //     (there is no dashboard page to the right of Music anyway).
+        //   - Up Next: LEFT escapes, RIGHT hands off to default focus
+        //     traversal which lands on the Play button (nextFocusRight).
+        //   - Skip Previous is intentionally not on the D-pad path -- remote
+        //     media keys (KEYCODE_MEDIA_PREVIOUS) handle it.
+        return when (focused.id) {
+            R.id.buttonPlayPause -> keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+            R.id.buttonSkipPrevious -> keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+            R.id.buttonSkipNext -> false
+            R.id.buttonDeviceCast -> keyCode != KeyEvent.KEYCODE_DPAD_LEFT
+            R.id.upNextContent -> keyCode != KeyEvent.KEYCODE_DPAD_RIGHT
+            else -> true
+        }
     }
 
     private val clockRunnable = object : Runnable {
@@ -239,58 +267,80 @@ class MainActivity : Activity() {
         mainHandler.post(clockRunnable)
     }
 
-    private fun updateDriftBehavior() {
-        if (currentPage != DashboardPage.HOME) {
-            mainHandler.removeCallbacks(drifterRunnable)
-            centerContentDisplay()
-        } else {
-            centerContentDisplay()
-            mainHandler.removeCallbacks(drifterRunnable)
-            mainHandler.postDelayed(drifterRunnable, oneMinuteMs)
-        }
-    }
-
-    private fun centerContentDisplay() {
-        val params = contentDisplayGroup.layoutParams as? RelativeLayout.LayoutParams ?: return
-        params.removeRule(RelativeLayout.ALIGN_PARENT_START)
-        params.removeRule(RelativeLayout.ALIGN_PARENT_TOP)
-        params.addRule(RelativeLayout.CENTER_IN_PARENT)
-        params.leftMargin = 0
-        params.topMargin = 0
-        contentDisplayGroup.layoutParams = params
-    }
-
     private val drifterRunnable = object : Runnable {
         override fun run() {
-            if (currentPage == DashboardPage.HOME) {
-                driftLayoutPosition()
-            }
+            if (!ambientMode) return
+            driftLayoutPosition()
             mainHandler.postDelayed(this, oneMinuteMs)
         }
     }
 
-    private fun startPixelDrifter() {
-        mainHandler.postDelayed(drifterRunnable, oneMinuteMs)
+    /**
+     * Nudge the clock by a small random offset using translation so corners of the
+     * surrounding safe area never get clipped. Drift only runs in ambient mode,
+     * when the supporting widgets have faded out and the clock is the lone bright
+     * element on the screen.
+     */
+    private fun driftLayoutPosition() {
+        val density = resources.displayMetrics.density
+        val maxDriftXPx = (AMBIENT_DRIFT_X_DP * density).toInt()
+        val maxDriftYPx = (AMBIENT_DRIFT_Y_DP * density).toInt()
+
+        val targetX = Random.nextInt(-maxDriftXPx, maxDriftXPx + 1).toFloat()
+        val targetY = Random.nextInt(-maxDriftYPx, maxDriftYPx + 1).toFloat()
+
+        contentDisplayGroup.animate().cancel()
+        contentDisplayGroup.animate()
+            .translationX(targetX)
+            .translationY(targetY)
+            .setDuration(DRIFT_ANIMATION_MS)
+            .start()
     }
 
-    private fun driftLayoutPosition() {
-        val containerWidth = rootContainer.width
-        val containerHeight = rootContainer.height
-        val groupWidth = contentDisplayGroup.width
-        val groupHeight = contentDisplayGroup.height
+    private fun recenterContentDisplay() {
+        contentDisplayGroup.animate().cancel()
+        contentDisplayGroup.animate()
+            .translationX(0f)
+            .translationY(0f)
+            .setDuration(DRIFT_RECENTER_MS)
+            .start()
+    }
 
-        if (containerWidth > 0 && containerHeight > 0 && groupWidth > 0 && groupHeight > 0) {
-            val maxHorizontalMargin = containerWidth - groupWidth
-            val maxVerticalMargin = containerHeight - groupHeight
+    private val enterAmbientRunnable = Runnable { enterAmbientMode() }
 
-            if (maxHorizontalMargin > 0 && maxVerticalMargin > 0) {
-                val params = contentDisplayGroup.layoutParams as RelativeLayout.LayoutParams
-                params.removeRule(RelativeLayout.CENTER_IN_PARENT)
-                params.leftMargin = Random.nextInt(0, maxHorizontalMargin)
-                params.topMargin = Random.nextInt(0, maxVerticalMargin)
-                contentDisplayGroup.layoutParams = params
-            }
+    private fun enterAmbientMode() {
+        if (ambientMode) return
+        ambientMode = true
+
+        // Always show the clock when entering ambient mode so it can drift safely.
+        if (currentPage != DashboardPage.HOME) {
+            dashboardPager.setCurrentItem(DashboardPage.HOME.index, false)
         }
+
+        homeBinder?.setWidgetsAmbient(true)
+        pageIndicatorGroup.animate().cancel()
+        pageIndicatorGroup.animate()
+            .alpha(0f)
+            .setDuration(AMBIENT_PAGER_FADE_OUT_MS)
+            .start()
+
+        mainHandler.removeCallbacks(drifterRunnable)
+        mainHandler.postDelayed(drifterRunnable, AMBIENT_DRIFT_KICKOFF_MS)
+    }
+
+    private fun exitAmbientMode() {
+        if (!ambientMode) return
+        ambientMode = false
+
+        homeBinder?.setWidgetsAmbient(false)
+        pageIndicatorGroup.animate().cancel()
+        pageIndicatorGroup.animate()
+            .alpha(1f)
+            .setDuration(AMBIENT_PAGER_FADE_IN_MS)
+            .start()
+
+        mainHandler.removeCallbacks(drifterRunnable)
+        recenterContentDisplay()
     }
 
     private val watchdogRunnable = Runnable {
@@ -298,6 +348,16 @@ class MainActivity : Activity() {
     }
 
     private fun resetInactivityWatchdog() {
+        exitAmbientMode()
+
+        mainHandler.removeCallbacks(enterAmbientRunnable)
+        if (AmbientPreferences.isAmbientEnabled(this)) {
+            mainHandler.postDelayed(
+                enterAmbientRunnable,
+                AmbientPreferences.getAmbientDelayMs(this)
+            )
+        }
+
         mainHandler.removeCallbacks(watchdogRunnable)
         if (!TimeoutPreferences.isWatchdogEnabled(this)) {
             return
@@ -326,6 +386,20 @@ class MainActivity : Activity() {
                 if (shouldNavigatePages(keyCode)) {
                     resetInactivityWatchdog()
                     goPreviousPage()
+                    return true
+                }
+            }
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                if (currentPage == DashboardPage.CALENDAR) {
+                    calendarBinder?.scrollBy(-calendarScrollStep)
+                    resetInactivityWatchdog()
+                    return true
+                }
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                if (currentPage == DashboardPage.CALENDAR) {
+                    calendarBinder?.scrollBy(calendarScrollStep)
+                    resetInactivityWatchdog()
                     return true
                 }
             }
@@ -387,5 +461,21 @@ class MainActivity : Activity() {
 
     companion object {
         private const val KEY_PAGE = "dashboard_page"
+
+        // Wait a moment after fading widgets before the first drift step so the
+        // clock visibly settles into its new minimal layout before moving.
+        private const val AMBIENT_DRIFT_KICKOFF_MS = 2_000L
+
+        private const val AMBIENT_PAGER_FADE_OUT_MS = 1_200L
+        private const val AMBIENT_PAGER_FADE_IN_MS = 320L
+
+        // Drift envelope (dp). Kept tight so even with the widgets fully visible
+        // (briefly during fade-out) the contentDisplayGroup never overflows the
+        // safe area enough to clip card corners.
+        private const val AMBIENT_DRIFT_X_DP = 32
+        private const val AMBIENT_DRIFT_Y_DP = 20
+
+        private const val DRIFT_ANIMATION_MS = 1_400L
+        private const val DRIFT_RECENTER_MS = 360L
     }
 }

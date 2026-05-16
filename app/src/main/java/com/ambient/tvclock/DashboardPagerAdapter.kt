@@ -5,8 +5,15 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 
+/**
+ * Pager adapter that caches the inflated page view *and* the binder attached to it
+ * inside each [PageHolder]. ViewPager2 calls [onBindViewHolder] more than once per
+ * page during pager updates and restores; without this cache we previously allocated
+ * a fresh `HomeScreenBinder` / `CalendarScreenBinder` / `MusicScreenBinder` every
+ * rebind, throwing away artwork / focus state and re-running `findViewById`.
+ */
 class DashboardPagerAdapter(
-    private val onPageBound: (DashboardPage, View) -> Unit
+    private val onPageReady: (DashboardPage, View, isNew: Boolean) -> Unit
 ) : RecyclerView.Adapter<DashboardPagerAdapter.PageHolder>() {
 
     private val layouts = intArrayOf(
@@ -25,8 +32,12 @@ class DashboardPagerAdapter(
     }
 
     override fun onBindViewHolder(holder: PageHolder, position: Int) {
-        onPageBound(DashboardPage.fromIndex(position), holder.itemView)
+        val isNew = !holder.bound
+        holder.bound = true
+        onPageReady(DashboardPage.fromIndex(position), holder.itemView, isNew)
     }
 
-    class PageHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class PageHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        var bound: Boolean = false
+    }
 }

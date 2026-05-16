@@ -1,20 +1,13 @@
 package com.ambient.tvclock
 
 import android.util.Log
-import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.concurrent.TimeUnit
 
 object IcalFetcher {
 
     private const val TAG = "IcalFetcher"
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(25, TimeUnit.SECONDS)
-        .readTimeout(45, TimeUnit.SECONDS)
-        .followRedirects(true)
-        .followSslRedirects(true)
-        .build()
+    private val client = HttpClients.shared
 
     fun fetch(url: String): String? {
         if (url.isBlank()) {

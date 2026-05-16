@@ -19,4 +19,24 @@
         <item>21600000</item>
         <item>0</item>
     </string-array>
+
+    <string name="ambient_default_value">90000</string>
+
+    <string-array name="ambient_labels">
+        <item>@string/ambient_off</item>
+        <item>@string/ambient_30_seconds</item>
+        <item>@string/ambient_1_minute</item>
+        <item>@string/ambient_90_seconds</item>
+        <item>@string/ambient_2_minutes</item>
+        <item>@string/ambient_5_minutes</item>
+    </string-array>
+
+    <string-array name="ambient_values">
+        <item>0</item>
+        <item>30000</item>
+        <item>60000</item>
+        <item>90000</item>
+        <item>120000</item>
+        <item>300000</item>
+    </string-array>
 </resources>

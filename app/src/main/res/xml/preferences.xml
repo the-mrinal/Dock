@@ -66,6 +66,15 @@
         android:title="@string/pref_category_sleep">
 
         <ListPreference
+            android:defaultValue="@string/ambient_default_value"
+            android:entries="@array/ambient_labels"
+            android:entryValues="@array/ambient_values"
+            android:key="ambient_delay_ms"
+            android:summary="@string/pref_ambient_delay_summary"
+            android:title="@string/pref_ambient_delay_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
             android:defaultValue="@string/timeout_default_value"
             android:entries="@array/timeout_labels"
             android:entryValues="@array/timeout_values"
