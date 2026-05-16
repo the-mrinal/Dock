@@ -3,6 +3,29 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
+        android:key="category_calendar"
+        android:title="@string/pref_category_calendar">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="show_calendar"
+            android:summary="@string/pref_show_calendar_summary"
+            android:title="@string/pref_show_calendar_title" />
+
+        <EditTextPreference
+            android:key="personal_calendar_url"
+            android:summary="@string/pref_personal_calendar_url_summary"
+            android:title="@string/pref_personal_calendar_url_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            android:key="work_calendar_url"
+            android:summary="@string/pref_work_calendar_url_summary"
+            android:title="@string/pref_work_calendar_url_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_now_playing"
         android:title="@string/pref_category_now_playing">
 
@@ -16,6 +39,26 @@
             android:key="grant_notification_access"
             android:title="@string/pref_notification_access_title"
             android:summary="@string/notification_access_required" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="category_spotify"
+        android:title="@string/pref_category_spotify">
+
+        <Preference
+            android:key="spotify_connect"
+            android:summary="@string/pref_spotify_connect_summary"
+            android:title="@string/pref_spotify_connect_title" />
+
+        <Preference
+            android:key="spotify_disconnect"
+            android:summary="@string/pref_spotify_disconnect_summary"
+            android:title="@string/pref_spotify_disconnect_title" />
+
+        <Preference
+            android:key="spotify_status"
+            android:selectable="false"
+            android:title="Status" />
     </PreferenceCategory>
 
     <PreferenceCategory

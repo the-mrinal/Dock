@@ -2,60 +2,51 @@ package com.ambient.tvclock
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Outline
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
-import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import android.widget.FrameLayout
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import kotlin.random.Random
 
 class MainActivity : Activity() {
 
-    private lateinit var textClockTime: TextView
-    private lateinit var textClockDate: TextView
-    private lateinit var textNowPlayingTime: TextView
-    private lateinit var textNowPlayingDate: TextView
-    private lateinit var textNowPlayingBadge: TextView
-    private lateinit var clockDisplayGroup: LinearLayout
-    private lateinit var nowPlayingGroup: LinearLayout
-    private lateinit var mediaControlsGroup: LinearLayout
-    private lateinit var contentDisplayGroup: FrameLayout
     private lateinit var rootContainer: RelativeLayout
-    private lateinit var albumArtContainer: FrameLayout
-    private lateinit var imageAlbumArt: ImageView
-    private lateinit var imageAlbumPlaceholder: ImageView
-    private lateinit var textTrackTitle: TextView
-    private lateinit var textTrackArtist: TextView
-    private lateinit var textTrackAlbum: TextView
-    private lateinit var buttonSkipPrevious: ImageButton
-    private lateinit var buttonPlayPause: ImageButton
-    private lateinit var buttonSkipNext: ImageButton
+    private lateinit var contentDisplayGroup: FrameLayout
+    private lateinit var dashboardPager: ViewPager2
+    private lateinit var textPageHome: TextView
+    private lateinit var textPageCalendar: TextView
+    private lateinit var textPageMusic: TextView
+
+    private var homeBinder: HomeScreenBinder? = null
+    private var calendarBinder: CalendarScreenBinder? = null
+    private var musicBinder: MusicScreenBinder? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val oneMinuteMs = 60 * 1000L
 
-    private val timeFormatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-    private val dateFormatter = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
-
-    private var lastArtworkKey: String? = null
-    private var isNowPlayingVisible = false
+    private var currentPage = DashboardPage.HOME
     private lateinit var nowPlayingPoller: NowPlayingPoller
+    private lateinit var calendarPoller: CalendarPoller
+    private lateinit var spotifyQueuePoller: SpotifyQueuePoller
 
     private val nowPlayingListener: (NowPlayingInfo?) -> Unit = { info ->
         mainHandler.post { applyNowPlaying(info) }
+    }
+
+    private val calendarListener: (CalendarSnapshot) -> Unit = { snapshot ->
+        mainHandler.post { applyCalendar(snapshot) }
+    }
+
+    private val queueListener: (SpotifyQueueSnapshot) -> Unit = { snapshot ->
+        mainHandler.post { applyQueue(snapshot) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,73 +55,89 @@ class MainActivity : Activity() {
 
         rootContainer = findViewById(R.id.rootContainer)
         contentDisplayGroup = findViewById(R.id.contentDisplayGroup)
-        clockDisplayGroup = findViewById(R.id.clockDisplayGroup)
-        nowPlayingGroup = findViewById(R.id.nowPlayingGroup)
-        mediaControlsGroup = findViewById(R.id.mediaControlsGroup)
-        textClockTime = findViewById(R.id.textClockTime)
-        textClockDate = findViewById(R.id.textClockDate)
-        textNowPlayingTime = findViewById(R.id.textNowPlayingTime)
-        textNowPlayingDate = findViewById(R.id.textNowPlayingDate)
-        textNowPlayingBadge = findViewById(R.id.textNowPlayingBadge)
-        albumArtContainer = findViewById(R.id.albumArtContainer)
-        imageAlbumArt = findViewById(R.id.imageAlbumArt)
-        imageAlbumPlaceholder = findViewById(R.id.imageAlbumPlaceholder)
-        textTrackTitle = findViewById(R.id.textTrackTitle)
-        textTrackArtist = findViewById(R.id.textTrackArtist)
-        textTrackAlbum = findViewById(R.id.textTrackAlbum)
-        buttonSkipPrevious = findViewById(R.id.buttonSkipPrevious)
-        buttonPlayPause = findViewById(R.id.buttonPlayPause)
-        buttonSkipNext = findViewById(R.id.buttonSkipNext)
+        dashboardPager = findViewById(R.id.dashboardPager)
+        textPageHome = findViewById(R.id.textPageHome)
+        textPageCalendar = findViewById(R.id.textPageCalendar)
+        textPageMusic = findViewById(R.id.textPageMusic)
 
-        setupAlbumArtClip()
-        setupMediaControls()
+        dashboardPager.isUserInputEnabled = false
+        dashboardPager.offscreenPageLimit = 3
+        dashboardPager.adapter = DashboardPagerAdapter { page, view ->
+            when (page) {
+                DashboardPage.HOME -> {
+                    homeBinder = HomeScreenBinder(view)
+                    homeBinder?.updateClock()
+                    homeBinder?.bindCalendar(CalendarCenter.current)
+                    homeBinder?.bindNowPlaying(NowPlayingCenter.current)
+                    homeBinder?.bindQueue(SpotifyQueueCenter.current)
+                }
+                DashboardPage.CALENDAR -> {
+                    calendarBinder = CalendarScreenBinder(view)
+                    calendarBinder?.bind(CalendarCenter.current)
+                }
+                DashboardPage.MUSIC -> {
+                    musicBinder = MusicScreenBinder(view) {
+                        resetInactivityWatchdog()
+                        spotifyQueuePoller.publishNow()
+                    }
+                    musicBinder?.bindNowPlaying(NowPlayingCenter.current)
+                    musicBinder?.bindQueue(SpotifyQueueCenter.current)
+                    musicBinder?.requestControlFocus()
+                }
+            }
+        }
+
+        dashboardPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                currentPage = DashboardPage.fromIndex(position)
+                updatePageIndicator()
+                updateDriftBehavior()
+                if (currentPage == DashboardPage.MUSIC) {
+                    musicBinder?.requestControlFocus()
+                }
+            }
+        })
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         nowPlayingPoller = NowPlayingPoller(this)
+        calendarPoller = CalendarPoller(this)
+        spotifyQueuePoller = SpotifyQueuePoller(this)
+
+        if (savedInstanceState != null) {
+            val pageIndex = savedInstanceState.getInt(KEY_PAGE, 0)
+            dashboardPager.setCurrentItem(pageIndex, false)
+            currentPage = DashboardPage.fromIndex(pageIndex)
+        }
+        updatePageIndicator()
 
         startClockTicker()
         startPixelDrifter()
         resetInactivityWatchdog()
     }
 
-    private fun setupAlbumArtClip() {
-        val radius = resources.getDimension(R.dimen.album_art_radius)
-        albumArtContainer.outlineProvider = object : ViewOutlineProvider() {
-            override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, radius)
-            }
-        }
-        albumArtContainer.clipToOutline = true
-    }
-
-    private fun setupMediaControls() {
-        buttonSkipPrevious.setOnClickListener {
-            resetInactivityWatchdog()
-            MediaTransport.skipToPrevious(this)
-            mainHandler.postDelayed({ NowPlayingSessionReader.publish(this) }, 400)
-        }
-        buttonPlayPause.setOnClickListener {
-            resetInactivityWatchdog()
-            MediaTransport.playPause(this)
-            mainHandler.postDelayed({ NowPlayingSessionReader.publish(this) }, 400)
-        }
-        buttonSkipNext.setOnClickListener {
-            resetInactivityWatchdog()
-            MediaTransport.skipToNext(this)
-            mainHandler.postDelayed({ NowPlayingSessionReader.publish(this) }, 400)
-        }
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_PAGE, currentPage.index)
     }
 
     override fun onStart() {
         super.onStart()
         NowPlayingCenter.addListener(nowPlayingListener)
+        CalendarCenter.addListener(calendarListener)
+        SpotifyQueueCenter.addListener(queueListener)
         nowPlayingPoller.start()
+        calendarPoller.start()
+        spotifyQueuePoller.start()
     }
 
     override fun onStop() {
         nowPlayingPoller.stop()
+        calendarPoller.stop()
+        spotifyQueuePoller.stop()
         NowPlayingCenter.removeListener(nowPlayingListener)
+        CalendarCenter.removeListener(calendarListener)
+        SpotifyQueueCenter.removeListener(queueListener)
         super.onStop()
     }
 
@@ -139,75 +146,101 @@ class MainActivity : Activity() {
         resetInactivityWatchdog()
         NotificationAccess.requestListenerReconnect(this)
         nowPlayingPoller.start()
+        calendarPoller.publishNow()
     }
 
     private fun applyNowPlaying(info: NowPlayingInfo?) {
-        val showNowPlaying = NowPlayingPreferences.isEnabled(this) &&
-            info != null &&
-            info.hasActiveSession
+        homeBinder?.bindNowPlaying(info)
+        musicBinder?.bindNowPlaying(info)
+    }
 
-        if (showNowPlaying) {
-            val track = info!!
-            clockDisplayGroup.visibility = View.GONE
-            nowPlayingGroup.visibility = View.VISIBLE
+    private fun applyCalendar(snapshot: CalendarSnapshot) {
+        homeBinder?.bindCalendar(snapshot)
+        calendarBinder?.bind(snapshot)
+    }
 
-            textTrackTitle.text = track.title
-            textTrackArtist.text = track.artist.ifEmpty { getString(R.string.unknown_artist) }
+    private fun applyQueue(snapshot: SpotifyQueueSnapshot) {
+        homeBinder?.bindQueue(snapshot)
+        musicBinder?.bindQueue(snapshot)
+    }
 
-            if (track.album.isNotEmpty()) {
-                textTrackAlbum.visibility = View.VISIBLE
-                textTrackAlbum.text = track.album
-            } else {
-                textTrackAlbum.visibility = View.GONE
-            }
-
-            val accentColor = if (MediaSessionHelper.isSpotify(track.packageName)) {
-                R.color.accent_spotify
-            } else {
-                R.color.accent_now_playing
-            }
-            textNowPlayingBadge.setTextColor(ContextCompat.getColor(this, accentColor))
-
-            val showSpotifyControls = MediaSessionHelper.isSpotify(track.packageName)
-            mediaControlsGroup.visibility = if (showSpotifyControls) View.VISIBLE else View.GONE
-
-            buttonPlayPause.setImageResource(
-                if (track.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-            )
-            buttonSkipPrevious.isEnabled = track.canSkipPrevious
-            buttonSkipPrevious.alpha = if (track.canSkipPrevious) 1f else 0.35f
-            buttonSkipNext.isEnabled = track.canSkipNext
-            buttonSkipNext.alpha = if (track.canSkipNext) 1f else 0.35f
-            buttonPlayPause.isEnabled = track.canPlay || track.canPause
-            buttonPlayPause.alpha = if (track.canPlay || track.canPause) 1f else 0.35f
-
-            val artKey = "${track.packageName}|${track.title}|${track.artist}"
-            if (artKey != lastArtworkKey) {
-                lastArtworkKey = artKey
-                if (track.artwork != null) {
-                    imageAlbumArt.setImageBitmap(track.artwork)
-                    imageAlbumArt.visibility = View.VISIBLE
-                    imageAlbumPlaceholder.visibility = View.GONE
-                } else {
-                    imageAlbumArt.setImageDrawable(null)
-                    imageAlbumArt.visibility = View.GONE
-                    imageAlbumPlaceholder.visibility = View.VISIBLE
-                }
-            }
+    private fun updatePageIndicator() {
+        val active = ContextCompat.getColor(this, R.color.text_primary)
+        val inactive = ContextCompat.getColor(this, R.color.text_tertiary)
+        textPageHome.setTextColor(if (currentPage == DashboardPage.HOME) active else inactive)
+        textPageCalendar.setTextColor(if (currentPage == DashboardPage.CALENDAR) active else inactive)
+        textPageMusic.setTextColor(if (currentPage == DashboardPage.MUSIC) active else inactive)
+        textPageHome.typeface = if (currentPage == DashboardPage.HOME) {
+            android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
         } else {
-            nowPlayingGroup.visibility = View.GONE
-            clockDisplayGroup.visibility = View.VISIBLE
-            lastArtworkKey = null
+            android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
         }
-
-        if (showNowPlaying != isNowPlayingVisible) {
-            isNowPlayingVisible = showNowPlaying
-            updateDriftBehavior(showNowPlaying)
+        textPageCalendar.typeface = if (currentPage == DashboardPage.CALENDAR) {
+            android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        } else {
+            android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
+        }
+        textPageMusic.typeface = if (currentPage == DashboardPage.MUSIC) {
+            android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+        } else {
+            android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
         }
     }
 
-    private fun updateDriftBehavior(nowPlayingActive: Boolean) {
-        if (nowPlayingActive) {
+    private fun goToPage(page: DashboardPage) {
+        if (currentPage == page) return
+        dashboardPager.setCurrentItem(page.index, true)
+    }
+
+    private fun goNextPage() {
+        if (currentPage.index < DashboardPage.MUSIC.index) {
+            goToPage(DashboardPage.fromIndex(currentPage.index + 1))
+        }
+    }
+
+    private fun goPreviousPage() {
+        if (currentPage.index > DashboardPage.HOME.index) {
+            goToPage(DashboardPage.fromIndex(currentPage.index - 1))
+        }
+    }
+
+    private fun shouldNavigatePages(keyCode: Int): Boolean {
+        val focused = currentFocus ?: return true
+        if (currentPage == DashboardPage.MUSIC || currentPage == DashboardPage.HOME) {
+            if (focused.id == R.id.buttonSkipPrevious ||
+                focused.id == R.id.buttonPlayPause ||
+                focused.id == R.id.buttonSkipNext ||
+                focused.id == R.id.upNextContent ||
+                focused.id == R.id.textDeviceLabel
+            ) {
+                return false
+            }
+            if (focused.parent is RecyclerView) {
+                return false
+            }
+        }
+        if (focused is RecyclerView &&
+            (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN)
+        ) {
+            return false
+        }
+        return true
+    }
+
+    private val clockRunnable = object : Runnable {
+        override fun run() {
+            homeBinder?.updateClock()
+            calendarBinder?.updateDateLine()
+            mainHandler.postDelayed(this, 1000)
+        }
+    }
+
+    private fun startClockTicker() {
+        mainHandler.post(clockRunnable)
+    }
+
+    private fun updateDriftBehavior() {
+        if (currentPage != DashboardPage.HOME) {
             mainHandler.removeCallbacks(drifterRunnable)
             centerContentDisplay()
         } else {
@@ -227,27 +260,9 @@ class MainActivity : Activity() {
         contentDisplayGroup.layoutParams = params
     }
 
-    private val clockRunnable = object : Runnable {
-        override fun run() {
-            val calendar = Calendar.getInstance()
-            val now = calendar.time
-            val timeText = timeFormatter.format(now)
-            val dateText = dateFormatter.format(now)
-            textClockTime.text = timeText
-            textClockDate.text = dateText
-            textNowPlayingTime.text = timeText
-            textNowPlayingDate.text = dateText
-            mainHandler.postDelayed(this, 1000)
-        }
-    }
-
-    private fun startClockTicker() {
-        mainHandler.post(clockRunnable)
-    }
-
     private val drifterRunnable = object : Runnable {
         override fun run() {
-            if (!isNowPlayingVisible) {
+            if (currentPage == DashboardPage.HOME) {
                 driftLayoutPosition()
             }
             mainHandler.postDelayed(this, oneMinuteMs)
@@ -299,17 +314,42 @@ class MainActivity : Activity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (isNowPlayingVisible && handleMediaKey(keyCode)) {
-            resetInactivityWatchdog()
-            return true
-        }
         when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                if (shouldNavigatePages(keyCode)) {
+                    resetInactivityWatchdog()
+                    goNextPage()
+                    return true
+                }
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                if (shouldNavigatePages(keyCode)) {
+                    resetInactivityWatchdog()
+                    goPreviousPage()
+                    return true
+                }
+            }
             KeyEvent.KEYCODE_MENU,
             KeyEvent.KEYCODE_SETTINGS -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 return true
             }
         }
+
+        if (currentPage == DashboardPage.MUSIC) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+                val focused = currentFocus
+                if (focused != null && focused.performClick()) {
+                    resetInactivityWatchdog()
+                    return true
+                }
+            }
+            if (handleMediaKey(keyCode)) {
+                resetInactivityWatchdog()
+                return true
+            }
+        }
+
         resetInactivityWatchdog()
         return super.onKeyDown(keyCode, event)
     }
@@ -343,5 +383,9 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         super.onDestroy()
         mainHandler.removeCallbacksAndMessages(null)
+    }
+
+    companion object {
+        private const val KEY_PAGE = "dashboard_page"
     }
 }

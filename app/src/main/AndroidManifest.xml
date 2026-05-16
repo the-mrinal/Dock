@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <uses-feature
         android:name="android.software.leanback"
         android:required="true" />
@@ -32,6 +34,27 @@
             android:exported="false"
             android:label="@string/settings_title"
             android:screenOrientation="landscape" />
+
+        <activity
+            android:name=".SpotifyAuthActivity"
+            android:exported="false"
+            android:label="@string/spotify_auth_title"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name=".SpotifyCallbackActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="spotify-callback"
+                    android:scheme="com.ambient.tvclock" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name=".MediaNotificationListener"

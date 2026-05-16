@@ -10,6 +10,7 @@ data class NowPlayingInfo(
     val isPlaying: Boolean,
     val isPaused: Boolean,
     val packageName: String,
+    val mediaUri: String,
     val canSkipNext: Boolean,
     val canSkipPrevious: Boolean,
     val canPlay: Boolean,

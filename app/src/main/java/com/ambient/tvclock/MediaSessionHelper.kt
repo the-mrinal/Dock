@@ -40,6 +40,11 @@ object MediaSessionHelper {
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
             ?: description.iconBitmap
 
+        val mediaUri = metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_URI)?.trim()
+            ?: metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)?.trim()
+            ?: description.mediaUri?.toString()?.trim()
+            ?: ""
+
         val playback = controller.playbackState
         val isPlaying = isActivelyPlaying(controller)
         val isPaused = playback?.state == PlaybackState.STATE_PAUSED
@@ -52,6 +57,7 @@ object MediaSessionHelper {
             isPlaying = isPlaying,
             isPaused = isPaused,
             packageName = controller.packageName,
+            mediaUri = mediaUri,
             canSkipNext = canPerformAction(playback, PlaybackState.ACTION_SKIP_TO_NEXT),
             canSkipPrevious = canPerformAction(playback, PlaybackState.ACTION_SKIP_TO_PREVIOUS),
             canPlay = canPerformAction(playback, PlaybackState.ACTION_PLAY),

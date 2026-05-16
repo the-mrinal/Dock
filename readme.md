@@ -1,90 +1,75 @@
 # TV Awake Clock (Fire TV)
 
-Ambient clock app for Amazon Fire TV / Android TV that keeps the display awake while visible, drifts the clock to reduce burn-in, and optionally auto-exits after a configurable period of remote inactivity.
+Ambient clock app for Amazon Fire TV / Android TV: three-screen dashboard (Home, Calendar, Music), burn-in drift on Home, configurable sleep timer, personal Google Calendar (iCal), and hybrid Spotify (MediaSession + optional Web API queue).
 
-## Features
+## Screens (D-pad Left / Right)
 
-- **Stay awake:** `keepScreenOn` on the layout plus `FLAG_KEEP_SCREEN_ON` while the app is in the foreground.
-- **Burn-in protection:** Repositions the clock every 60 seconds.
-- **Configurable sleep timer:** Auto-exit after no remote input for a duration you choose (default 3 hours), or disable the timer entirely.
-- **Now playing (Spotify / media):** When Spotify or another media app is playing, shows album art, title, artist, and a small clock (Android Auto style). Returns to the large clock when playback stops.
+| Screen | Content |
+|--------|---------|
+| **Home** | Large clock, today calendar widget, compact now playing widget |
+| **Calendar** | Full list of today’s events (personal; work when URL added) |
+| **Music** | Full now playing, transport controls, up next (5) + recently played (5) via Spotify API |
 
-## Now playing (Spotify)
+Press **Menu** for Settings.
 
-The app reads **active media sessions** from the system (same mechanism used by Android Auto). Spotify on Fire TV must be playing in the background or foreground.
+## Setup
 
-1. Open **Settings** in the app (Menu on the remote).
-2. Under **Now playing**, keep **Show Spotify / media while playing** enabled.
-3. Grant **Media access permission** once. On Fire TV this is usually done via ADB:
+### 1. Build
+
+```bash
+source scripts/dev-env.sh
+cp local.properties.example local.properties   # set sdk.dir and spotify.clientId
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+`spotify.clientId` comes from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Redirect URI: `com.ambient.tvclock://spotify-callback`. Add your Spotify account under **User Management** (Development Mode).
+
+### 2. Personal calendar (Google iCal)
+
+1. Google Calendar → your calendar → **Integrate calendar** → **Secret address in iCal format**.
+2. On the TV: **Settings → Personal calendar URL** — paste the link (or use the script below).
+
+Optional — paste URL from your Mac:
+
+```bash
+./scripts/set-calendar-urls.sh 192.168.1.4:5555 "https://calendar.google.com/calendar/ical/.../basic.ics"
+```
+
+Work Outlook ICS can be added later under **Work calendar URL**.
+
+### 3. Media sessions (Spotify on device)
+
+Grant notification listener (Fire TV needs both):
 
 ```bash
 adb shell settings put secure enabled_notification_listeners com.ambient.tvclock/com.ambient.tvclock.MediaNotificationListener
 adb shell cmd notification allow_listener com.ambient.tvclock/com.ambient.tvclock.MediaNotificationListener
 ```
 
-On Fire TV, **both** commands are required — `settings put` alone does not connect the listener.
+Or use `./scripts/install-firetv.sh`.
 
-4. Start Spotify and play a track, then open **TV Awake Clock** (or leave it open). You should see album art, track, artist, and a compact clock. When playback pauses, the normal large clock returns.
+### 4. Spotify API queue (optional)
 
-## Configuring the inactivity timer
+1. Add `spotify.clientId` to `local.properties` and rebuild.
+2. **Settings → Connect Spotify** — sign in on the TV (WebView).
+3. Play Spotify on the same account; Fire TV must be the active Connect device for queue data (Premium).
+4. After an app update, use **Disconnect** then **Connect Spotify** once (scopes: queue, recently played, play/skip).
+5. On **Music**, focus transport buttons or a track row and press **OK** — play, pause, next, previous, or play a listed track.
+6. Focus **Playing on … · OK to switch** and press **OK** to move playback to another Spotify Connect device (phone, speaker, TV, etc.).
 
-1. Launch the app on your Fire TV.
-2. Press **Menu** (or **Settings**) on the remote to open **Settings**.
-3. Choose **Auto-exit after inactivity**:
+## Features
 
-| Option | Behavior |
-|--------|----------|
-| 30 minutes | Exits after 30 min without remote input |
-| 1 hour | Exits after 1 hour |
-| 2 hours | Exits after 2 hours |
-| 3 hours (default) | Exits after 3 hours |
-| 6 hours | Exits after 6 hours |
-| Never | No auto-exit; screen stays awake until you leave the app |
-
-Any D-pad or remote key on the clock screen resets the timer. Changing the setting takes effect when you return to the clock (or immediately on resume).
-
-Preferences are stored in `SharedPreferences` under the key `inactivity_timeout_ms`. Default values live in `app/src/main/res/values/arrays.xml` if you want to change the presets at build time.
-
-## Dev environment (macOS CLI)
-
-Install once with Homebrew:
-
-```bash
-brew install openjdk@17 android-platform-tools
-brew install --cask android-commandlinetools
-source scripts/dev-env.sh
-yes | sdkmanager --licenses
-sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
-```
-
-Create `local.properties` (or copy from a machine that already built):
-
-```properties
-sdk.dir=/opt/homebrew/share/android-commandlinetools
-```
-
-Before each terminal session:
-
-```bash
-source scripts/dev-env.sh
-```
-
-Optional: add the exports in `scripts/dev-env.sh` to your `~/.zshrc` so `java` and `adb` work in every shell.
-
-## Build & install on Fire TV
-
-```bash
-cd /path/to/fire_tv
-source scripts/dev-env.sh
-./gradlew assembleDebug
-adb connect <FIRE_TV_IP>:5555
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-Enable **Developer options** and **ADB debugging** on the Fire TV first (Settings → My Fire TV → About → click device name 7 times).
+- **Stay awake** while the app is visible
+- **Burn-in protection** on Home (clock drifts every 60s)
+- **Sleep timer** — Settings → auto-exit after inactivity
+- **Calendar** — polls iCal feeds every 15 minutes
+- **Now playing** — MediaSession from Spotify TV app; queue + recently played via Web API when connected
 
 ## Project layout
 
-- `MainActivity.kt` — clock, pixel drift, inactivity watchdog
-- `SettingsActivity.kt` — preference UI for the sleep timer
-- `TimeoutPreferences.kt` — reads the configured timeout in milliseconds (`0` = disabled)
+- `MainActivity.kt` — dashboard pager, drift, watchdog
+- `HomeScreenBinder.kt` / `CalendarScreenBinder.kt` / `MusicScreenBinder.kt`
+- `CalendarPoller.kt` / `IcalParser.kt` — calendar feeds
+- `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue
+- `NowPlayingPoller.kt` — MediaSession (unchanged core)

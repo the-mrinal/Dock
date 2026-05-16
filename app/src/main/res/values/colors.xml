@@ -10,4 +10,12 @@
     <color name="text_clock_dim">#3D3D3D</color>
     <color name="accent_now_playing">#FFFFFF</color>
     <color name="accent_spotify">#1DB954</color>
+    <color name="accent_personal">#8AB4F8</color>
+    <color name="accent_work">#F28B82</color>
+    <color name="event_now_highlight">#1A3D2E</color>
+    <color name="spotify_panel_bg">#181818</color>
+    <color name="spotify_row_hover">#282828</color>
+    <color name="spotify_divider">#2A2A2A</color>
+    <color name="spotify_progress_bg">#4D4D4D</color>
+    <color name="spotify_progress_fill">#FFFFFF</color>
 </resources>

@@ -4,6 +4,34 @@
     <string name="settings_title">Settings</string>
     <string name="settings_menu_hint">Press Menu on the remote to open settings</string>
 
+    <string name="page_home">Home</string>
+    <string name="page_calendar">Calendar</string>
+    <string name="page_music">Music</string>
+
+    <string name="widget_today">Today</string>
+    <string name="widget_now_playing">Now playing</string>
+    <string name="calendar_screen_title">Today</string>
+    <string name="music_empty_state">Start Spotify on Fire TV to see playback here</string>
+    <string name="up_next">Up next</string>
+    <string name="recently_played">Recently played</string>
+    <string name="music_section_up_next">Up next</string>
+    <string name="music_section_recent">Recently played</string>
+    <string name="music_playing_on_tv">Playing on Fire TV</string>
+    <string name="music_playing_on_device">Playing on %1$s · OK to switch</string>
+    <string name="spotify_pick_device">Choose where to play</string>
+    <string name="spotify_no_devices">No Spotify devices found. Open Spotify on a device first.</string>
+    <string name="home_up_next">Up next: %1$s — %2$s</string>
+    <string name="home_nothing_playing">Nothing playing</string>
+    <string name="calendar_no_events">No events today</string>
+    <string name="calendar_add_in_settings">Add your personal calendar URL in Settings</string>
+    <string name="calendar_more_today">+%1$d more today</string>
+    <string name="calendar_happening_now">Now</string>
+    <string name="calendar_all_day">All day</string>
+    <string name="calendar_source_personal">Personal</string>
+    <string name="calendar_source_work">Work</string>
+    <string name="calendar_last_updated">Updated %1$s</string>
+    <string name="calendar_fetch_error">Could not refresh calendar</string>
+
     <string name="pref_category_sleep">Sleep timer</string>
     <string name="pref_inactivity_timeout_title">Auto-exit after inactivity</string>
     <string name="pref_inactivity_timeout_summary">Closes the app and allows Fire TV to sleep when no remote input is detected</string>
@@ -15,14 +43,46 @@
     <string name="timeout_6_hours">6 hours</string>
     <string name="timeout_never">Never (stay awake until you exit)</string>
 
+    <string name="pref_category_calendar">Calendar</string>
+    <string name="pref_show_calendar_title">Show calendar</string>
+    <string name="pref_show_calendar_summary">Display today\'s events on Home and Calendar screens</string>
+    <string name="pref_personal_calendar_url_title">Personal calendar URL</string>
+    <string name="pref_personal_calendar_url_summary">Google Calendar secret iCal link</string>
+    <string name="pref_work_calendar_url_title">Work calendar URL (optional)</string>
+    <string name="pref_work_calendar_url_summary">Outlook ICS link when available — leave empty for now</string>
+
     <string name="pref_category_now_playing">Now playing</string>
-    <string name="pref_show_now_playing_title">Show Spotify / media while playing</string>
-    <string name="pref_show_now_playing_summary">When Spotify (or other media apps) are playing, show track title, artist, and album art like Android Auto</string>
+    <string name="pref_show_now_playing_title">Show media on dashboard</string>
+    <string name="pref_show_now_playing_summary">Show a music widget on Home when Spotify or other media is playing</string>
     <string name="pref_notification_access_title">Media access permission</string>
     <string name="notification_access_required">Required once so the app can read active media sessions. Tap to open settings, or grant via ADB on Fire TV.</string>
     <string name="notification_access_granted">Granted — now playing will appear when Spotify is playing.</string>
 
+    <string name="pref_category_spotify">Spotify API</string>
+    <string name="pref_spotify_connect_title">Connect Spotify</string>
+    <string name="pref_spotify_connect_summary">Link your account for up next and recently played (Premium, Development Mode)</string>
+    <string name="pref_spotify_disconnect_title">Disconnect Spotify</string>
+    <string name="pref_spotify_disconnect_summary">Remove stored tokens from this device</string>
+    <string name="spotify_connected">Spotify connected</string>
+    <string name="spotify_not_connected">Not connected — tap Connect Spotify</string>
+    <string name="spotify_no_client_id">Add spotify.clientId to local.properties and rebuild</string>
+    <string name="spotify_auth_title">Connect Spotify</string>
+    <string name="spotify_disconnected_toast">Spotify disconnected</string>
+    <string name="spotify_auth_loading">Connecting to Spotify…</string>
+    <string name="spotify_connect_failed">Could not connect to Spotify. Try again.</string>
+    <string name="spotify_queue_not_linked">Link Spotify in Settings (Menu) for up next</string>
+    <string name="spotify_queue_not_playing">Play Spotify on this Fire TV to load the queue</string>
+    <string name="spotify_queue_empty">Queue not available — use the same Premium account on this TV</string>
+    <string name="spotify_queue_api_error">Spotify queue unavailable (check Premium &amp; Development Mode access)</string>
+    <string name="spotify_recent_not_linked">Link Spotify in Settings for recently played</string>
+    <string name="spotify_recent_empty">No recent tracks yet</string>
+    <string name="spotify_recent_api_error">Recently played unavailable — disconnect and reconnect Spotify in Settings</string>
+    <string name="spotify_reconnect_for_recent">Reconnect Spotify in Settings to enable recently played</string>
+    <string name="tap_to_play_track">Select · OK to play</string>
+    <string name="spotify_reconnect_for_controls">Reconnect Spotify in Settings for play/skip controls</string>
+
     <string name="now_playing_badge">Now playing</string>
+    <string name="listening_to">Listening to</string>
     <string name="unknown_artist">Unknown artist</string>
     <string name="cd_album_art">Album art</string>
     <string name="cd_skip_previous">Previous track</string>
