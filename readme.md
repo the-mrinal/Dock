@@ -1,20 +1,60 @@
-# TV Awake Clock (Fire TV)
+# Fire TV Ambient Dock
 
-Ambient clock app for Amazon Fire TV / Android TV: three-screen dashboard (Home, Calendar, Music), burn-in drift on Home, configurable sleep timer, personal Google Calendar (iCal), and hybrid Spotify (MediaSession + optional Web API queue).
+> The always-on control panel for your desk. Plug a Fire TV into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup.
 
-## Screens (D-pad Left / Right)
+![Hero — the ambient screensaver: time, what's playing, what's next on your calendar, nothing else](screenshots/firetv-20260516-193305.png)
 
-| Screen | Content |
-|--------|---------|
-| **Home** | Large clock, today calendar widget, compact now playing widget |
-| **Calendar** | Full list of today’s events (personal; work when URL added) |
-| **Music** | Full now playing, transport controls, up next (5) + recently played (5) via Spotify API |
+You already have a laptop for the thing you're focused on. You already have a phone for the world reaching in. **You're missing the third screen** — the one that just *sits there* and tells you the time, what meeting is next, and what's playing, without ever asking for a click.
 
-Press **Menu** for Settings.
+This is that screen.
 
-## Setup
+---
 
-### 1. Build
+## What you get
+
+### A clock you actually want to look at
+
+A huge, thin, beautifully kerned time display — with seconds that quietly fade away after 90 seconds of stillness so the resting face is just `7:33 PM`. When idle, the whole dashboard melts away into a true-black screensaver and the clock drifts a few pixels every minute so your panel never burns in.
+
+![Active dashboard — clock, today's calendar, now playing, blurred album-art wash](screenshots/firetv-20260516-193325.png)
+
+### Your calendar, at the exact moment you need it
+
+The dashboard shows what's happening *now* and what's next. Walk past the screen and you instantly know: *"keep coding"* or *"stand up, meeting in five"*. Tap into the Calendar page for the full timeline of the day — personal and work feeds merged from your Google / Outlook iCal URLs, colour-tagged.
+
+![Calendar page — the day on a single screen, NOW badge on the current event](screenshots/firetv-20260516-193345.png)
+
+### A remote control for Spotify, on your wall
+
+The Music page is a full-blown Spotify Connect remote: album art, transport buttons, your live queue, your recently played tracks — driven by the actual MediaSession on your TV plus the Spotify Web API. Skip from across the room with the Fire TV remote. Switch playback to your headphones, your kitchen speaker, your living-room TV, all from one focus ring.
+
+![Music page — now playing, transport, up next, recently played](screenshots/firetv-20260516-193428.png)
+
+### A background that actually breathes
+
+Every screen carries a softly blurred wash of the current track's album art — Gaussian-quality, no pixel grid, no harsh edges. When you stop touching the remote, the wash fades to black so the clock owns the room.
+
+---
+
+## Why this exists
+
+Most "TV dashboards" out there are either repurposed weather apps, screen-saver photo frames, or someone's home-assistant panel from 2019. None of them sit *gracefully* in an engineer's workspace.
+
+This one does. It's built for the specific moment when you're heads-down in code, you hear a song you love, you glance up, and you want to know — in one beat — *what is this, how long do I have until my next call, am I still on track?* No app, no tab, no notification. Just a calm second screen that already knew.
+
+Side benefits:
+
+- **Stay awake** while visible (no screen-off mid-meeting)
+- **Sleep timer** so it gracefully exits after you go to bed
+- **Burn-in protection** for OLED panels (clock drifts in ambient mode)
+- **Fire TV native** — uses the remote, the D-pad, the media keys exactly as you'd expect
+- **No cloud, no telemetry, no account required** (Spotify connection is optional and PKCE-based)
+
+---
+
+## Get it running in 5 minutes
+
+### 1. Build & sideload
 
 ```bash
 source scripts/dev-env.sh
@@ -25,52 +65,71 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 `spotify.clientId` comes from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Redirect URI: `com.ambient.tvclock://spotify-callback`. Add your Spotify account under **User Management** (Development Mode).
 
-### 2. Personal calendar (Google iCal)
+### 2. Point it at your calendar
 
-1. Google Calendar → your calendar → **Integrate calendar** → **Secret address in iCal format**.
-2. On the TV: **Settings → Personal calendar URL** — paste the link (or use the script below).
-
-Optional — paste URL from your Mac:
+Google Calendar → your calendar → **Integrate calendar** → **Secret address in iCal format**. On the TV: **Settings → Personal calendar URL** — paste the link. Or from your Mac:
 
 ```bash
 ./scripts/set-calendar-urls.sh 192.168.1.4:5555 "https://calendar.google.com/calendar/ical/.../basic.ics"
 ```
 
-Work Outlook ICS can be added later under **Work calendar URL**.
+Work Outlook ICS goes under **Work calendar URL**.
 
-### 3. Media sessions (Spotify on device)
+### 3. Let it see your music
 
-Grant notification listener (Fire TV needs both):
+Grant the notification listener so it can read MediaSession metadata from the Spotify TV app:
 
 ```bash
 adb shell settings put secure enabled_notification_listeners com.ambient.tvclock/com.ambient.tvclock.MediaNotificationListener
 adb shell cmd notification allow_listener com.ambient.tvclock/com.ambient.tvclock.MediaNotificationListener
 ```
 
-Or use `./scripts/install-firetv.sh`.
+Or just run `./scripts/install-firetv.sh` — it does all three steps in one shot.
 
-### 4. Spotify API queue (optional)
+### 4. (Optional, Premium) Spotify queue + transport
 
-1. Add `spotify.clientId` to `local.properties` and rebuild.
-2. **Settings → Connect Spotify** — sign in on the TV (WebView).
-3. Play Spotify on the same account; Fire TV must be the active Connect device for queue data (Premium).
-4. After an app update, use **Disconnect** then **Connect Spotify** once (scopes: queue, recently played, play/skip).
-5. On **Music**, focus transport buttons or a track row and press **OK** — play, pause, next, previous, or play a listed track.
-6. Focus **Playing on … · OK to switch** and press **OK** to move playback to another Spotify Connect device (phone, speaker, TV, etc.).
+1. Add `spotify.clientId` to `local.properties` and rebuild
+2. **Settings → Connect Spotify** — sign in on the TV (WebView)
+3. Play Spotify on the same account; the Fire TV must be the active Connect device for queue data
+4. On **Music**, focus a transport button or a track row and press **OK**
+5. Focus **Playing on … · OK to switch** to move playback to another device
 
-## Features
+---
 
-- **Stay awake** while the app is visible
-- **Ambient mode** — after a configurable idle window (Settings → Fade widgets when idle, 90s default) the calendar / now playing widgets and page indicator fade out, leaving only the clock; any key brings them back. Set to **Off** to keep widgets visible.
-- **Burn-in protection** — once ambient, the clock translates within a small envelope every 60s (no card-corner clipping; drift is off in active mode)
-- **Sleep timer** — Settings → auto-exit after inactivity
-- **Calendar** — polls iCal feeds every 15 minutes
-- **Now playing** — MediaSession from Spotify TV app; queue + recently played via Web API when connected
+## How to use it
 
-## Project layout
+| Input | Where | What it does |
+|---|---|---|
+| D-pad Left / Right | Anywhere | Switch between Home, Calendar, Music |
+| D-pad Up / Down | Calendar | Scroll the day |
+| D-pad / OK | Music | Focus + activate transport, tracks, device switcher |
+| Media keys | Music | Play/pause, skip, previous (works with Fire TV remote media buttons) |
+| Menu / Settings | Anywhere | Settings (calendar URLs, Spotify, ambient timing, sleep timer) |
 
-- `MainActivity.kt` — dashboard pager, drift, watchdog
-- `HomeScreenBinder.kt` / `CalendarScreenBinder.kt` / `MusicScreenBinder.kt`
-- `CalendarPoller.kt` / `IcalParser.kt` — calendar feeds
-- `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue
-- `NowPlayingPoller.kt` — MediaSession (unchanged core)
+After your configured idle window (default 90s) the dashboard fades into ambient mode — clock + a single horizontal music ⨯ calendar strip below it. Any keypress brings it back.
+
+---
+
+## Capture screenshots
+
+```bash
+mkdir -p screenshots
+adb exec-out screencap -p > screenshots/$(date +%Y%m%d-%H%M%S).png
+```
+
+---
+
+## Under the hood
+
+- `MainActivity.kt` — dashboard pager, drift, ambient watchdog, input routing
+- `HomeScreenBinder.kt` / `CalendarScreenBinder.kt` / `MusicScreenBinder.kt` — per-screen view binders
+- `BlurredBackgroundBinder.kt` + `AlbumArtBlur.kt` — full-bleed artwork wash (pyramid downsample + 3-pass box blur ≈ Gaussian, plus a GPU `RenderEffect` pass on API 31+)
+- `CalendarPoller.kt` / `IcalParser.kt` — iCal feed polling, every 15 min
+- `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue/recently-played
+- `NowPlayingPoller.kt` — MediaSession bridge
+
+Built on plain Android views (no Compose, no React Native) so it stays buttery on older Fire TV hardware.
+
+---
+
+*If you've got a spare monitor and a Fire TV stick in a drawer somewhere, give this 5 minutes. It's the kind of small infrastructure you don't realise was missing from your desk until it's there.*
