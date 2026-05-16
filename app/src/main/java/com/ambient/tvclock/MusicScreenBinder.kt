@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ContextWrapper
 import android.graphics.Outline
 import android.media.MediaMetadata
+import android.media.session.PlaybackState
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewOutlineProvider
@@ -30,7 +31,7 @@ class MusicScreenBinder(
     private val textArtist: TextView = root.findViewById(R.id.textTrackArtist)
     private val textAlbum: TextView = root.findViewById(R.id.textTrackAlbum)
     private val textEmpty: TextView = root.findViewById(R.id.textMusicEmpty)
-    private val waveformPlayback: WaveformProgressView = root.findViewById(R.id.waveformPlayback)
+    private val waveformPlayback: PlaybackProgressBar = root.findViewById(R.id.waveformPlayback)
     private val textQueueHint: TextView = root.findViewById(R.id.textQueueHint)
     private val textRecentHint: TextView = root.findViewById(R.id.textRecentHint)
     private val upNextContent: View = root.findViewById(R.id.upNextContent)
@@ -207,7 +208,7 @@ class MusicScreenBinder(
 
         NowPlayingArtwork.bind(imageAlbumArt, imagePlaceholder, track, artworkState)
         bindBlurredBackground(track)
-        bindProgress()
+        bindProgress(track)
     }
 
     private fun bindBlurredBackground(track: NowPlayingInfo) {
@@ -243,16 +244,36 @@ class MusicScreenBinder(
         }
     }
 
-    private fun bindProgress() {
+    private fun bindProgress(info: NowPlayingInfo) {
         val controller = NowPlayingCenter.activeController
+        val state = controller?.playbackState
         val duration = controller?.metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
-        val position = controller?.playbackState?.position ?: 0L
-        if (duration > 0L) {
-            waveformPlayback.setProgress(position.coerceIn(0L, duration), duration)
-            waveformPlayback.visibility = View.VISIBLE
-        } else {
+        if (duration <= 0L) {
             waveformPlayback.visibility = View.GONE
+            return
         }
+
+        // The system reports position as of `lastPositionUpdateTime` — extrapolate
+        // to "right now" so we don't show the playhead lagging by a poll interval.
+        val nowElapsed = android.os.SystemClock.elapsedRealtime()
+        val anchorPosition = state?.position ?: 0L
+        val anchorTime = state?.lastPositionUpdateTime ?: nowElapsed
+        val speed = state?.playbackSpeed ?: 1f
+        val livePosition = if (info.isPlaying && speed > 0f) {
+            anchorPosition + ((nowElapsed - anchorTime).coerceAtLeast(0L) * speed).toLong()
+        } else {
+            anchorPosition
+        }.coerceIn(0L, duration)
+
+        val isPlayingSession = info.isPlaying &&
+            state?.state == PlaybackState.STATE_PLAYING
+        waveformPlayback.setPlayback(
+            positionMs = livePosition,
+            durationMs = duration,
+            playing = isPlayingSession,
+            speed = if (speed > 0f) speed else 1f
+        )
+        waveformPlayback.visibility = View.VISIBLE
     }
 
     fun bindQueue(snapshot: SpotifyQueueSnapshot) {
@@ -303,6 +324,9 @@ class MusicScreenBinder(
             SpotifyQueueState.API_ERROR -> {
                 showUpNextHint(context.getString(R.string.spotify_queue_api_error))
             }
+            SpotifyQueueState.RATE_LIMITED -> {
+                showUpNextHint(context.getString(R.string.spotify_queue_rate_limited))
+            }
         }
     }
 
@@ -339,6 +363,12 @@ class MusicScreenBinder(
             SpotifyQueueState.API_ERROR -> {
                 textRecentHint.visibility = View.VISIBLE
                 textRecentHint.text = context.getString(R.string.spotify_recent_api_error)
+                recyclerRecentlyPlayed.visibility = View.GONE
+                recentAdapter.submit(emptyList())
+            }
+            SpotifyQueueState.RATE_LIMITED -> {
+                textRecentHint.visibility = View.VISIBLE
+                textRecentHint.text = context.getString(R.string.spotify_recent_rate_limited)
                 recyclerRecentlyPlayed.visibility = View.GONE
                 recentAdapter.submit(emptyList())
             }

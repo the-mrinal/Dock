@@ -5,7 +5,8 @@ enum class SpotifyQueueState {
     NOT_PLAYING,
     NO_QUEUE,
     OK,
-    API_ERROR
+    API_ERROR,
+    RATE_LIMITED
 }
 
 data class SpotifyQueueTrack(

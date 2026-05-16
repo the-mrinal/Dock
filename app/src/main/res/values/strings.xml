@@ -94,6 +94,8 @@
     <string name="spotify_recent_not_linked">Link Spotify in Settings for recently played</string>
     <string name="spotify_recent_empty">No recent tracks yet</string>
     <string name="spotify_recent_api_error">Recently played unavailable — disconnect and reconnect Spotify in Settings</string>
+    <string name="spotify_recent_rate_limited">Catching up with Spotify…</string>
+    <string name="spotify_queue_rate_limited">Catching up with Spotify…</string>
     <string name="spotify_reconnect_for_recent">Reconnect Spotify in Settings to enable recently played</string>
     <string name="tap_to_play_track">Select · OK to play</string>
     <string name="spotify_reconnect_for_controls">Reconnect Spotify in Settings for play/skip controls</string>

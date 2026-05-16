@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- TV overscan safe zones -->
+    <!-- TV overscan safe zones. Bottom was 64dp but that left a visibly large dead
+         band under the page tabs; 32dp still clears typical overscan on Fire TV. -->
     <dimen name="tv_safe_top">32dp</dimen>
-    <dimen name="tv_safe_bottom">64dp</dimen>
+    <dimen name="tv_safe_bottom">32dp</dimen>
     <dimen name="tv_safe_horizontal">56dp</dimen>
 
     <dimen name="screen_padding_horizontal">56dp</dimen>

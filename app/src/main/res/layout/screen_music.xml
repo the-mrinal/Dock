@@ -183,9 +183,10 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
+                android:layout_marginBottom="14dp"
                 android:layout_weight="1"
-                android:clipChildren="false"
-                android:gravity="center_horizontal"
+                android:clipChildren="true"
+                android:gravity="center"
                 android:orientation="vertical">
 
                 <TextView
@@ -197,14 +198,14 @@
                     android:text="@string/now_playing_badge"
                     android:textAllCaps="true"
                     android:textColor="@color/text_tertiary"
-                    android:textSize="11sp" />
+                    android:textSize="10sp"
+                    android:visibility="gone" />
 
                 <FrameLayout
                     android:id="@+id/albumArtContainer"
-                    android:layout_width="180dp"
-                    android:layout_height="180dp"
+                    android:layout_width="170dp"
+                    android:layout_height="170dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="14dp"
                     android:background="@drawable/bg_album_frame"
                     android:elevation="6dp">
 
@@ -230,13 +231,13 @@
                     android:id="@+id/textTrackTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="14dp"
                     android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
                     android:gravity="center"
-                    android:maxLines="2"
+                    android:maxLines="1"
                     android:textColor="@color/text_primary"
-                    android:textSize="22sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -249,7 +250,7 @@
                     android:gravity="center"
                     android:maxLines="1"
                     android:textColor="@color/text_secondary"
-                    android:textSize="15sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/textTrackAlbum"
@@ -273,22 +274,22 @@
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="14dp">
+                android:paddingStart="14dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="10dp">
 
-                <com.ambient.tvclock.WaveformProgressView
+                <com.ambient.tvclock.PlaybackProgressBar
                     android:id="@+id/waveformPlayback"
                     android:layout_width="match_parent"
-                    android:layout_height="22dp"
+                    android:layout_height="8dp"
                     android:visibility="gone" />
 
                 <LinearLayout
                     android:id="@+id/mediaControlsGroup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="4dp"
                     android:clipChildren="false"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
@@ -300,25 +301,25 @@
 
                     <ImageButton
                         android:id="@+id/buttonSkipPrevious"
-                        android:layout_width="52dp"
-                        android:layout_height="52dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
                         android:background="@drawable/bg_control_icon"
                         android:clickable="true"
                         android:contentDescription="@string/cd_skip_previous"
                         android:focusable="true"
                         android:nextFocusLeft="@+id/upNextContent"
                         android:nextFocusRight="@+id/buttonPlayPause"
-                        android:padding="12dp"
+                        android:padding="10dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_skip_previous"
                         android:tint="@color/text_primary" />
 
                     <ImageButton
                         android:id="@+id/buttonPlayPause"
-                        android:layout_width="68dp"
-                        android:layout_height="68dp"
-                        android:layout_marginStart="14dp"
-                        android:layout_marginEnd="14dp"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
                         android:background="@drawable/bg_play_button_spotify"
                         android:clickable="true"
                         android:contentDescription="@string/cd_play_pause"
@@ -326,22 +327,22 @@
                         android:nextFocusLeft="@+id/buttonSkipPrevious"
                         android:nextFocusRight="@+id/buttonSkipNext"
                         android:nextFocusUp="@+id/upNextContent"
-                        android:padding="20dp"
+                        android:padding="16dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_pause"
                         android:tint="#000000" />
 
                     <ImageButton
                         android:id="@+id/buttonSkipNext"
-                        android:layout_width="52dp"
-                        android:layout_height="52dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
                         android:background="@drawable/bg_control_icon"
                         android:clickable="true"
                         android:contentDescription="@string/cd_skip_next"
                         android:focusable="true"
                         android:nextFocusLeft="@+id/buttonPlayPause"
                         android:nextFocusRight="@+id/buttonDeviceCast"
-                        android:padding="12dp"
+                        android:padding="10dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_skip_next"
                         android:tint="@color/text_primary" />
@@ -353,15 +354,15 @@
 
                     <ImageButton
                         android:id="@+id/buttonDeviceCast"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
                         android:background="@drawable/bg_cast_button"
                         android:clickable="true"
                         android:contentDescription="@string/cd_switch_device"
                         android:focusable="true"
                         android:nextFocusLeft="@+id/buttonSkipNext"
                         android:nextFocusUp="@+id/buttonPlayPause"
-                        android:padding="9dp"
+                        android:padding="8dp"
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_cast"
                         android:tint="@color/accent_spotify" />

@@ -26,6 +26,34 @@ object SpotifyApiClient {
     // currently-playing track without leaving the recently-played list short.
     private const val RECENT_LIMIT = 10
 
+    // Spotify's per-app rate limit is a rolling window; when we trip it we want
+    // every endpoint to pause together until the cool-down expires. The first
+    // 429 sets [rateLimitedUntilMs] to (now + Retry-After) and subsequent calls
+    // short-circuit with httpCode = 429 instead of issuing more requests.
+    private const val DEFAULT_BACKOFF_SECONDS = 30L
+    private const val MAX_BACKOFF_SECONDS = 600L
+
+    @Volatile
+    private var rateLimitedUntilMs: Long = 0L
+
+    fun isRateLimited(): Boolean = System.currentTimeMillis() < rateLimitedUntilMs
+
+    fun rateLimitRemainingMs(): Long =
+        (rateLimitedUntilMs - System.currentTimeMillis()).coerceAtLeast(0L)
+
+    private fun trip429(retryAfterHeader: String?) {
+        val seconds = retryAfterHeader?.trim()?.toLongOrNull()
+            ?.coerceIn(1L, MAX_BACKOFF_SECONDS)
+            ?: DEFAULT_BACKOFF_SECONDS
+        val until = System.currentTimeMillis() + seconds * 1000L
+        rateLimitedUntilMs = maxOf(rateLimitedUntilMs, until)
+        Log.w(TAG, "Rate limited, backing off for ${seconds}s")
+    }
+
+    private fun clearRateLimit() {
+        rateLimitedUntilMs = 0L
+    }
+
     data class QueueResult(
         val tracks: List<SpotifyQueueTrack>,
         val httpCode: Int
@@ -125,16 +153,19 @@ object SpotifyApiClient {
     }
 
     fun fetchQueue(context: Context): QueueResult {
+        if (isRateLimited()) return QueueResult(emptyList(), 429)
         val token = ensureAccessToken(context) ?: return QueueResult(emptyList(), 401)
         return getJsonArrayTracks(QUEUE_URL, token)
     }
 
     fun fetchRecentlyPlayed(context: Context): QueueResult {
+        if (isRateLimited()) return QueueResult(emptyList(), 429)
         val token = ensureAccessToken(context) ?: return QueueResult(emptyList(), 401)
         return getRecentTracks(RECENT_URL, token)
     }
 
     fun fetchPlayerState(context: Context): SpotifyPlayerState? {
+        if (isRateLimited()) return null
         val token = ensureAccessToken(context) ?: return null
         val request = Request.Builder()
             .url(PLAYER_URL)
@@ -143,6 +174,10 @@ object SpotifyApiClient {
             .build()
         return try {
             http.newCall(request).execute().use { response ->
+                if (response.code == 429) {
+                    trip429(response.header("Retry-After"))
+                    return null
+                }
                 if (response.code == 204 || !response.isSuccessful) return null
                 val json = JSONObject(response.body?.string().orEmpty())
                 val deviceJson = json.optJSONObject("device") ?: return null
@@ -204,12 +239,17 @@ object SpotifyApiClient {
         return try {
             http.newCall(request).execute().use { response ->
                 val code = response.code
+                if (code == 429) {
+                    trip429(response.header("Retry-After"))
+                    return QueueResult(emptyList(), 429)
+                }
                 if (code == 204 || !response.isSuccessful) {
                     if (!response.isSuccessful) {
                         Log.w(TAG, "HTTP $code: ${response.body?.string()?.take(120)}")
                     }
                     return QueueResult(emptyList(), code)
                 }
+                clearRateLimit()
                 val json = JSONObject(response.body?.string().orEmpty())
                 val queue = json.optJSONArray("queue") ?: return QueueResult(emptyList(), code)
                 QueueResult(parseTrackArray(queue, maxItems = 1), code)
@@ -229,10 +269,15 @@ object SpotifyApiClient {
         return try {
             http.newCall(request).execute().use { response ->
                 val code = response.code
+                if (code == 429) {
+                    trip429(response.header("Retry-After"))
+                    return QueueResult(emptyList(), 429)
+                }
                 if (!response.isSuccessful) {
                     Log.w(TAG, "Recent HTTP $code: ${response.body?.string()?.take(120)}")
                     return QueueResult(emptyList(), code)
                 }
+                clearRateLimit()
                 val json = JSONObject(response.body?.string().orEmpty())
                 val items = json.optJSONArray("items") ?: return QueueResult(emptyList(), code)
                 val tracks = mutableListOf<SpotifyQueueTrack>()
