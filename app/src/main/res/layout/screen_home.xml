@@ -299,16 +299,17 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <!-- Music column (LEFT). The chip ID stays homeAmbientMusicCorner
-                 so existing visibility logic in HomeScreenBinder still targets
-                 it; positioning has changed from bottom-corner to a first-class
-                 column. -->
-            <LinearLayout
+            <!-- Music column (LEFT). The art frame + three-line text column
+                 used to be a horizontal LinearLayout wrapping a vertical
+                 LinearLayout (two extra view-tree levels). Now flattened into
+                 a single ConstraintLayout — same visual result, two fewer
+                 nodes to measure on every layout pass. IDs are preserved so
+                 HomeScreenBinder doesn't need changes. -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                xmlns:app="http://schemas.android.com/apk/res-auto"
                 android:id="@+id/homeAmbientMusicCorner"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="end|center_vertical"
-                android:orientation="horizontal"
                 android:paddingEnd="28dp"
                 android:visibility="gone">
 
@@ -316,7 +317,10 @@
                     android:id="@+id/homeAmbientArtFrame"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
-                    android:background="@drawable/bg_album_frame">
+                    android:background="@drawable/bg_album_frame"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent">
 
                     <ImageView
                         android:id="@+id/imageAmbientAlbumArt"
@@ -335,46 +339,49 @@
                         android:src="@drawable/ic_music_placeholder" />
                 </FrameLayout>
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/textAmbientNowPlayingLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="14dp"
-                    android:orientation="vertical">
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.18"
+                    android:text="@string/ambient_label_now_playing"
+                    android:textAllCaps="true"
+                    android:textColor="@color/accent_spotify"
+                    android:textSize="11sp"
+                    app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
+                    app:layout_constraintTop_toTopOf="@id/homeAmbientArtFrame" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.18"
-                        android:text="@string/ambient_label_now_playing"
-                        android:textAllCaps="true"
-                        android:textColor="@color/accent_spotify"
-                        android:textSize="11sp" />
+                <TextView
+                    android:id="@+id/textAmbientTrackTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif"
+                    android:maxLines="1"
+                    android:maxWidth="320dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
+                    app:layout_constraintTop_toBottomOf="@id/textAmbientNowPlayingLabel" />
 
-                    <TextView
-                        android:id="@+id/textAmbientTrackTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:ellipsize="end"
-                        android:fontFamily="sans-serif"
-                        android:maxLines="1"
-                        android:maxWidth="320dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="18sp" />
-
-                    <TextView
-                        android:id="@+id/textAmbientTrackArtist"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:fontFamily="sans-serif-light"
-                        android:maxLines="1"
-                        android:maxWidth="320dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-            </LinearLayout>
+                <TextView
+                    android:id="@+id/textAmbientTrackArtist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-light"
+                    android:maxLines="1"
+                    android:maxWidth="320dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
+                    app:layout_constraintTop_toBottomOf="@id/textAmbientTrackTitle" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <!-- Slim divider between the two ambient columns. Translucent so it
                  reads as a quiet seam, not a hard line. Hidden alongside the

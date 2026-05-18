@@ -263,8 +263,16 @@ class MainActivity : Activity() {
             homeBinder?.updateClock()
             homeBinder?.refreshAmbient()
             calendarBinder?.updateDateLine()
-            mainHandler.postDelayed(this, 1000)
+            // Ambient mode never shows seconds; ticking at 1Hz just burns the
+            // main thread. Sleep to the next minute boundary instead.
+            val delay = if (ambientMode) nextMinuteBoundaryDelayMs() else 1_000L
+            mainHandler.postDelayed(this, delay)
         }
+    }
+
+    private fun nextMinuteBoundaryDelayMs(): Long {
+        val ms = System.currentTimeMillis() % 60_000L
+        return (60_000L - ms).coerceAtLeast(1_000L)
     }
 
     private fun startClockTicker() {
@@ -355,6 +363,11 @@ class MainActivity : Activity() {
 
         mainHandler.removeCallbacks(drifterRunnable)
         recenterContentDisplay()
+
+        // Force the clock to repaint immediately on exit — the pending tick
+        // could be up to 60s out from the ambient cadence.
+        mainHandler.removeCallbacks(clockRunnable)
+        mainHandler.post(clockRunnable)
     }
 
     private val watchdogRunnable = Runnable {

@@ -33,7 +33,7 @@ class SpotifyQueuePoller(context: Context) {
     private val pollRunnable = object : Runnable {
         override fun run() {
             publish()
-            handler.postDelayed(this, TICK_INTERVAL_MS)
+            scheduleNext()
         }
     }
 
@@ -44,7 +44,7 @@ class SpotifyQueuePoller(context: Context) {
         lastRecentFetchAt = 0L
         lastPlayerFetchAt = 0L
         publish()
-        handler.postDelayed(pollRunnable, TICK_INTERVAL_MS)
+        scheduleNext()
     }
 
     fun stop() {
@@ -56,7 +56,36 @@ class SpotifyQueuePoller(context: Context) {
         // re-fetch; recent stays on its own cadence to keep us under the limit.
         lastQueueFetchAt = 0L
         lastPlayerFetchAt = 0L
+        handler.removeCallbacks(pollRunnable)
         publish()
+        scheduleNext()
+    }
+
+    /**
+     * Post the next wakeup at the earliest moment any endpoint becomes due.
+     * Drops idle-page wakes from one-every-5s to one-every-60s, while playing
+     * stays close to the 10s queue cadence.
+     */
+    private fun scheduleNext() {
+        handler.removeCallbacks(pollRunnable)
+
+        // Not linked or in 429 cool-down: just check back in a minute.
+        if (!SpotifyTokenStore.isConnected(appContext) || SpotifyApiClient.isRateLimited()) {
+            handler.postDelayed(pollRunnable, MAX_DELAY_MS)
+            return
+        }
+
+        val info = NowPlayingCenter.current
+        val spotifyHere = info != null &&
+            info.hasActiveSession &&
+            MediaSessionHelper.isSpotify(info.packageName)
+        val iv = if (spotifyHere && info!!.isPlaying) IntervalSet.PLAYING else IntervalSet.IDLE
+        val now = SystemClock.elapsedRealtime()
+        val nextQueue = if (spotifyHere) iv.queueMs - (now - lastQueueFetchAt) else Long.MAX_VALUE
+        val nextPlayer = iv.playerMs - (now - lastPlayerFetchAt)
+        val nextRecent = iv.recentMs - (now - lastRecentFetchAt)
+        val next = minOf(nextQueue, nextPlayer, nextRecent).coerceIn(MIN_DELAY_MS, MAX_DELAY_MS)
+        handler.postDelayed(pollRunnable, next)
     }
 
     private fun publish() {
@@ -240,8 +269,10 @@ class SpotifyQueuePoller(context: Context) {
     }
 
     companion object {
-        /** Wake up roughly every 5s; each endpoint decides for itself whether it's due. */
-        private const val TICK_INTERVAL_MS = 5_000L
+        /** Never sleep less than this — keeps a hot-loop bug from spinning the main thread. */
+        private const val MIN_DELAY_MS = 1_000L
+        /** Cap so we always recheck within two minutes even if all counters drift. */
+        private const val MAX_DELAY_MS = 120_000L
         private const val RECENT_DISPLAY_LIMIT = 5
     }
 }

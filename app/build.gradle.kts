@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.ambient.tvclock"
-        minSdk = 25
+        minSdk = 26
         targetSdk = 33
         versionCode = 2
         versionName = "2.0"
@@ -32,7 +32,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -56,6 +57,7 @@ dependencies {
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.viewpager2:viewpager2:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.3.1")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
 }

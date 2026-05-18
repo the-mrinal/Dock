@@ -22,6 +22,11 @@ object AlbumArtBlur {
     private const val BACKGROUND_MAX_OUTPUT = 1280
     private const val BACKGROUND_BLUR_RADIUS = 12
 
+    // GPU path (API 31+): the bitmap is what the RenderEffect samples from.
+    // Larger than the CPU path's tiny 96-px intermediate so centerCrop to 4K
+    // has enough source data, but small enough that the GPU Gaussian is cheap.
+    private const val BACKGROUND_GPU_INPUT_DIMENSION = 192
+
     /**
      * Heavy "color wash" blur used by the Music page now-playing panel.
      */
@@ -36,6 +41,15 @@ object AlbumArtBlur {
      */
     fun blurForBackground(source: Bitmap): Bitmap =
         pyramidBlur(source, BACKGROUND_MIN_DIMENSION, BACKGROUND_MAX_OUTPUT, BACKGROUND_BLUR_RADIUS)
+
+    /**
+     * Cheap downscale-only variant used on API 31+ where the ImageView's
+     * GPU [android.graphics.RenderEffect] handles the Gaussian. We skip the
+     * three-pass CPU box blur entirely — by far the heaviest step — and just
+     * shrink the source so the GPU has a small, cache-friendly bitmap to blur.
+     */
+    fun downscaleForBackground(source: Bitmap): Bitmap =
+        pyramidDown(source, BACKGROUND_GPU_INPUT_DIMENSION)
 
     /**
      * Pipeline:

@@ -16,7 +16,12 @@ object AlbumArtLoader {
     private val http = HttpClients.shared
     private val executor = Executors.newFixedThreadPool(2)
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val cache = object : LruCache<String, Bitmap>(8 * 1024 * 1024) {
+    // HARDWARE bitmaps live in GPU memory rather than the Java heap, so this
+    // cache (sized in *native* bytes via byteCount) is gentle on the small
+    // Dalvik heap Fire TV gives us. Lowered from 8 MB to 4 MB since each entry
+    // is also smaller post-hardware-config and we never need more than the
+    // up-next row + a few neighbours in memory at once.
+    private val cache = object : LruCache<String, Bitmap>(4 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
     }
 
@@ -72,7 +77,11 @@ object AlbumArtLoader {
         val sample = computeSampleSize(bounds.outWidth, bounds.outHeight, MAX_DECODE_DIMENSION)
         val opts = BitmapFactory.Options().apply {
             inSampleSize = sample
-            inPreferredConfig = Bitmap.Config.RGB_565
+            // HARDWARE keeps the pixels in GPU memory off the Java heap. Safe
+            // here because every caller only hands the bitmap to an ImageView;
+            // nothing in this code path ever reads back with getPixels() or
+            // draws into a software Canvas.
+            inPreferredConfig = Bitmap.Config.HARDWARE
         }
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
     }
