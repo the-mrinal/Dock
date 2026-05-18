@@ -64,5 +64,13 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".CalendarRefreshReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.ambient.tvclock.action.REFRESH_CALENDAR" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

@@ -36,10 +36,9 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
     private var ambient: Boolean = false
 
     init {
-        // On API 31+ ask the GPU for an extra Gaussian smoothing pass on top of
-        // our software pyramid blur. This eats the last visible pixel grid that
-        // can sneak through after centerCrop-ing the bitmap to the TV's native
-        // resolution, with negligible cost (the bitmap we feed in is small).
+        // On API 31+ the GPU does the whole Gaussian — we feed it a small
+        // downscaled bitmap and skip the CPU pyramid+box-blur entirely. Below
+        // API 31 we fall back to the CPU path and don't touch RenderEffect.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             imageView.setRenderEffect(
                 RenderEffect.createBlurEffect(
@@ -94,14 +93,18 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
         lastKey = key
 
         executor.execute {
-            val blurred = try {
-                AlbumArtBlur.blurForBackground(art!!)
+            val prepared = try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    AlbumArtBlur.downscaleForBackground(art!!)
+                } else {
+                    AlbumArtBlur.blurForBackground(art!!)
+                }
             } catch (_: Exception) {
                 null
             }
             mainHandler.post {
                 if (lastKey != key) return@post
-                if (blurred != null) applyBitmap(blurred)
+                if (prepared != null) applyBitmap(prepared)
             }
         }
     }
@@ -172,9 +175,11 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
         // Kept as a documentation anchor; targetAlpha branch is unused now.
         private const val AMBIENT_ALPHA = 0.0f
 
-        // Light extra GPU blur layered on the already-blurred bitmap. Small
-        // because the input is already smooth; this is just an anti-grid pass.
-        private const val RENDER_EFFECT_RADIUS = 8f
+        // GPU Gaussian radius (in output pixels). On API 31+ this *is* the blur
+        // — the input bitmap is just a downscaled crop of the album art. Tuned
+        // to roughly match the visual weight of the legacy CPU pyramid+box pass
+        // when the bitmap is centerCrop'd to a 1080p / 4K background.
+        private const val RENDER_EFFECT_RADIUS = 28f
 
         private const val FADE_IN_MS = 700L
         private const val FADE_OUT_MS = 700L
