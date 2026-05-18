@@ -32,7 +32,8 @@ if [[ -n "$DEVICE" ]]; then
   ADB=(adb -s "$DEVICE")
 fi
 
-PKG="com.ambient.tvclock"
+PKG="com.ambient.tvclock.firetv"
+ACTIVITY="com.ambient.tvclock.MainActivity"
 PREFS="${PKG}_preferences.xml"
 TMP="$(mktemp)"
 trap 'rm -f "$TMP"' EXIT
@@ -74,5 +75,5 @@ PY
 "${ADB[@]}" push "$TMP" "/data/local/tmp/$PREFS"
 "${ADB[@]}" shell "run-as $PKG cp /data/local/tmp/$PREFS /data/data/$PKG/shared_prefs/$PREFS"
 "${ADB[@]}" shell am force-stop "$PKG"
-"${ADB[@]}" shell am start -n "$PKG/.MainActivity"
+"${ADB[@]}" shell am start -n "$PKG/$ACTIVITY"
 echo "Calendar URL written on $PKG. App restarted."

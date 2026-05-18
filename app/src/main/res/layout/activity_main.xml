@@ -33,7 +33,7 @@
             android:id="@+id/contentDisplayGroup"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_above="@+id/pageIndicatorGroup"
+            android:layout_above="@+id/onboardingPill"
             android:clipChildren="false"
             android:clipToPadding="false">
 
@@ -43,6 +43,51 @@
                 android:layout_height="match_parent"
                 android:layout_gravity="center" />
         </FrameLayout>
+
+        <!-- First-launch onboarding pill (Decision #5). Hidden by default; MainActivity
+             flips visibility when the receiver master toggle is off and the user is on
+             the Home page within the 7-day onboarding window. -->
+        <LinearLayout
+            android:id="@+id/onboardingPill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/pageIndicatorGroup"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/bg_onboarding_pill"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="6dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:text="@string/onboarding_mirroring_pill"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/onboardingDismiss"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/onboarding_dismiss"
+                android:fontFamily="sans-serif-medium"
+                android:focusable="true"
+                android:paddingStart="6dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="2dp"
+                android:text="×"
+                android:textColor="@color/text_tertiary"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/pageIndicatorGroup"
@@ -109,4 +154,14 @@
                 android:textSize="13sp" />
         </LinearLayout>
     </RelativeLayout>
+
+    <!-- Phase 3: mirroring overlay. Hidden until a sender connects. Sits above
+         the dashboard so the SurfaceView covers the full screen edge-to-edge. -->
+    <com.ambient.tvclock.receiver.ui.StreamingOverlay
+        android:id="@+id/streamingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:background="@android:color/black"
+        android:visibility="gone" />
 </FrameLayout>

@@ -1,7 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">TV Awake Clock</string>
+    <string name="app_name">Dock</string>
     <string name="settings_title">Settings</string>
+
+    <!-- Streaming overlay sender pill. -->
+    <string name="streaming_pill_airplay">Casting from %1$s via AirPlay</string>
+    <string name="streaming_pill_cast">Casting from %1$s via Google Cast</string>
+    <string name="streaming_pill_miracast">Casting from %1$s via Miracast</string>
+
+    <!-- First-launch onboarding pill (Phase 4 / Decision #5). -->
+    <string name="onboarding_mirroring_pill">Tip: enable phone mirroring in Settings</string>
+    <string name="onboarding_dismiss">Dismiss</string>
+
+    <!-- Receiver foreground service (Phase 1; inert until Phase 2 wires the settings toggle). -->
+    <string name="notification_channel_name">Receiver Service</string>
+    <string name="notification_channel_description">Persistent notification for the AirPlay/Miracast/Cast receiver service</string>
+    <string name="notification_status_running">Receiver active — advertising on network</string>
+    <string name="notification_status_stopped">Receiver stopped</string>
+    <string name="notification_status_streaming">Streaming from %1$s</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_restart">Restart</string>
+
     <string name="settings_menu_hint">Press Menu on the remote to open settings</string>
 
     <string name="page_home">Home</string>
@@ -74,6 +93,22 @@
     <string name="pref_notification_access_title">Media access permission</string>
     <string name="notification_access_required">Required once so the app can read active media sessions. Tap to open settings, or grant via ADB on Fire TV.</string>
     <string name="notification_access_granted">Granted — now playing will appear when Spotify is playing.</string>
+
+    <string name="pref_category_receiver">Phone mirroring (beta)</string>
+    <string name="pref_receiver_enabled_title">Enable mirroring receiver</string>
+    <string name="pref_receiver_enabled_summary">Let nearby phones and laptops cast to this device</string>
+    <string name="pref_receiver_device_name_title">Device name</string>
+    <string name="pref_receiver_device_name_summary">Shown to senders in the AirPlay/Cast picker. Leave blank to use the system name.</string>
+    <string name="pref_receiver_airplay_title">AirPlay receiver</string>
+    <string name="pref_receiver_airplay_summary">Accept connections from macOS and iPhone</string>
+    <string name="pref_receiver_cast_title">Google Cast receiver</string>
+    <string name="pref_receiver_cast_summary">Accept connections from Chrome and Android</string>
+    <string name="pref_receiver_miracast_title">Miracast receiver</string>
+    <string name="pref_receiver_miracast_summary">Accept connections from Windows and Android</string>
+    <string name="pref_receiver_pin_title">Require PIN for AirPlay</string>
+    <string name="pref_receiver_pin_summary">Show a 4-digit confirmation code on screen before allowing the connection</string>
+    <string name="pref_receiver_start_on_boot_title">Start on device boot</string>
+    <string name="pref_receiver_start_on_boot_summary">Keep advertising as soon as the device powers on</string>
 
     <string name="pref_category_spotify">Spotify API</string>
     <string name="pref_spotify_connect_title">Connect Spotify</string>

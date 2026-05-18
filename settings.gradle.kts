@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TV Awake Clock"
+rootProject.name = "Dock"
 include(":app")

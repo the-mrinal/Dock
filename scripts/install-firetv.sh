@@ -6,13 +6,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/dev-env.sh"
 
 DEVICE="${1:-192.168.1.4:5555}"
-COMPONENT="com.ambient.tvclock/com.ambient.tvclock.MediaNotificationListener"
+PKG="com.ambient.tvclock.firetv"
+COMPONENT="${PKG}/com.ambient.tvclock.MediaNotificationListener"
 
 cd "$ROOT"
-./gradlew assembleDebug
-adb -s "$DEVICE" install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleFiretvDebug
+adb -s "$DEVICE" install -r app/build/outputs/apk/firetv/debug/app-firetv-debug.apk
 adb -s "$DEVICE" shell settings put secure enabled_notification_listeners "$COMPONENT"
 adb -s "$DEVICE" shell cmd notification allow_listener "$COMPONENT"
-adb -s "$DEVICE" shell am start -n com.ambient.tvclock/.MainActivity
+adb -s "$DEVICE" shell am start -n "${PKG}/com.ambient.tvclock.MainActivity"
 
-echo "Installed. Play Spotify, then open TV Awake Clock."
+echo "Installed. Play Spotify, then open Dock."
