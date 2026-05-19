@@ -85,6 +85,59 @@
     <string name="calendar_happening_now">Now</string>
     <string name="calendar_all_day">All day</string>
 
+    <!-- Dock redesign — Home, Calendar, Connect copy. -->
+    <string name="dock_studio_eyebrow">Dock · Studio</string>
+    <string name="home_widget_today_eyebrow">Today</string>
+    <string name="home_widget_now_personal">Now · Personal</string>
+    <string name="home_widget_now_work">Now · Work</string>
+    <string name="home_widget_ends_in">Ends in %1$dm · %2$s</string>
+    <string name="home_widget_until">Until %1$s</string>
+    <string name="home_widget_also_now">+%1$d also now</string>
+    <string name="home_widget_next_up">Next up</string>
+    <string name="home_widget_more_today">%1$d more today →</string>
+    <string name="home_widget_now_playing">Now playing</string>
+    <string name="home_widget_up_next">Up next</string>
+    <string name="home_widget_playing_on">Living Room TV</string>
+    <string name="home_ambient_idle">Idle · any key wakes</string>
+    <string name="home_ambient_now_playing">Now playing</string>
+    <string name="home_ambient_now">Now · Personal</string>
+
+    <string name="calendar_eyebrow">Calendar</string>
+    <string name="calendar_meta_template">%1$s · %2$s</string>
+    <string name="calendar_events_count_one">%1$d event</string>
+    <string name="calendar_events_count_other">%1$d events</string>
+    <string name="calendar_booked_hours">%1$dh %2$dm booked</string>
+    <string name="calendar_booked_minutes">%1$dm booked</string>
+    <string name="calendar_with_conflicts">%1$d with conflicts</string>
+    <string name="calendar_legend_personal">Personal</string>
+    <string name="calendar_legend_work">Work</string>
+    <string name="calendar_legend_conflict">Conflict</string>
+    <string name="calendar_hint_left">Updated %1$s · ▷ press right to refresh</string>
+    <string name="calendar_hint_left_simple">▷ press right to refresh</string>
+    <string name="calendar_hint_right">↑↓ between rows · ←→ between conflicting events</string>
+    <string name="calendar_now_band">Now · %1$d events</string>
+    <string name="calendar_partial_overlap">Partial overlap</string>
+    <string name="calendar_attending">You\'re in</string>
+    <string name="calendar_declined">Declined</string>
+    <string name="calendar_starts_at">Starts %1$s</string>
+    <string name="calendar_minutes_left">%1$dm left</string>
+    <string name="calendar_dur_ends">%1$s · ends %2$s</string>
+    <string name="calendar_empty_eyebrow">Nothing on the books</string>
+    <string name="calendar_empty_title">A whole day to yourself.</string>
+    <string name="calendar_empty_copy">No events from your personal or work calendars. Pull right on the remote to refresh, or check tomorrow with DPAD-down.</string>
+
+    <string name="connect_title">Connect</string>
+    <string name="connect_action_turn_on">Turn on</string>
+    <string name="connect_action_stop">Stop</string>
+    <string name="connect_action_connect">Connect</string>
+    <string name="connect_action_disconnect">Disconnect</string>
+    <string name="connect_action_retry">Retry</string>
+    <string name="connect_action_receive_config">Receive config</string>
+    <string name="connect_airplay_eyebrow">AirPlay</string>
+    <string name="connect_vpn_eyebrow">VPN</string>
+    <string name="connect_airplay_detail_streaming">From %1$s · 1080p</string>
+    <string name="connect_vpn_detail_connected">%1$s · kill-switch on</string>
+
     <string name="ambient_label_now">Now</string>
     <string name="ambient_label_now_until">Now · Until %1$s</string>
     <string name="ambient_label_next">Next</string>
