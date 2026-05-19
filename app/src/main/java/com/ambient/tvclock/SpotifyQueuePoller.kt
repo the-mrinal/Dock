@@ -157,14 +157,27 @@ class SpotifyQueuePoller(context: Context) {
             )
 
             val nextDeviceName = player?.device?.name ?: previous.activeDeviceName
+            // Same carry-over policy as device name: prefer a fresh value
+            // from the player fetch, otherwise reuse what we last knew so a
+            // queue-only tick doesn't strip context off the Up Next track.
+            val nextContextUri = player?.contextUri?.takeIf { it.isNotBlank() }
+                ?: previous.activeContextUri
+            val stampedUpNext = nextUpNext?.let { track ->
+                if (track.contextUri.isBlank() && !nextContextUri.isNullOrBlank()) {
+                    track.copy(contextUri = nextContextUri)
+                } else {
+                    track
+                }
+            }
 
             postSnapshot(
                 SpotifyQueueSnapshot(
-                    upNext = nextUpNext,
+                    upNext = stampedUpNext,
                     recentlyPlayed = nextRecentTracks,
                     state = nextQueueState,
                     recentState = nextRecentState,
-                    activeDeviceName = nextDeviceName
+                    activeDeviceName = nextDeviceName,
+                    activeContextUri = nextContextUri
                 )
             )
         }

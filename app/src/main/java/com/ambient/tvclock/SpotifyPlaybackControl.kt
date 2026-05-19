@@ -54,6 +54,33 @@ object SpotifyPlaybackControl {
     }
 
     /**
+     * Plays an ordered list of track URIs as a synthetic queue. Used when we
+     * don't have a Spotify "context" URI (e.g. recently-played items streamed
+     * via DJ / Smart Shuffle / search, where `context` comes back as null) but
+     * still want playback to continue past the clicked track instead of
+     * stopping. Spotify accepts up to 50 URIs per call.
+     */
+    fun playUris(
+        context: Context,
+        uris: List<String>,
+        deviceId: String? = null
+    ): PlayResult {
+        if (uris.isEmpty()) return PlayResult.ERROR
+        val urisArray = JSONArray()
+        uris.forEach { urisArray.put(it) }
+        val body = JSONObject()
+            .put("uris", urisArray)
+            .toString()
+            .toRequestBody("application/json".toMediaType())
+        val url = if (deviceId != null) {
+            "$PLAYER_URL/play?device_id=$deviceId"
+        } else {
+            "$PLAYER_URL/play"
+        }
+        return mapPlayResult(putWithCode(context, url, body))
+    }
+
+    /**
      * Starts playback of [contextUri] (a playlist/album/artist URI) at the
      * track identified by [offsetUri]. Unlike [playUri], Spotify will
      * continue playing through the rest of the context after [offsetUri].

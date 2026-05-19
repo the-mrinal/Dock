@@ -203,9 +203,14 @@ object SpotifyApiClient {
                 val json = JSONObject(response.body?.string().orEmpty())
                 val deviceJson = json.optJSONObject("device") ?: return null
                 val device = parseDevice(deviceJson) ?: return null
+                val contextUri = json.optJSONObject("context")
+                    ?.optString("uri", "")
+                    ?.trim()
+                    .orEmpty()
                 SpotifyPlayerState(
                     device = device,
-                    isPlaying = json.optBoolean("is_playing", false)
+                    isPlaying = json.optBoolean("is_playing", false),
+                    contextUri = contextUri
                 )
             }
         } catch (e: Exception) {
@@ -453,9 +458,21 @@ object SpotifyApiClient {
                     val item = items.optJSONObject(i) ?: continue
                     val track = item.optJSONObject("track") ?: continue
                     val parsed = parseTrack(track) ?: continue
-                    val key = dedupeKey(parsed)
+                    // Each recently-played item carries the context (playlist /
+                    // album / artist) it was streamed from. Without it, clicking
+                    // a row would play the track in isolation and stop.
+                    val contextUri = item.optJSONObject("context")
+                        ?.optString("uri", "")
+                        ?.trim()
+                        .orEmpty()
+                    val stamped = if (contextUri.isNotEmpty()) {
+                        parsed.copy(contextUri = contextUri)
+                    } else {
+                        parsed
+                    }
+                    val key = dedupeKey(stamped)
                     if (!seen.add(key)) continue
-                    tracks.add(parsed)
+                    tracks.add(stamped)
                 }
                 QueueResult(tracks, code)
             }

@@ -264,8 +264,31 @@ class MusicScreenBinder(
     private fun playSelectedTrack(track: SpotifyQueueTrack) {
         if (track.uri.isBlank()) return
         onControlUsed()
-        MediaTransport.playTrack(root.context, track.uri)
+        if (track.contextUri.isNotBlank()) {
+            // We know the playlist/album this track was streamed from — use
+            // the playlist drill-down path so Spotify plays through it.
+            startPlay(track.contextUri, track.uri, deviceId = null)
+        } else {
+            // No context (Spotify often returns null for tracks streamed via
+            // DJ / Smart Shuffle / search). Build a synthetic queue from the
+            // clicked track plus everything below it in the visible Recently
+            // Played list so playback keeps going.
+            startPlayUris(buildUriQueueFrom(track), deviceId = null)
+        }
         refreshPlaybackSoon()
+    }
+
+    /**
+     * For Recently Played clicks without a context URI, replay the slice of
+     * the current snapshot starting at the clicked track. Falls back to a
+     * one-item list if the track isn't in the snapshot for some reason —
+     * `playUris` will still play it (just without continuation).
+     */
+    private fun buildUriQueueFrom(start: SpotifyQueueTrack): List<String> {
+        val recent = SpotifyQueueCenter.current.recentlyPlayed
+        val startIdx = recent.indexOfFirst { it.uri == start.uri && start.uri.isNotBlank() }
+        val slice = if (startIdx >= 0) recent.drop(startIdx) else listOf(start)
+        return slice.map { it.uri }.filter { it.isNotBlank() }
     }
 
     private fun playInPlaylistContext(track: SpotifyQueueTrack) {
@@ -292,15 +315,40 @@ class MusicScreenBinder(
                 offsetUri = offsetUri,
                 deviceId = deviceId
             )
-            root.post { handlePlaybackResult(activity, result, contextUri, offsetUri) }
+            root.post {
+                handlePlaybackResult(activity, result) { newDeviceId ->
+                    startPlay(contextUri, offsetUri, newDeviceId)
+                }
+            }
+        }
+    }
+
+    /**
+     * Background-executor counterpart to [startPlay] for the no-context
+     * fallback. Same NO_DEVICE_404 / 403 / 429 handling.
+     */
+    private fun startPlayUris(uris: List<String>, deviceId: String?) {
+        if (uris.isEmpty()) return
+        val activity = findActivity()
+        val context = root.context.applicationContext
+        playbackExecutor.execute {
+            val result = SpotifyPlaybackControl.playUris(
+                context = context,
+                uris = uris,
+                deviceId = deviceId
+            )
+            root.post {
+                handlePlaybackResult(activity, result) { newDeviceId ->
+                    startPlayUris(uris, newDeviceId)
+                }
+            }
         }
     }
 
     private fun handlePlaybackResult(
         activity: Activity?,
         result: SpotifyPlaybackControl.PlayResult,
-        contextUri: String,
-        offsetUri: String
+        retryWithDevice: (String) -> Unit
     ) {
         val context = root.context
         when (result) {
@@ -313,7 +361,7 @@ class MusicScreenBinder(
                     // actually play.
                     SpotifyDevicePicker.show(activity) { deviceId ->
                         onControlUsed()
-                        startPlay(contextUri, offsetUri, deviceId)
+                        retryWithDevice(deviceId)
                         refreshPlaybackSoon()
                     }
                 } else {
