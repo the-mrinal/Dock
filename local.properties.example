@@ -1,3 +1,10 @@
 sdk.dir=/path/to/android/sdk
 # From Spotify Developer Dashboard → your app → Settings → Client ID
 spotify.clientId=your_spotify_client_id_here
+
+# Release signing — leave commented to fall back to debug-signed release builds.
+# To configure, run: scripts/setup-signing.sh
+#signing.keystoreFile=/absolute/path/to/release.keystore
+#signing.keystorePassword=your_keystore_password
+#signing.keyAlias=firetv
+#signing.keyPassword=your_key_password

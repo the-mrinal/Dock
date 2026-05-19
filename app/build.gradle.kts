@@ -13,6 +13,11 @@ val localProperties = Properties().apply {
 }
 val spotifyClientId = localProperties.getProperty("spotify.clientId", "")
 
+val signingKeystoreFile = localProperties.getProperty("signing.keystoreFile", "")
+val signingKeystorePassword = localProperties.getProperty("signing.keystorePassword", "")
+val signingKeyAlias = localProperties.getProperty("signing.keyAlias", "")
+val signingKeyPassword = localProperties.getProperty("signing.keyPassword", "")
+
 android {
     namespace = "com.ambient.tvclock"
     compileSdk = 36
@@ -46,6 +51,17 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (signingKeystoreFile.isNotEmpty()) {
+            create("release") {
+                storeFile = file(signingKeystoreFile)
+                storePassword = signingKeystorePassword
+                keyAlias = signingKeyAlias
+                keyPassword = signingKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -54,6 +70,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 
