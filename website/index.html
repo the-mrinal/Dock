@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire TV Dock — The ambient screen your desk was missing.</title>
+  <meta name="description" content="Plug a Fire TV into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup. Clock, calendar, Spotify remote, phone mirroring, WireGuard VPN. No cloud." />
+
+  <!-- TODO: replace firetv-dock.example.com with the real domain before deploying -->
+  <link rel="canonical" href="https://firetv-dock.example.com/" />
+  <meta property="og:title" content="Fire TV Dock" />
+  <meta property="og:description" content="The ambient screen your desk was missing." />
+  <meta property="og:image" content="https://firetv-dock.example.com/og.png" />
+  <meta property="og:url" content="https://firetv-dock.example.com/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Fire TV Dock" />
+  <meta name="twitter:description" content="The ambient screen your desk was missing." />
+  <meta name="twitter:image" content="https://firetv-dock.example.com/og.png" />
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#hero">Skip to content</a>
+
+  <header class="nav">
+    <a class="brand" href="#hero" aria-label="Fire TV Dock — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">DOCK</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/the-mrinal/fire_tv" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="hero" class="hero">
+      <div class="hero-inner">
+        <div class="brand-mark brand-mark-large" aria-hidden="true"></div>
+
+        <h1 class="hero-title">
+          The <span class="accent">ambient</span> screen
+          <br/>your desk was missing.
+        </h1>
+
+        <p class="hero-sub">
+          Plug a Fire TV into a spare monitor and turn that dusty second screen
+          into the calmest, most useful surface in your setup.
+          No cloud. No telemetry. No account required.
+        </p>
+
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://github.com/the-mrinal/fire_tv/releases/latest" rel="noopener">
+            Download APK
+          </a>
+          <a class="btn btn-secondary" href="https://github.com/the-mrinal/fire_tv" rel="noopener">
+            Star on GitHub
+          </a>
+        </div>
+
+        <p class="hero-meta">
+          Apache 2.0 · Fire TV &amp; Google TV · Built on plain Android views — buttery on old hardware
+        </p>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <header class="section-head">
+        <p class="kicker">Features</p>
+        <h2>Quiet by default. Loud when it matters.</h2>
+      </header>
+
+      <div class="feature-grid">
+        <article class="feature">
+          <h3>A clock you want to look at</h3>
+          <p>
+            Huge, thin, beautifully kerned time. Seconds fade after 90s of stillness.
+            Drifts a few pixels every minute so your panel never burns in.
+          </p>
+        </article>
+        <article class="feature">
+          <h3>Calendar at a glance</h3>
+          <p>
+            Walk past the screen, know whether to keep coding or stand up.
+            Personal + work iCal feeds merged on one page.
+          </p>
+        </article>
+        <article class="feature">
+          <h3>Spotify Connect remote</h3>
+          <p>
+            Album art, transport, live queue, recently played.
+            Switch playback between your devices from one focus ring.
+          </p>
+        </article>
+        <article class="feature">
+          <h3>Phone mirroring</h3>
+          <p>
+            AirPlay, Google Cast, Miracast — all three.
+            Each independently toggleable. The dashboard crossfades out when a sender connects.
+          </p>
+        </article>
+        <article class="feature">
+          <h3>WireGuard VPN</h3>
+          <p>
+            Drop a <code>.conf</code> from your laptop over LAN.
+            Every byte the TV sends — Netflix, Plex, the launcher — through the tunnel.
+          </p>
+        </article>
+        <article class="feature">
+          <h3>Album-art breathing room</h3>
+          <p>
+            Every screen carries a softly blurred wash of the current track's artwork.
+            Stop touching the remote and it fades to black.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="screenshots" class="screenshots">
+      <header class="section-head">
+        <p class="kicker">Screenshots</p>
+        <h2>What it looks like at rest.</h2>
+      </header>
+
+      <div class="shot-grid">
+        <figure class="shot">
+          <img src="shots/home.png" alt="Home dashboard with clock, calendar card, and now-playing card" loading="lazy" />
+          <figcaption><strong>Home</strong> — the resting face</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="shots/connect.png" alt="Connect page showing AirPlay and VPN cards side by side" loading="lazy" />
+          <figcaption><strong>Connect</strong> — AirPlay &amp; WireGuard, side by side</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="shots/calendar.png" alt="Calendar day view with personal events" loading="lazy" />
+          <figcaption><strong>Calendar</strong> — the day on one screen</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="shots/music.png" alt="Music page with transport, up next, and recently played" loading="lazy" />
+          <figcaption><strong>Music</strong> — transport, up next, recently played</figcaption>
+        </figure>
+        <figure class="shot shot-wide">
+          <img src="shots/settings-vpn.png" alt="VPN settings: LAN config import, kill-switch shortcut, indicator overlay" loading="lazy" />
+          <figcaption><strong>Settings · VPN</strong> — LAN import, kill-switch, indicator overlay</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="install" class="install">
+      <header class="section-head">
+        <p class="kicker">Install</p>
+        <h2>Running in five minutes.</h2>
+      </header>
+
+      <div class="install-grid">
+        <div class="install-card">
+          <h3>1. Grab the APK</h3>
+          <p>From the <a href="https://github.com/the-mrinal/fire_tv/releases/latest" rel="noopener">latest release</a>. Pick the build for your platform.</p>
+          <pre><code>app-firetv-release-vX.Y.Z.apk
+app-googletv-release-vX.Y.Z.apk</code></pre>
+        </div>
+
+        <div class="install-card">
+          <h3>2. ADB into your TV</h3>
+          <p>Enable ADB on the TV (Settings → My Fire TV → Developer Options).</p>
+          <pre><code>adb connect &lt;fire-tv-ip&gt;:5555
+adb install -r app-firetv-release-*.apk</code></pre>
+        </div>
+
+        <div class="install-card">
+          <h3>3. Launch &amp; point at your stuff</h3>
+          <p>Open <strong>Dock</strong>. Press Menu, paste your iCal URL, optionally connect Spotify. Done.</p>
+          <p class="hint">
+            Building from source?
+            <a href="https://github.com/the-mrinal/fire_tv#option-2--build-from-source" rel="noopener">See the README</a>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="why" class="why">
+      <div class="why-inner">
+        <p class="kicker">Why this exists</p>
+        <h2>The third screen.</h2>
+        <p>
+          You already have a laptop for the thing you're focused on. You already have a phone for the world reaching in.
+          You're missing the third screen — the one that just <em>sits there</em> and tells you the time, what meeting is next,
+          and what's playing, without ever asking for a click.
+        </p>
+        <p>
+          Most "TV dashboards" are repurposed weather apps, photo frames, or a home-assistant panel from 2019.
+          None of them sit gracefully in an engineer's workspace.
+        </p>
+        <p>
+          This one does.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Fire TV Dock</span>
+      </div>
+      <nav class="footer-links">
+        <a href="https://github.com/the-mrinal/fire_tv" rel="noopener">GitHub</a>
+        <a href="https://github.com/the-mrinal/fire_tv/releases" rel="noopener">Releases</a>
+        <a href="https://github.com/the-mrinal/fire_tv/blob/main/LICENSE" rel="noopener">License</a>
+        <a href="https://github.com/the-mrinal/fire_tv/blob/main/CONTRIBUTING.md" rel="noopener">Contributing</a>
+      </nav>
+      <p class="footer-copy">
+        Apache 2.0 · No cloud · No telemetry
+      </p>
+    </div>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
