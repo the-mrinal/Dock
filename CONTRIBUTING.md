@@ -90,23 +90,50 @@ to match.
 
 ## Releases
 
-Releases are cut **after** a PR is merged to `main`, using the [`semantic-release`](https://semantic-release.gitbook.io/semantic-release) CLI run locally:
+Releases are cut **after** a PR is merged to `main`, using the [`semantic-release`](https://semantic-release.gitbook.io/semantic-release) CLI run locally. The quickest path is the Claude Code shortcut:
 
-```bash
-npx semantic-release --no-ci
+```
+/release
 ```
 
-(Once the release tooling lands in a follow-up PR, a `/release` shortcut will wrap this.)
+…which wraps the manual flow:
 
-Tags follow `vMAJOR.MINOR.PATCH`. The CLI bumps `versionName` and `versionCode` in `app/build.gradle.kts`, writes `CHANGELOG.md`, pushes the tag, and creates a GitHub Release with notes generated from the commits.
+```bash
+git checkout main && git pull --ff-only
+npm install                                  # first time only, or after package.json changes
+npx semantic-release --no-ci --dry-run       # preview the next version
+npx semantic-release --no-ci                 # cut the release
+```
 
-**Building and attaching APKs to a release is a separate, manually-triggered step** to avoid burning CI minutes on every merge:
+What it does:
+
+- Reads Conventional-Commit messages since the last `v*` tag and decides the bump
+- Bumps `versionName` and `versionCode` in `app/build.gradle.kts` (versionCode is encoded as `MAJOR*10000 + MINOR*100 + PATCH`)
+- Writes `CHANGELOG.md`
+- Commits the bump as `chore(release): X.Y.Z [skip ci]`
+- Pushes the tag
+- Creates a GitHub Release with notes generated from the commits
+
+### First-ever release
+
+semantic-release needs a baseline `v*` tag to compute the next version from. On a fresh repo with no `v*` tag yet, create one first:
+
+```bash
+gh release create v2.0.0 --target main --generate-notes \
+  --title "v2.0.0" --notes "Baseline release for semantic-release."
+```
+
+After that, every `/release` produces an automatic `vX.Y.Z` bump.
+
+### Packaging APKs
+
+Building APKs is a separate, **manually-triggered** workflow to avoid burning CI minutes on every merge:
 
 ```bash
 gh workflow run package.yml -f tag=vX.Y.Z
 ```
 
-Reasoning: releases (tags + notes) are cheap and should happen often. APK builds are expensive and should only happen when you actually want to ship binaries.
+Releases (tags + notes) are cheap and should happen often. APK builds are expensive and should only happen when you actually want to ship binaries.
 
 ## Reporting bugs / asking for features
 
