@@ -20,10 +20,17 @@ object SpotifyApiClient {
     private const val DEVICES_URL = "https://api.spotify.com/v1/me/player/devices"
     private const val PLAYLISTS_URL = "https://api.spotify.com/v1/me/playlists"
     private const val PLAYLIST_BASE_URL = "https://api.spotify.com/v1/playlists"
+    private const val ME_URL = "https://api.spotify.com/v1/me"
+    private const val SAVED_TRACKS_URL = "https://api.spotify.com/v1/me/tracks"
     private const val REDIRECT_URI = "com.ambient.tvclock://spotify-callback"
+    // `user-library-read` was added so we can surface Liked Songs alongside
+    // the user's own playlists. Tokens issued before this scope was added
+    // will 403 on /v1/me/tracks — the UI maps that to NEEDS_REAUTH and tells
+    // the user to reconnect.
     private const val SCOPES =
         "user-read-playback-state user-read-currently-playing user-read-recently-played " +
-            "user-modify-playback-state playlist-read-private playlist-read-collaborative"
+            "user-modify-playback-state user-library-read " +
+            "playlist-read-private playlist-read-collaborative"
 
     // Spotify caps these endpoints at 50/100 per page. We fetch in pages until
     // either `next` is null or we hit these soft caps — keeps memory bounded
@@ -32,6 +39,8 @@ object SpotifyApiClient {
     const val PLAYLIST_TRACKS_PAGE_LIMIT = 100
     const val PLAYLISTS_MAX = 200
     const val PLAYLIST_TRACKS_MAX = 500
+    /** /v1/me/tracks caps the page size at 50. */
+    private const val SAVED_TRACKS_PAGE_LIMIT = 50
 
     // Headroom over the UI's display cap (5) so the poller can still filter the
     // currently-playing track without leaving the recently-played list short.
@@ -166,6 +175,42 @@ object SpotifyApiClient {
         return SpotifyTokenStore.getAccessToken(context)
     }
 
+    /**
+     * Returns the linked user's Spotify ID, fetching it from /v1/me on first
+     * use and persisting it. Used to filter [fetchPlaylists] down to playlists
+     * the user actually owns. Returns null on a hard network failure; callers
+     * should treat that as "filter unavailable" and show the unfiltered list
+     * rather than nothing.
+     */
+    private fun ensureUserId(context: Context): String? {
+        SpotifyTokenStore.getUserId(context)?.let { return it }
+        val token = ensureAccessToken(context) ?: return null
+        val request = Request.Builder()
+            .url(ME_URL)
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return try {
+            http.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "/v1/me HTTP ${response.code}")
+                    return null
+                }
+                val json = JSONObject(response.body?.string().orEmpty())
+                val id = json.optString("id", "").trim()
+                if (id.isNotEmpty()) {
+                    SpotifyTokenStore.saveUserId(context, id)
+                    id
+                } else {
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "/v1/me failed: ${e.message}")
+            null
+        }
+    }
+
     fun fetchFeed(context: Context): SpotifyFeed {
         return SpotifyFeed(
             queue = fetchQueue(context),
@@ -254,9 +299,12 @@ object SpotifyApiClient {
     fun fetchPlaylists(context: Context): PlaylistsResult {
         if (isRateLimited()) return PlaylistsResult(emptyList(), 429)
         val token = ensureAccessToken(context) ?: return PlaylistsResult(emptyList(), 401)
+        val myUserId = ensureUserId(context)
 
         val collected = mutableListOf<SpotifyPlaylist>()
         var offset = 0
+        var pageCode = 200
+        var hitError = false
         while (collected.size < PLAYLISTS_MAX) {
             val url = "$PLAYLISTS_URL?limit=$PLAYLISTS_PAGE_LIMIT&offset=$offset"
             val request = Request.Builder()
@@ -267,18 +315,24 @@ object SpotifyApiClient {
             try {
                 http.newCall(request).execute().use { response ->
                     val code = response.code
+                    pageCode = code
                     if (code == 429) {
                         trip429(response.header("Retry-After"))
-                        return PlaylistsResult(collected, 429)
+                        hitError = true
+                        return@use
                     }
                     if (!response.isSuccessful) {
                         Log.w(TAG, "Playlists HTTP $code: ${response.body?.string()?.take(120)}")
-                        return PlaylistsResult(collected, code)
+                        hitError = true
+                        return@use
                     }
                     clearRateLimit()
                     val json = JSONObject(response.body?.string().orEmpty())
-                    val items = json.optJSONArray("items") ?: return PlaylistsResult(collected, code)
-                    if (items.length() == 0) return PlaylistsResult(collected, code)
+                    val items = json.optJSONArray("items")
+                    if (items == null || items.length() == 0) {
+                        offset = Int.MAX_VALUE
+                        return@use
+                    }
                     for (i in 0 until items.length()) {
                         if (collected.size >= PLAYLISTS_MAX) break
                         val item = items.optJSONObject(i) ?: continue
@@ -286,16 +340,58 @@ object SpotifyApiClient {
                     }
                     val next = json.optString("next", "")
                     if (next.isBlank() || items.length() < PLAYLISTS_PAGE_LIMIT) {
-                        return PlaylistsResult(collected, code)
+                        offset = Int.MAX_VALUE
+                    } else {
+                        offset += PLAYLISTS_PAGE_LIMIT
                     }
-                    offset += PLAYLISTS_PAGE_LIMIT
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Playlists request failed: ${e.message}")
-                return PlaylistsResult(collected, -1)
+                return PlaylistsResult(finalisePlaylists(context, token, collected, myUserId), -1)
             }
+            if (hitError || offset == Int.MAX_VALUE) break
         }
-        return PlaylistsResult(collected, 200)
+        return PlaylistsResult(
+            finalisePlaylists(context, token, collected, myUserId),
+            pageCode
+        )
+    }
+
+    /**
+     * Filter playlists to ones owned by the linked user (drops Spotify-curated
+     * mixes, followed playlists, and friends' shared playlists) and prepend
+     * a synthetic Liked Songs entry. If `myUserId` is null we couldn't reach
+     * /v1/me — keep the full list rather than blank the UI.
+     */
+    private fun finalisePlaylists(
+        context: Context,
+        token: String,
+        collected: List<SpotifyPlaylist>,
+        myUserId: String?
+    ): List<SpotifyPlaylist> {
+        val owned = if (myUserId != null) {
+            collected.filter { it.ownerId == myUserId }
+        } else {
+            collected
+        }
+        val likedCount = fetchSavedTrackCount(token)
+        return listOf(SpotifyPlaylist.likedSongs(likedCount)) + owned
+    }
+
+    private fun fetchSavedTrackCount(token: String): Int {
+        val request = Request.Builder()
+            .url("$SAVED_TRACKS_URL?limit=1")
+            .header("Authorization", "Bearer $token")
+            .get()
+            .build()
+        return try {
+            http.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) 0
+                else JSONObject(response.body?.string().orEmpty()).optInt("total", 0)
+            }
+        } catch (_: Exception) {
+            0
+        }
     }
 
     /**
@@ -305,6 +401,9 @@ object SpotifyApiClient {
      * paginated stream for legacy reasons).
      */
     fun fetchPlaylistTracks(context: Context, playlistId: String): PlaylistTracksResult {
+        if (playlistId == SpotifyPlaylist.LIKED_SONGS_ID) {
+            return fetchSavedTracks(context)
+        }
         if (isRateLimited()) return PlaylistTracksResult(emptyList(), 429)
         val token = ensureAccessToken(context) ?: return PlaylistTracksResult(emptyList(), 401)
 
@@ -367,6 +466,61 @@ object SpotifyApiClient {
         return PlaylistTracksResult(collected, 200)
     }
 
+    /**
+     * Loads the user's Liked Songs ("Saved Tracks"). Same pagination shape as
+     * [fetchPlaylistTracks]; uses /v1/me/tracks which caps each page at 50.
+     * Requires the `user-library-read` scope — 403 on the first page means
+     * the token was issued before that scope existed.
+     */
+    private fun fetchSavedTracks(context: Context): PlaylistTracksResult {
+        if (isRateLimited()) return PlaylistTracksResult(emptyList(), 429)
+        val token = ensureAccessToken(context) ?: return PlaylistTracksResult(emptyList(), 401)
+
+        val collected = mutableListOf<SpotifyQueueTrack>()
+        var offset = 0
+        while (collected.size < PLAYLIST_TRACKS_MAX) {
+            val url = "$SAVED_TRACKS_URL?limit=$SAVED_TRACKS_PAGE_LIMIT&offset=$offset"
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build()
+            try {
+                http.newCall(request).execute().use { response ->
+                    val code = response.code
+                    if (code == 429) {
+                        trip429(response.header("Retry-After"))
+                        return PlaylistTracksResult(collected, 429)
+                    }
+                    if (!response.isSuccessful) {
+                        Log.w(TAG, "Saved tracks HTTP $code: ${response.body?.string()?.take(120)}")
+                        return PlaylistTracksResult(collected, code)
+                    }
+                    clearRateLimit()
+                    val json = JSONObject(response.body?.string().orEmpty())
+                    val items = json.optJSONArray("items")
+                        ?: return PlaylistTracksResult(collected, code)
+                    if (items.length() == 0) return PlaylistTracksResult(collected, code)
+                    for (i in 0 until items.length()) {
+                        if (collected.size >= PLAYLIST_TRACKS_MAX) break
+                        val item = items.optJSONObject(i) ?: continue
+                        val trackObj = item.optJSONObject("track") ?: continue
+                        parseTrack(trackObj)?.let { collected.add(it) }
+                    }
+                    val next = json.optString("next", "")
+                    if (next.isBlank() || items.length() < SAVED_TRACKS_PAGE_LIMIT) {
+                        return PlaylistTracksResult(collected, code)
+                    }
+                    offset += SAVED_TRACKS_PAGE_LIMIT
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Saved tracks request failed: ${e.message}")
+                return PlaylistTracksResult(collected, -1)
+            }
+        }
+        return PlaylistTracksResult(collected, 200)
+    }
+
     private fun parsePlaylist(item: JSONObject): SpotifyPlaylist? {
         val id = item.optString("id", "").trim()
         val name = item.optString("name", "").trim()
@@ -379,13 +533,16 @@ object SpotifyApiClient {
             ?.takeIf { it >= 0 }
             ?: item.optJSONObject("tracks")?.optInt("total", 0)
             ?: 0
-        val ownerName = item.optJSONObject("owner")?.optString("display_name", "").orEmpty()
+        val ownerObj = item.optJSONObject("owner")
+        val ownerName = ownerObj?.optString("display_name", "").orEmpty()
+        val ownerId = ownerObj?.optString("id", "").orEmpty().trim()
         return SpotifyPlaylist(
             id = id,
             name = name,
             imageUrl = imageUrl,
             trackCount = trackCount,
-            ownerName = ownerName
+            ownerName = ownerName,
+            ownerId = ownerId
         )
     }
 

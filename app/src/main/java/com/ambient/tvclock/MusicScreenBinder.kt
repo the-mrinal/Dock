@@ -3,6 +3,7 @@ package com.ambient.tvclock
 import android.app.Activity
 import android.content.ContextWrapper
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Outline
 import android.media.MediaMetadata
 import android.media.session.PlaybackState
@@ -12,6 +13,7 @@ import android.view.ViewOutlineProvider
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -40,6 +42,7 @@ class MusicScreenBinder(
     private val imageUpNextArt: ImageView = root.findViewById(R.id.imageUpNextArt)
     private val textUpNextTitle: TextView = root.findViewById(R.id.textUpNextTitle)
     private val textUpNextArtist: TextView = root.findViewById(R.id.textUpNextArtist)
+    private val progressUpNextLoading: ProgressBar = root.findViewById(R.id.progressUpNextLoading)
     private val recyclerRecentlyPlayed: RecyclerView = root.findViewById(R.id.recyclerRecentlyPlayed)
     private val mediaControls: LinearLayout = root.findViewById(R.id.mediaControlsGroup)
     private val buttonPrev: ImageButton = root.findViewById(R.id.buttonSkipPrevious)
@@ -57,6 +60,7 @@ class MusicScreenBinder(
     private var upNextTrack: SpotifyQueueTrack? = null
     private val artworkState = NowPlayingArtwork.State()
     private var lastBackgroundKey: String? = null
+    private var lastBackgroundBitmap: Bitmap? = null
     private val recentAdapter = QueueTrackAdapter { track -> playSelectedTrack(track) }
 
     private enum class BrowseMode { DEFAULT, PLAYLISTS, TRACKS }
@@ -264,6 +268,7 @@ class MusicScreenBinder(
     private fun playSelectedTrack(track: SpotifyQueueTrack) {
         if (track.uri.isBlank()) return
         onControlUsed()
+        beginLoading(track.uri)
         if (track.contextUri.isNotBlank()) {
             // We know the playlist/album this track was streamed from — use
             // the playlist drill-down path so Spotify plays through it.
@@ -295,9 +300,49 @@ class MusicScreenBinder(
         val playlist = currentPlaylist ?: return
         if (track.uri.isBlank()) return
         onControlUsed()
-        startPlay(playlist.uri, track.uri, deviceId = null)
+        beginLoading(track.uri)
+        if (playlist.isLikedSongs) {
+            // Spotify's /v1/me/player/play won't accept Liked Songs as a
+            // context_uri (no public context type exists for saved tracks),
+            // so hand over the clicked track + the rest of the visible list
+            // as an explicit `uris` array. Spotify caps that at 50 per call.
+            startPlayUris(buildLikedSongsQueueFrom(track), deviceId = null)
+        } else {
+            startPlay(playlist.uri, track.uri, deviceId = null)
+        }
         refreshPlaybackSoon()
     }
+
+    private fun buildLikedSongsQueueFrom(start: SpotifyQueueTrack): List<String> {
+        val tracks = playlistTrackAdapter.currentList
+        val idx = tracks.indexOfFirst { it.uri == start.uri && start.uri.isNotBlank() }
+        val slice = if (idx >= 0) tracks.drop(idx) else listOf(start)
+        return slice.take(50).map { it.uri }.filter { it.isNotBlank() }
+    }
+
+    /**
+     * Show the inline progress bar on whichever row matches [uri] across
+     * Up Next, Recently Played, and the playlist tracks list. Schedules a
+     * safety hide so a hung network call can never leave the bar stuck.
+     */
+    private fun beginLoading(uri: String) {
+        if (uri.isBlank()) return
+        recentAdapter.setLoadingUri(uri)
+        playlistTrackAdapter.setLoadingUri(uri)
+        progressUpNextLoading.visibility =
+            if (upNextTrack?.uri == uri) View.VISIBLE else View.GONE
+        root.removeCallbacks(loadingSafetyTimeout)
+        root.postDelayed(loadingSafetyTimeout, LOADING_SAFETY_MS)
+    }
+
+    private fun endLoading() {
+        recentAdapter.setLoadingUri(null)
+        playlistTrackAdapter.setLoadingUri(null)
+        progressUpNextLoading.visibility = View.GONE
+        root.removeCallbacks(loadingSafetyTimeout)
+    }
+
+    private val loadingSafetyTimeout = Runnable { endLoading() }
 
     /**
      * Fires `playContext` on the background executor and routes the result
@@ -351,6 +396,10 @@ class MusicScreenBinder(
         retryWithDevice: (String) -> Unit
     ) {
         val context = root.context
+        // Whatever Spotify said, the in-flight request has resolved — the
+        // inline loading bar should disappear. The retry path will re-arm it
+        // via beginLoading() if the user picks a device.
+        endLoading()
         when (result) {
             SpotifyPlaybackControl.PlayResult.OK -> Unit
             SpotifyPlaybackControl.PlayResult.NO_DEVICE_404 -> {
@@ -597,10 +646,12 @@ class MusicScreenBinder(
             nowPlayingContent.visibility = View.GONE
             textEmpty.visibility = View.VISIBLE
             imageAlbumBackground.visibility = View.GONE
+            imageAlbumBackground.setImageDrawable(null)
             waveformPlayback.visibility = View.GONE
             mediaControls.visibility = View.GONE
             NowPlayingArtwork.reset(artworkState)
             lastBackgroundKey = null
+            lastBackgroundBitmap = null
             updateLeftPanelFocusChain()
             ensureSomethingFocused()
             return
@@ -646,26 +697,50 @@ class MusicScreenBinder(
     }
 
     private fun bindBlurredBackground(track: NowPlayingInfo) {
-        val art = track.artwork ?: run {
-            imageAlbumBackground.visibility = View.GONE
-            lastBackgroundKey = null
+        val art = track.artwork
+        val key = track.mediaUri.ifBlank { "${track.title}|${track.artist}" }
+        // Spotify pushes track metadata in two stages: first the new title/
+        // artist with a tiny placeholder bitmap (its app icon, via
+        // DISPLAY_ICON / iconBitmap), then a moment later the real album art.
+        // Anything below this size is the placeholder — refuse to blur it
+        // and keep the previous background instead, so users never see the
+        // blue Spotify-logo blur flash on a track change.
+        val artLooksReal = art != null &&
+            art.width >= MIN_BACKGROUND_ART_PX &&
+            art.height >= MIN_BACKGROUND_ART_PX
+
+        if (!artLooksReal) {
+            // Hold whatever blur is already on screen. Only hide if we have
+            // nothing to hold (cold start, no track ever played this session).
+            if (lastBackgroundBitmap == null) {
+                imageAlbumBackground.visibility = View.GONE
+            }
             return
         }
-        val key = track.mediaUri.ifBlank { "${track.title}|${track.artist}" }
-        if (key == lastBackgroundKey) return
+
+        // Re-blur when EITHER the track key changes OR Spotify swapped in a
+        // higher-quality bitmap for the same track (the old code only watched
+        // the key, so the real album art that arrived after the placeholder
+        // never made it onto the background).
+        val sameKey = key == lastBackgroundKey
+        val sameBitmap = art === lastBackgroundBitmap
+        if (sameKey && sameBitmap) return
+
         lastBackgroundKey = key
+        lastBackgroundBitmap = art
         blurExecutor.execute {
             val blurred = try {
-                AlbumArtBlur.blur(art)
+                AlbumArtBlur.blur(art!!)
             } catch (_: Exception) {
                 null
             }
             root.post {
-                if (lastBackgroundKey != key) return@post
+                // Stale: a newer bind has superseded us before our blur landed.
+                if (lastBackgroundBitmap !== art) return@post
                 if (blurred != null) {
                     imageAlbumBackground.setImageBitmap(blurred)
                     imageAlbumBackground.visibility = View.VISIBLE
-                } else {
+                } else if (imageAlbumBackground.drawable == null) {
                     imageAlbumBackground.visibility = View.GONE
                 }
             }
@@ -679,6 +754,14 @@ class MusicScreenBinder(
         private val playbackExecutor = Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "spotify-playback").apply { isDaemon = true }
         }
+        /** Upper bound for the inline loading bar — Spotify usually responds
+         *  in well under a second, but the OkHttp read timeout is 20s. After
+         *  this long, drop the bar even if the call hasn't returned. */
+        private const val LOADING_SAFETY_MS = 8_000L
+        /** Bitmaps below this size are treated as the placeholder app-icon
+         *  Spotify ships during track transitions, not as album art. Real
+         *  album art on Spotify is at least 300x300. */
+        private const val MIN_BACKGROUND_ART_PX = 192
     }
 
     private fun bindProgress(info: NowPlayingInfo) {
@@ -772,6 +855,7 @@ class MusicScreenBinder(
         textQueueHint.visibility = View.VISIBLE
         textQueueHint.text = message
         upNextContent.visibility = View.GONE
+        progressUpNextLoading.visibility = View.GONE
         AlbumArtLoader.clear(imageUpNextArt)
     }
 
