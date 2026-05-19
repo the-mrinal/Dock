@@ -127,6 +127,7 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
     implementation("com.googlecode.plist:dd-plist:1.28")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.google.zxing:core:3.5.3")
 
     implementation("com.wireguard.android:tunnel:1.0.20260102")
 

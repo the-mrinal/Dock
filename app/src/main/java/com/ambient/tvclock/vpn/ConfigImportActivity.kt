@@ -74,9 +74,10 @@ class ConfigImportActivity : AppCompatActivity(), ConfigImportServer.Listener {
         }
 
         val url = getString(R.string.vpn_import_url_value, lanIp, srv.port)
-        urlView.text = "${url}drop"
+        val dropUrl = "${url}drop"
+        urlView.text = dropUrl
         pinView.text = sess.pin
-        qrPattern.seed = url
+        qrPattern.seed = dropUrl
         listeningHalo.isPulsing = true
         updateCountdown()
         mainHandler.post(ticker)

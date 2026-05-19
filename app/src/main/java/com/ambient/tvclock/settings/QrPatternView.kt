@@ -9,20 +9,25 @@ import android.util.AttributeSet
 import android.view.View
 import androidx.core.content.res.use
 import com.ambient.tvclock.R
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.MultiFormatWriter
+import com.google.zxing.common.BitMatrix
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
 /**
- * Deterministic 25×25 QR-style hash pattern, ported verbatim from the HTML
- * prototype's `QrPattern` function. This is **decorative only** — the project
- * does not use zxing today, and rather than introducing a transitive dep we
- * mirror the design exactly so artboard 10 reproduces. The seed driver
- * (`seed = "${url}"`) means the same LAN URL produces the same pattern across
- * runs.
+ * Renders a scannable QR code that resolves to the LAN endpoint a phone
+ * should hit to upload a WireGuard config (artboard 10).
  *
- * Cell math (from the HTML):
- *   - 25×25 grid
- *   - djb2-ish hash: `h = ((h << 5) + h + x*31 + y*17) >>> 0`, `on = (h & 3) > 1`
- *   - three finder squares (top-left, top-right, bottom-left), 7×7 each,
- *     drawn as a ring + 3×3 inner block, overriding the hash cells.
+ * The view is square — caller sizes it; we render the QR module grid into
+ * the smaller of width/height with a small white quiet-zone padding so
+ * scanners can lock on. The QR uses M-level error correction (15%
+ * recovery) which is plenty for a clean on-screen render and lets the
+ * encoded URL stay short.
+ *
+ * The legacy attr name `qrSeed` is preserved for backwards-compat with
+ * `activity_config_import.xml`; setting it (or the [seed] property) just
+ * sets the QR's encoded content.
  */
 class QrPatternView @JvmOverloads constructor(
     context: Context,
@@ -35,19 +40,16 @@ class QrPatternView @JvmOverloads constructor(
 
     private val cellRect = RectF()
 
-    /**
-     * Seed string. Empty string falls back to the constant the HTML uses on
-     * first render, which keeps the pattern stable across cold starts.
-     */
+    /** The URL or text encoded into the QR. */
     var seed: String = ""
         set(value) {
             if (field == value) return
             field = value
-            cells = buildCells(value)
+            matrix = encode(value)
             invalidate()
         }
 
-    private var cells: BooleanArray = buildCells("")
+    private var matrix: BitMatrix? = encode("")
 
     init {
         attrs?.let {
@@ -60,57 +62,33 @@ class QrPatternView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val side = minOf(width, height).toFloat()
-        val cs = side / N
         canvas.drawRect(0f, 0f, side, side, bgPaint)
-        for (y in 0 until N) {
-            for (x in 0 until N) {
-                if (!cells[y * N + x]) continue
+        val m = matrix ?: return
+        val n = m.width  // square
+        if (n <= 0) return
+        val cs = side / n
+        for (y in 0 until n) {
+            for (x in 0 until n) {
+                if (!m.get(x, y)) continue
                 cellRect.set(x * cs, y * cs, (x + 1) * cs, (y + 1) * cs)
                 canvas.drawRect(cellRect, onPaint)
             }
         }
     }
 
-    companion object {
-        private const val N = 25
-
-        private fun inFinder(x: Int, y: Int, xx: Int, yy: Int): Boolean =
-            x >= xx && x < xx + 7 && y >= yy && y < yy + 7
-
-        private fun inFinderInner(x: Int, y: Int, xx: Int, yy: Int): Boolean =
-            x >= xx + 2 && x < xx + 5 && y >= yy + 2 && y < yy + 5
-
-        private fun inFinderRing(x: Int, y: Int, xx: Int, yy: Int): Boolean {
-            val inside = inFinder(x, y, xx, yy) && !(x > xx && x < xx + 6 && y > yy && y < yy + 6)
-            return inside || inFinderInner(x, y, xx, yy)
-        }
-
-        private fun buildCells(seed: String): BooleanArray {
-            val out = BooleanArray(N * N)
-            // The HTML hash is seedless; injecting the seed by folding it into
-            // the initial `h` keeps the same distribution but tied to LAN URL.
-            var h: Long = 5381L
-            for (ch in seed) {
-                h = ((h * 33L) + ch.code) and 0xFFFFFFFFL
-            }
-            val finders = arrayOf(
-                intArrayOf(0, 0),
-                intArrayOf(N - 7, 0),
-                intArrayOf(0, N - 7),
+    private fun encode(content: String): BitMatrix? {
+        if (content.isEmpty()) return null
+        return try {
+            val hints = mapOf(
+                EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M,
+                EncodeHintType.MARGIN to 0,
+                EncodeHintType.CHARACTER_SET to "UTF-8",
             )
-            for (y in 0 until N) {
-                for (x in 0 until N) {
-                    h = ((h shl 5) + h + x * 31L + y * 17L) and 0xFFFFFFFFL
-                    var on = (h and 3L) > 1L
-                    for (f in finders) {
-                        if (inFinder(x, y, f[0], f[1])) {
-                            on = inFinderRing(x, y, f[0], f[1])
-                        }
-                    }
-                    out[y * N + x] = on
-                }
-            }
-            return out
+            // Size is nominal — zxing returns the natural module count and we
+            // scale to the View's bounds in onDraw.
+            MultiFormatWriter().encode(content, BarcodeFormat.QR_CODE, 0, 0, hints)
+        } catch (_: Throwable) {
+            null
         }
     }
 }

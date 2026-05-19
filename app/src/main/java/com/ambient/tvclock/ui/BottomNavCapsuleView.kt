@@ -5,8 +5,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
-import android.graphics.Shader
-import android.graphics.RenderEffect
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.util.AttributeSet
@@ -29,10 +27,10 @@ import com.ambient.tvclock.R
  *
  * Hosts four focusable destination chips. Each chip has an icon + label;
  * the chip for the active page gets a tinted background and a small accent
- * dot. The capsule itself is a translucent black pill — on API 31+ we
- * attach a [RenderEffect] backdrop blur, on older devices we ship a solid
- * 0.66 alpha colour, matching the HTML's `backdropFilter: blur(28px)` and
- * its `background: rgba(12,12,14,0.66)`.
+ * dot. The capsule itself is a translucent black pill with a 0.66 alpha
+ * scrim; the sibling `ArtWashView` behind it is already heavily blurred
+ * so the wash shows through the scrim as the visual backdrop, matching
+ * the HTML's `backdropFilter: blur(28px)` + `background: rgba(12,12,14,0.66)`.
  *
  * Public API:
  *  - [setActive] swaps the highlighted destination programmatically.
@@ -83,12 +81,12 @@ class BottomNavCapsuleView @JvmOverloads constructor(
             elevation = 20f * density
             clipChildren = false
             clipToPadding = false
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Real translucent blur of whatever's behind. Cheap on TVs.
-                setRenderEffect(
-                    RenderEffect.createBlurEffect(28f, 28f, Shader.TileMode.CLAMP),
-                )
-            }
+            // No setRenderEffect here. Android's RenderEffect is forward-only —
+            // attaching a blur to this capsule would blur its own chip labels,
+            // not what's behind it. The sibling ArtWashView already renders a
+            // pre-blurred radial wash, so a translucent scrim background on the
+            // capsule lets that wash show through and gives the HTML's
+            // `backdrop-filter: blur(28px)` look without destroying our text.
         }
         val capsuleLp = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER)
         addView(capsule, capsuleLp)

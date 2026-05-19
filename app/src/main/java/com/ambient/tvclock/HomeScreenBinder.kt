@@ -1,8 +1,6 @@
 package com.ambient.tvclock
 
 import android.graphics.Outline
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.os.Build
 import android.view.View
 import android.view.ViewGroup
@@ -370,15 +368,19 @@ class HomeScreenBinder(private val root: View) {
     }
 
     /**
-     * RenderEffect blur for the tickler capsule on API 31+. Older devices fall
-     * back to the translucent solid baked into [bg_ambient_capsule].
+     * Apply / clear the tickler's backdrop look on ambient enter/exit.
+     *
+     * We deliberately do NOT call `setRenderEffect(blur)` on the tickler:
+     * `RenderEffect` is forward-only on Android, so attaching a blur to
+     * the tickler blurs its *own* text and album-art (Stream C's reported
+     * bug). The sibling ArtWashView already produces a heavily blurred
+     * radial wash, and the tickler's translucent capsule background
+     * (`bg_ambient_capsule`) lets that wash show through — that is the
+     * "backdrop blur." This function stays as a hook for future ambient
+     * effects (e.g. saturate, color shift) without touching the contents.
      */
-    private fun applyAmbientBlur(enable: Boolean) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        ambientTickler.setRenderEffect(
-            if (enable) RenderEffect.createBlurEffect(20f, 20f, Shader.TileMode.CLAMP)
-            else null
-        )
+    private fun applyAmbientBlur(@Suppress("UNUSED_PARAMETER") enable: Boolean) {
+        // Intentionally empty; see kdoc.
     }
 
     private fun CLOCK_AMBIENT_LIFT_PX(): Float =
