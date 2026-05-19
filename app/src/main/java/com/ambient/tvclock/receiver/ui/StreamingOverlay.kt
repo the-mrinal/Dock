@@ -13,6 +13,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import com.ambient.tvclock.R
 import com.ambient.tvclock.receiver.Protocol
+import com.ambient.tvclock.receiver.ReceiverStateBus
 import com.ambient.tvclock.util.Logger
 
 /**
@@ -22,6 +23,12 @@ import com.ambient.tvclock.util.Logger
  * activeConnection observer. [currentSurface] returns the live Surface or
  * null when the SurfaceView hasn't been created yet (or has been destroyed),
  * matching the contract VideoDecoder expects.
+ *
+ * The inner SurfaceView is an [AspectRatioSurfaceView]: when the source video
+ * dimensions are known (via [setVideoSize]), it shrinks to preserve the source
+ * aspect ratio and is centered inside this FrameLayout, leaving black bars on
+ * the unused sides — so a portrait phone is shown upright, not stretched to
+ * fill a 16:9 TV.
  */
 class StreamingOverlay @JvmOverloads constructor(
     context: Context,
@@ -29,20 +36,28 @@ class StreamingOverlay @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private val surfaceView: SurfaceView = SurfaceView(context)
+    private val surfaceView: AspectRatioSurfaceView = AspectRatioSurfaceView(context)
     val senderPill: TextView = TextView(context)
 
     @Volatile
     private var surface: Surface? = null
 
     init {
-        addView(
-            surfaceView,
-            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        val surfaceLayout = LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            LayoutParams.MATCH_PARENT,
+            Gravity.CENTER
         )
+        addView(surfaceView, surfaceLayout)
         surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
                 surface = holder.surface
+                // Push the new surface to the receiver pipeline so the active
+                // MediaCodec rebinds onto it (via setOutputSurface). Without
+                // this, a SurfaceView resize destroys the surface MediaCodec
+                // was configured with — the decoder then writes into a dead
+                // surface and the entire mirror pipeline goes garbage.
+                ReceiverStateBus.publishVideoSurface(holder.surface)
                 Logger.d("StreamingOverlay: surface created")
             }
 
@@ -57,6 +72,7 @@ class StreamingOverlay @JvmOverloads constructor(
 
             override fun surfaceDestroyed(holder: SurfaceHolder) {
                 surface = null
+                ReceiverStateBus.publishVideoSurface(null)
                 Logger.d("StreamingOverlay: surface destroyed")
             }
         })
@@ -83,6 +99,19 @@ class StreamingOverlay @JvmOverloads constructor(
 
     fun currentSurface(): Surface? = surface
 
+    /**
+     * Sets the source video resolution so the SurfaceView can letterbox itself
+     * to preserve the source aspect ratio. Safe to call repeatedly — only
+     * triggers a relayout when the aspect actually changes (e.g. a sender flips
+     * its phone from portrait to landscape mid-session).
+     *
+     * Pass `width <= 0` or `height <= 0` to reset to full-bleed (the default
+     * before any video has arrived).
+     */
+    fun setVideoSize(width: Int, height: Int) {
+        surfaceView.setVideoSize(width, height)
+    }
+
     fun setSenderInfo(senderName: String, protocol: Protocol) {
         val template = when (protocol) {
             Protocol.AIRPLAY -> R.string.streaming_pill_airplay
@@ -94,4 +123,54 @@ class StreamingOverlay @JvmOverloads constructor(
 
     private fun dp(value: Int): Int =
         (value * resources.displayMetrics.density).toInt()
+}
+
+/**
+ * SurfaceView that constrains itself to a given source aspect ratio (fit-inside,
+ * a.k.a. letterbox / pillarbox). The parent supplies the available area; this
+ * view picks the largest centered rectangle of the target aspect that fits.
+ *
+ * Until [setVideoSize] is called with valid dimensions, behaves exactly like a
+ * regular SurfaceView (fills its measure spec) so the overlay still renders
+ * before the first SPS arrives.
+ */
+private class AspectRatioSurfaceView(context: Context) : SurfaceView(context) {
+
+    // Width / height of the source video. <= 0 means "unknown — fill parent".
+    private var sourceWidth: Int = 0
+    private var sourceHeight: Int = 0
+
+    fun setVideoSize(width: Int, height: Int) {
+        val w = if (width > 0) width else 0
+        val h = if (height > 0) height else 0
+        if (w == sourceWidth && h == sourceHeight) return
+        sourceWidth = w
+        sourceHeight = h
+        Logger.d("AspectRatioSurfaceView: source size set to ${w}x${h}")
+        requestLayout()
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        val srcW = sourceWidth
+        val srcH = sourceHeight
+        if (srcW <= 0 || srcH <= 0) return
+
+        val parentW = MeasureSpec.getSize(widthMeasureSpec)
+        val parentH = MeasureSpec.getSize(heightMeasureSpec)
+        if (parentW <= 0 || parentH <= 0) return
+
+        // Compare aspects without float division to keep this branch-allocation-free
+        // on the layout hot path: source.w*parent.h vs source.h*parent.w.
+        val sourceWideRelativeToParent = srcW.toLong() * parentH > srcH.toLong() * parentW
+        val (measuredW, measuredH) = if (sourceWideRelativeToParent) {
+            // Source is wider than the parent slot → width-bounded (letterbox top/bottom).
+            parentW to ((parentW.toLong() * srcH) / srcW).toInt().coerceAtLeast(1)
+        } else {
+            // Source is taller (or equal) → height-bounded (pillarbox left/right).
+            // This is the portrait-phone case the bug report describes.
+            ((parentH.toLong() * srcW) / srcH).toInt().coerceAtLeast(1) to parentH
+        }
+        setMeasuredDimension(measuredW, measuredH)
+    }
 }

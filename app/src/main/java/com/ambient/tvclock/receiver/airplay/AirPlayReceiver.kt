@@ -67,7 +67,14 @@ class AirPlayReceiver(
      * the same name — NsdManager resolves the collision by appending " (2)", " (3)", etc.
      * The UI can use this callback to show the user the real registered name.
      */
-    private val onActualNameRegistered: (String) -> Unit = {}
+    private val onActualNameRegistered: (String) -> Unit = {},
+    /**
+     * Called when the active [VideoDecoder] learns the source video dimensions
+     * (and again if they change mid-session, e.g. a phone rotates). The
+     * receiver forwards this verbatim so the UI layer can letterbox correctly.
+     * `null` is emitted from [stop] / `onStreamingStopped` to reset overlay state.
+     */
+    private val onVideoSize: (width: Int, height: Int) -> Unit = { _, _ -> }
 ) {
 
     // SupervisorJob: child coroutine failures don't propagate to siblings.
@@ -79,9 +86,13 @@ class AirPlayReceiver(
     private var rtspHandler: RtspHandler? = null
     private var timingHandler: TimingHandler? = null
     private var videoDecoder: VideoDecoder? = null
+    // Tracks the surface VideoDecoder was last configured/rebound with. Used to
+    // suppress redundant setOutputSurface() calls when the StateFlow replays.
+    @Volatile private var configuredSurface: Surface? = null
     private var lastMirrorSpsPps: ByteArray? = null
     private var audioPlayer: AudioPlayer? = null
     private var mirrorReceiver: MirrorTcpReceiver? = null
+    private var surfaceObserverJob: kotlinx.coroutines.Job? = null
     private val airPlayPairing = AirPlayPairing(context)
 
     // UDP socket for receiving audio RTP packets — opened after RECORD, closed on TEARDOWN
@@ -98,6 +109,7 @@ class AirPlayReceiver(
      */
     fun start() {
         Logger.i("AirPlayReceiver starting (displayName='$displayName')")
+        startSurfaceObserver()
         scope.launch {
             try {
                 startTimingHandler()
@@ -106,6 +118,32 @@ class AirPlayReceiver(
             } catch (e: Exception) {
                 Logger.e("Failed to start AirPlayReceiver", e)
                 emitState(ProtocolState.ERROR)
+            }
+        }
+    }
+
+    /**
+     * Collects surface-lifecycle events from [com.ambient.tvclock.receiver.ReceiverStateBus]
+     * and rebinds the active [VideoDecoder] each time the SurfaceView's underlying
+     * Surface is destroyed and recreated (which happens whenever the
+     * `AspectRatioSurfaceView` re-measures to the source video aspect ratio).
+     *
+     * The first emission is the StateFlow's current value at subscribe time —
+     * for a fresh receiver session this is `null` (no overlay yet) or the
+     * pre-resize Surface that [VideoDecoder.initialize] will pick up via the
+     * existing surface provider. We skip surfaces identical to the one the
+     * decoder was last configured with, so the initial replay doesn't trigger
+     * a redundant rebind.
+     */
+    private fun startSurfaceObserver() {
+        surfaceObserverJob?.cancel()
+        surfaceObserverJob = scope.launch {
+            com.ambient.tvclock.receiver.ReceiverStateBus.videoSurface.collect { surface ->
+                if (surface == null || surface === configuredSurface) return@collect
+                val decoder = videoDecoder ?: return@collect
+                Logger.i("AirPlayReceiver: surface changed mid-stream — rebinding decoder")
+                decoder.setOutputSurface(surface)
+                configuredSurface = surface
             }
         }
     }
@@ -272,9 +310,10 @@ class AirPlayReceiver(
                 videoDecoder?.release()
                 videoDecoder = null
             }
-            videoDecoder = VideoDecoder(surface).also {
+            videoDecoder = VideoDecoder(surface, onVideoSize).also {
                 it.initialize(sps, pps, DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT)
             }
+            configuredSurface = surface
             lastMirrorSpsPps = data.copyOf()
             Logger.i("VideoDecoder initialized from mirror SPS/PPS")
         }
@@ -364,12 +403,13 @@ class AirPlayReceiver(
             return
         }
 
-        videoDecoder = VideoDecoder(surface).also { decoder ->
+        videoDecoder = VideoDecoder(surface, onVideoSize).also { decoder ->
             decoder.initialize(sps, pps, DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT)
             rtspHandler?.onVideoNalUnit = { nalUnit, ptsUs ->
                 decoder.decodeNalUnit(nalUnit, ptsUs)
             }
         }
+        configuredSurface = surface
         Logger.i("VideoDecoder started (${DEFAULT_VIDEO_WIDTH}x${DEFAULT_VIDEO_HEIGHT} hint)")
     }
 
@@ -440,6 +480,7 @@ class AirPlayReceiver(
         audioSocket = null
         videoDecoder?.release()
         videoDecoder = null
+        configuredSurface = null
         lastMirrorSpsPps = null
         audioPlayer?.release()
         audioPlayer = null
