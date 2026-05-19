@@ -16,4 +16,22 @@
     <dimen name="media_button_size_large">68dp</dimen>
     <dimen name="media_button_spacing">28dp</dimen>
     <dimen name="media_controls_bottom_padding">12dp</dimen>
+
+    <!-- Dock Music redesign (Stream A). 1920×1080 with 64dp side gutters
+         (already provided by the activity_main padding). -->
+    <dimen name="music_hero_cover_size">472dp</dimen>
+    <dimen name="music_hero_gap">56dp</dimen>
+    <dimen name="music_transport_primary">96dp</dimen>
+    <dimen name="music_transport_secondary">76dp</dimen>
+    <dimen name="music_top_chrome_height">56dp</dimen>
+    <dimen name="music_top_chrome_bottom">28dp</dimen>
+    <dimen name="music_section_gap">36dp</dimen>
+    <dimen name="music_recent_card_radius">14dp</dimen>
+    <dimen name="music_playlist_card_radius">16dp</dimen>
+    <dimen name="music_empty_tile_size">220dp</dimen>
+    <dimen name="music_tracks_cover">300dp</dimen>
+    <dimen name="music_device_picker_width">760dp</dimen>
+    <dimen name="music_device_picker_radius">20dp</dimen>
+    <dimen name="music_progress_thumb">16dp</dimen>
+    <dimen name="music_progress_track">6dp</dimen>
 </resources>

@@ -202,6 +202,41 @@
     <string name="cd_skip_next">Next track</string>
     <string name="cd_switch_device">Switch playback device</string>
 
+    <!-- Dock redesign — Music (Stream A). -->
+    <string name="music_eyebrow">Music</string>
+    <string name="music_breadcrumb_browse">Browse Playlists</string>
+    <string name="music_breadcrumb_root">Music</string>
+    <string name="music_lan">LAN</string>
+    <string name="music_now_playing_from_playlist">Playing from playlist</string>
+    <string name="music_now_playing_context">Deep Focus</string>
+    <string name="music_device_on_label">On</string>
+    <string name="music_device_default_name">Living Room TV</string>
+    <string name="music_album_year_format">%1$s · %2$s</string>
+    <string name="music_press_ok_to_jump">Press OK to jump</string>
+    <string name="music_recent_hint">← → to browse · OK resumes in original context</string>
+    <string name="music_empty_eyebrow">Nothing playing</string>
+    <string name="music_empty_title">Quiet for now.</string>
+    <string name="music_empty_body">Start something from your playlists below — or press play on any device with Spotify Connect and it\'ll appear here automatically.</string>
+    <string name="music_empty_browse_cta">Browse Playlists</string>
+    <string name="music_empty_change_device_cta">Change device</string>
+    <string name="music_browse_eyebrow">Your Library</string>
+    <string name="music_browse_title">Playlists</string>
+    <string name="music_browse_legend_ok_open">OK   Open</string>
+    <string name="music_browse_legend_back">BACK   Now Playing</string>
+    <string name="music_browse_legend_nav">↑↓ ←→   Navigate</string>
+    <string name="music_tracks_eyebrow_format">Playlist · %1$d tracks</string>
+    <string name="music_tracks_play_all">Play playlist</string>
+    <string name="music_tracks_shuffle">Shuffle</string>
+    <string name="music_tracks_column_title">Title</string>
+    <string name="music_tracks_column_album">Album</string>
+    <string name="music_tracks_column_time">Time</string>
+    <string name="music_device_picker_eyebrow">Spotify Connect</string>
+    <string name="music_device_picker_title">Play on…</string>
+    <string name="music_device_picker_legend_ok">OK   Select</string>
+    <string name="music_device_picker_legend_back">BACK   Close</string>
+    <string name="music_device_active_label">Playing</string>
+    <string name="music_now_playing_queue">Queue</string>
+
     <!-- VPN (WireGuard) settings + import flow. -->
     <string name="pref_category_vpn">VPN (WireGuard)</string>
     <string name="pref_vpn_enabled_title">Enable VPN</string>
