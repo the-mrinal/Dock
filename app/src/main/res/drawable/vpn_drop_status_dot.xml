@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 8dp solid green dot for the LAN drop eyebrow. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/c_vpn" />
+    <size android:width="8dp" android:height="8dp" />
+</shape>

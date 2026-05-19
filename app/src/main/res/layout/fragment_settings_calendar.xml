@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Calendar settings page. Top blurb under the host activity's eyebrow/title,
+    then a vertical stack of PrefRows. The danger row at the bottom drops the
+    feeds + clears cache.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/manrope"
+            android:maxWidth="720dp"
+            android:text="@string/settings_calendar_blurb"
+            android:textColor="#80FFFFFF"
+            android:textFontWeight="300"
+            android:textSize="18sp"
+            android:lineSpacingMultiplier="1.4" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical">
+
+            <com.ambient.tvclock.settings.PrefRow
+                android:id="@+id/prefCalendarPersonal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" />
+
+            <com.ambient.tvclock.settings.PrefRow
+                android:id="@+id/prefCalendarWork"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" />
+
+            <com.ambient.tvclock.settings.PrefRow
+                android:id="@+id/prefCalendarRefresh"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" />
+
+            <com.ambient.tvclock.settings.PrefRow
+                android:id="@+id/prefCalendarShow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" />
+
+            <com.ambient.tvclock.settings.PrefRow
+                android:id="@+id/prefCalendarTomorrow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp" />
+
+            <com.ambient.tvclock.settings.PrefDangerRow
+                android:id="@+id/prefCalendarReset"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

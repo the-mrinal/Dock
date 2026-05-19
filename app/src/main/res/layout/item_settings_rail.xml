@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    A single rail row. The `FocusableContainer` wraps the surface so the
+    standard 2dp white accent border + halo appears on focus, exactly like the
+    rest of the redesign. The surface itself is the focus target; its background
+    (`@drawable/settings_rail_item_bg`) handles the active-state tint + 2dp
+    left bar via a layer-list.
+-->
+<com.ambient.tvclock.ui.FocusableContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    app:accentColor="#FFFFFFFF"
+    app:focusRadius="10dp"
+    app:focusScale="1.02">
+
+    <LinearLayout
+        android:id="@+id/railItemSurface"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/settings_rail_item_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
+
+        <ImageView
+            android:id="@+id/railItemIcon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:id="@+id/railItemLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:fontFamily="@font/manrope"
+            android:textColor="#8CFFFFFF"
+            android:textFontWeight="500"
+            android:textSize="17sp" />
+    </LinearLayout>
+</com.ambient.tvclock.ui.FocusableContainer>

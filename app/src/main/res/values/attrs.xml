@@ -52,4 +52,29 @@
         <!-- Use the wider 0.42em tracking variant. -->
         <attr name="eyebrowTracking" format="boolean" />
     </declare-styleable>
+
+    <!-- Stream B (Settings) primitives. -->
+    <declare-styleable name="PrefRow">
+        <attr name="prefLabel" format="string" />
+        <attr name="prefValue" format="string" />
+        <attr name="prefHint" format="string" />
+        <!-- One of: none, chevron, arrow, enter (return key). -->
+        <attr name="prefAffordance" format="enum">
+            <enum name="none" value="0" />
+            <enum name="chevron" value="1" />
+            <enum name="arrow" value="2" />
+            <enum name="enter" value="3" />
+        </attr>
+        <attr name="prefDanger" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="PrefToggle">
+        <attr name="toggleOn" format="boolean" />
+        <attr name="toggleAccent" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="QrPatternView">
+        <!-- Seed string the deterministic 25x25 hash pattern is derived from. -->
+        <attr name="qrSeed" format="string" />
+    </declare-styleable>
 </resources>
