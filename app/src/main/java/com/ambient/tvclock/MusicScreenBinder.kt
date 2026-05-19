@@ -697,26 +697,19 @@ class MusicScreenBinder(
     }
 
     private fun bindBlurredBackground(track: NowPlayingInfo) {
+        // `track.artwork` is already filtered upstream by ArtworkClassifier
+        // in MediaSessionHelper — Spotify placeholders (transparent icons,
+        // flat fills, sub-192px bitmaps) arrive here as null. So a null
+        // here means "no real artwork yet"; hold the previous blur until
+        // a real bitmap shows up.
         val art = track.artwork
-        val key = track.mediaUri.ifBlank { "${track.title}|${track.artist}" }
-        // Spotify pushes track metadata in two stages: first the new title/
-        // artist with a tiny placeholder bitmap (its app icon, via
-        // DISPLAY_ICON / iconBitmap), then a moment later the real album art.
-        // Anything below this size is the placeholder — refuse to blur it
-        // and keep the previous background instead, so users never see the
-        // blue Spotify-logo blur flash on a track change.
-        val artLooksReal = art != null &&
-            art.width >= MIN_BACKGROUND_ART_PX &&
-            art.height >= MIN_BACKGROUND_ART_PX
-
-        if (!artLooksReal) {
-            // Hold whatever blur is already on screen. Only hide if we have
-            // nothing to hold (cold start, no track ever played this session).
+        if (art == null) {
             if (lastBackgroundBitmap == null) {
                 imageAlbumBackground.visibility = View.GONE
             }
             return
         }
+        val key = track.mediaUri.ifBlank { "${track.title}|${track.artist}" }
 
         // Re-blur when EITHER the track key changes OR Spotify swapped in a
         // higher-quality bitmap for the same track (the old code only watched
@@ -758,10 +751,6 @@ class MusicScreenBinder(
          *  in well under a second, but the OkHttp read timeout is 20s. After
          *  this long, drop the bar even if the call hasn't returned. */
         private const val LOADING_SAFETY_MS = 8_000L
-        /** Bitmaps below this size are treated as the placeholder app-icon
-         *  Spotify ships during track transitions, not as album art. Real
-         *  album art on Spotify is at least 300x300. */
-        private const val MIN_BACKGROUND_ART_PX = 192
     }
 
     private fun bindProgress(info: NowPlayingInfo) {
