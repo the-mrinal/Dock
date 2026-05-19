@@ -16,6 +16,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Optional overlay pill that surfaces "VPN active · <geo>" over other apps. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <uses-feature
         android:name="android.software.leanback"
         android:required="true" />
@@ -112,5 +115,26 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- WireGuard VPN. The actual VpnService is the library's inner class; we just
+             register it here with the BIND_VPN_SERVICE permission Android requires. -->
+        <service
+            android:name="com.wireguard.android.backend.GoBackend$VpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+        <activity
+            android:name=".vpn.ConfigImportActivity"
+            android:exported="false"
+            android:label="@string/vpn_import_title"
+            android:screenOrientation="landscape" />
+
+        <service
+            android:name=".vpn.VpnOverlayService"
+            android:exported="false" />
     </application>
 </manifest>

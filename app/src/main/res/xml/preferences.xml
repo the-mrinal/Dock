@@ -115,6 +115,44 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="category_vpn"
+        android:title="@string/pref_category_vpn">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="vpn_enabled"
+            android:summary="@string/pref_vpn_enabled_summary"
+            android:title="@string/pref_vpn_enabled_title" />
+
+        <Preference
+            android:key="vpn_status"
+            android:selectable="false"
+            android:summary="@string/pref_vpn_status_no_config"
+            android:title="@string/pref_vpn_status_title" />
+
+        <Preference
+            android:key="vpn_receive_config"
+            android:summary="@string/pref_vpn_receive_config_summary"
+            android:title="@string/pref_vpn_receive_config_title" />
+
+        <Preference
+            android:key="vpn_clear_config"
+            android:summary="@string/pref_vpn_clear_config_summary"
+            android:title="@string/pref_vpn_clear_config_title" />
+
+        <Preference
+            android:key="vpn_killswitch"
+            android:summary="@string/pref_vpn_killswitch_summary"
+            android:title="@string/pref_vpn_killswitch_title" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="vpn_overlay_enabled"
+            android:summary="@string/pref_vpn_overlay_summary"
+            android:title="@string/pref_vpn_overlay_title" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_sleep"
         android:title="@string/pref_category_sleep">
 

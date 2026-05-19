@@ -143,4 +143,44 @@
     <string name="cd_play_pause">Play or pause</string>
     <string name="cd_skip_next">Next track</string>
     <string name="cd_switch_device">Switch playback device</string>
+
+    <!-- VPN (WireGuard) settings + import flow. -->
+    <string name="pref_category_vpn">VPN (WireGuard)</string>
+    <string name="pref_vpn_enabled_title">Enable VPN</string>
+    <string name="pref_vpn_enabled_summary">Route all device traffic through the imported WireGuard tunnel</string>
+    <string name="pref_vpn_status_title">Status</string>
+    <string name="pref_vpn_status_no_config">No config imported</string>
+    <string name="pref_vpn_status_down">Down</string>
+    <string name="pref_vpn_status_connecting">Connecting…</string>
+    <string name="pref_vpn_status_up">Up · peer %1$s</string>
+    <string name="pref_vpn_status_error">Error: %1$s</string>
+    <string name="pref_vpn_receive_config_title">Receive config from laptop (LAN)</string>
+    <string name="pref_vpn_receive_config_summary">Spin up a short-lived LAN endpoint to accept a .conf upload</string>
+    <string name="pref_vpn_clear_config_title">Clear config</string>
+    <string name="pref_vpn_clear_config_summary">Delete the imported WireGuard config from this device</string>
+    <string name="pref_vpn_killswitch_title">Always-on / kill-switch (system)</string>
+    <string name="pref_vpn_killswitch_summary">Open Android\'s VPN settings to enable Always-on VPN and block non-VPN traffic</string>
+
+    <string name="vpn_import_title">Receive WireGuard config</string>
+    <string name="vpn_import_url_label">Open this in any browser on your laptop or phone:</string>
+    <string name="vpn_import_url_value">http://%1$s:%2$d/</string>
+    <string name="vpn_import_pin_label">Use this PIN (header X-Wg-Pin):</string>
+    <string name="vpn_import_pin_value">%1$s</string>
+    <string name="vpn_import_curl_hint">curl -X POST -H \"X-Wg-Pin: %1$s\" -H \"Content-Type: text/plain\" \\\n--data-binary @wg0.conf http://%2$s:%3$d/upload</string>
+    <string name="vpn_import_status_waiting">Waiting for upload… (%1$d:%2$02d remaining)</string>
+    <string name="vpn_import_status_received">Config received and saved. You can close this screen.</string>
+    <string name="vpn_import_status_expired">Time expired without an upload. Try again.</string>
+    <string name="vpn_import_status_error">Server error: %1$s</string>
+    <string name="vpn_import_no_lan">No LAN address found. Connect this device to Wi-Fi or Ethernet.</string>
+    <string name="vpn_import_cancel">Cancel</string>
+
+    <string name="vpn_notification_channel_name">VPN tunnel</string>
+    <string name="vpn_notification_channel_description">Status of the WireGuard tunnel</string>
+    <string name="vpn_connect_failed">Could not start VPN: %1$s</string>
+    <string name="vpn_not_authorized">Grant VPN permission to enable the tunnel</string>
+
+    <string name="pref_vpn_overlay_title">Show VPN indicator overlay</string>
+    <string name="pref_vpn_overlay_summary">A small “🔒 country” pill in the corner while VPN is up — visible even over Netflix or the launcher</string>
+    <string name="vpn_overlay_default_label">VPN</string>
+    <string name="vpn_overlay_needs_permission">Grant “Display over other apps” for this app to enable the overlay</string>
 </resources>
