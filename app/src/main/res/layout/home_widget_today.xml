@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    "Today" widget on the Home screen (artboards 01 + 02).
+    Wrapped by HomeScreenBinder in a FocusableContainer with accent
+    @color/nav_accent_calendar so it gets the blue focus ring on D-pad.
+
+    Two driven states (see HomeScreenBinder):
+      - multi-now: "Now · Personal" badge + Until-12:00 + +1 also-now chip
+      - ending-soon: same badge + amber "Ends in 7m" eyebrow
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="240dp"
+    android:background="@drawable/bg_dock_card"
+    android:orientation="vertical"
+    android:padding="28dp">
+
+    <!-- Top row: badge + until/ending eyebrow ... TODAY caps right. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textHomeTodayBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_now_badge_personal"
+            android:fontFamily="@font/jetbrains_mono"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.18"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="5dp"
+            android:text="@string/home_widget_now_personal"
+            android:textAllCaps="true"
+            android:textColor="@color/dock_bg"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textHomeTodayUntil"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.16"
+            android:textAllCaps="true"
+            android:textColor="@color/dock_text_ter"
+            android:textSize="13sp"
+            android:textStyle="normal"
+            tools:ignore="MissingPrefix"
+            xmlns:tools="http://schemas.android.com/tools" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/jetbrains_mono"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.18"
+            android:text="@string/home_widget_today_eyebrow"
+            android:textAllCaps="true"
+            android:textColor="#73FFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Middle: title + meta. weight=1 lets it absorb the vertical slack so the
+         bottom row is anchored at the card's lower edge regardless of meta length. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textHomeTodayTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/manrope"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.01"
+            android:maxLines="2"
+            android:textColor="@color/dock_text_pri"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/textHomeTodayMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/manrope"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="#99FFFFFF"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <!-- Bottom row: variant-specific (also-now chip OR next-up cluster) + "n more today →". -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Multi-now variant: "+1 ALSO NOW" chip with overlapping title. -->
+        <LinearLayout
+            android:id="@+id/homeTodayAlsoChip"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_also_now_chip"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="6dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.22"
+                android:text="+1 also now"
+                android:textAllCaps="true"
+                android:textColor="#F2A29A"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="12dp"
+                android:layout_marginHorizontal="10dp"
+                android:background="#30FFFFFF" />
+
+            <TextView
+                android:id="@+id/textHomeTodayAlsoTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="#C7FFFFFF"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- Ending-soon / single-now variant: "Next up · 13:00 · Lunch with Priya" -->
+        <LinearLayout
+            android:id="@+id/homeTodayNextRow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.2"
+                android:text="@string/home_widget_next_up"
+                android:textAllCaps="true"
+                android:textColor="#6BFFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textHomeTodayNextTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:textColor="#EBFFFFFF"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/textHomeTodayNextTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="#D9FFFFFF"
+                android:textSize="16sp" />
+
+            <View
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_now_badge_personal" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textHomeTodayMore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.16"
+            android:textAllCaps="true"
+            android:textColor="#66FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="normal" />
+    </LinearLayout>
+</LinearLayout>

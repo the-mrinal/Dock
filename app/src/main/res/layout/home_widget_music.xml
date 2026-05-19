@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    "Now playing" widget on the Home screen (artboards 01 + 02).
+    Wrapped by HomeScreenBinder in a FocusableContainer with accent
+    @color/nav_accent_music (chartreuse).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="240dp"
+    android:background="@drawable/bg_dock_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="24dp">
+
+    <FrameLayout
+        android:id="@+id/homeMusicArtFrame"
+        android:layout_width="192dp"
+        android:layout_height="192dp"
+        android:background="@drawable/bg_album_frame">
+
+        <ImageView
+            android:id="@+id/imageHomeAlbumArt"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@string/cd_album_art"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/imageHomeAlbumPlaceholder"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_music_placeholder" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="24dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Eyebrow row: VuBars + NOW PLAYING + device label. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.ambient.tvclock.ui.VuBarsView
+                android:layout_width="16dp"
+                android:layout_height="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.22"
+                android:text="@string/home_widget_now_playing"
+                android:textAllCaps="true"
+                android:textColor="@color/dock_accent_chartreuse"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/textHomeMusicDevice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.18"
+                android:text="@string/home_widget_playing_on"
+                android:textAllCaps="true"
+                android:textColor="#66FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Title + artist (sits at vertical center of slack). -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textHomeTrackTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.01"
+                android:maxLines="1"
+                android:textColor="@color/dock_text_pri"
+                android:textSize="30sp" />
+
+            <TextView
+                android:id="@+id/textHomeTrackArtist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="#99FFFFFF"
+                android:textSize="19sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Up Next teaser. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:text="@string/home_widget_up_next"
+                android:textColor="#D9FFFFFF"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/textHomeUpNext"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="#85FFFFFF"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

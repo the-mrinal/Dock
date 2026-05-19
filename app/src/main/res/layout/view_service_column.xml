@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Inner content of ServiceColumnView — inflated via merge.
+    Vertical stack: eyebrow (large 0.42em tracking) → 160dp halo wrapper
+    (PulseHaloView centred) → 64sp state title → detail line → capsule
+    action pill. State-driven by `ServiceColumnView.setState(...)`.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="LinearLayout">
+
+    <com.ambient.tvclock.ui.EyebrowView
+        android:id="@+id/serviceColumnEyebrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <!-- The PulseHaloView is given its own 160dp slot with a radial scrim
+         behind it so the halo + dot read as one unit. Margin keeps the
+         space between eyebrow and halo close to the HTML's 56px gap. -->
+    <FrameLayout
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:layout_marginTop="56dp">
+
+        <com.ambient.tvclock.ui.PulseHaloView
+            android:id="@+id/serviceColumnHalo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_service_halo_radial" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/serviceColumnTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="56dp"
+        android:fontFamily="@font/manrope"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:letterSpacing="-0.025"
+        android:textColor="@color/dock_text_pri"
+        android:textSize="64sp" />
+
+    <TextView
+        android:id="@+id/serviceColumnDetail"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:fontFamily="@font/manrope"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxWidth="460dp"
+        android:textColor="#80FFFFFF"
+        android:textSize="19sp" />
+
+    <!-- IDs serviceColumnAction is the runtime handle; the per-instance ID
+         (buttonAirplayAction / buttonVpnAction) is applied in code by
+         StatusScreenBinder so MainActivity's existing focus-edge checks keep
+         working without referencing internal merge IDs. -->
+    <com.ambient.tvclock.ui.PillButton
+        android:id="@+id/serviceColumnAction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="44dp"
+        android:minWidth="200dp" />
+</merge>

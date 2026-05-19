@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brighter card variant for focused widgets / event rows. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/dock_card_focus" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/dock_border_strong" />
+    <corners android:radius="18dp" />
+</shape>

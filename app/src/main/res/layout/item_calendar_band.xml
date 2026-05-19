@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Calendar overlap band (artboard 05). Grid: 160dp time column | 2 BandCards
+    side-by-side. "NOW · N events" pill is drawn by the row binder on top of
+    the upper-right edge of the outer container when the band is happening
+    now. Amber "Partial overlap" tag appears in the time column when at least
+    one card's window only partially overlaps the rest of the band.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="5dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:id="@+id/bandRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_band_outer"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:minHeight="148dp"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="14dp">
+
+        <!-- Time column. Same shape as the single-row time column, plus the
+             optional amber "Partial overlap" tag below dur/ends. -->
+        <LinearLayout
+            android:layout_width="160dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textBandTimeStart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/manrope"
+                android:fontFeatureSettings="tnum"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.01"
+                android:textColor="#EBFFFFFF"
+                android:textSize="36sp" />
+
+            <TextView
+                android:id="@+id/textBandDurEnds"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.16"
+                android:textAllCaps="true"
+                android:textColor="#6BFFFFFF"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/textBandPartial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.2"
+                android:text="@string/calendar_partial_overlap"
+                android:textAllCaps="true"
+                android:textColor="@color/c_amber"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="18dp"
+            android:layout_height="0dp" />
+
+        <!-- Two side-by-side BandCard cells. Each is wrapped in a
+             FocusableContainer so D-pad LEFT/RIGHT walks between conflicting
+             events. -->
+        <com.ambient.tvclock.ui.FocusableContainer
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/bandCard0Focus"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            app:accentColor="@color/cal_personal_dot"
+            app:focusRadius="10dp">
+
+            <com.ambient.tvclock.ui.BandCard
+                android:id="@+id/bandCard0"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </com.ambient.tvclock.ui.FocusableContainer>
+
+        <com.ambient.tvclock.ui.FocusableContainer
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/bandCard1Focus"
+            android:layout_width="0dp"
+            android:layout_height="120dp"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            app:accentColor="@color/cal_personal_dot"
+            app:focusRadius="10dp">
+
+            <com.ambient.tvclock.ui.BandCard
+                android:id="@+id/bandCard1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </com.ambient.tvclock.ui.FocusableContainer>
+    </LinearLayout>
+
+    <!-- "NOW · 2 events" pill — notched onto the upper-right of the band's
+         outer container when the binder reports the band is happening now. -->
+    <TextView
+        android:id="@+id/textBandNowPill"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="-8dp"
+        android:layout_marginEnd="32dp"
+        android:background="@drawable/bg_now_pill_white"
+        android:fontFamily="@font/jetbrains_mono"
+        android:includeFontPadding="false"
+        android:letterSpacing="0.22"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:textAllCaps="true"
+        android:textColor="@color/dock_bg"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</FrameLayout>
