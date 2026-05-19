@@ -178,4 +178,9 @@
     <string name="vpn_notification_channel_description">Status of the WireGuard tunnel</string>
     <string name="vpn_connect_failed">Could not start VPN: %1$s</string>
     <string name="vpn_not_authorized">Grant VPN permission to enable the tunnel</string>
+
+    <string name="pref_vpn_overlay_title">Show VPN indicator overlay</string>
+    <string name="pref_vpn_overlay_summary">A small “🔒 country” pill in the corner while VPN is up — visible even over Netflix or the launcher</string>
+    <string name="vpn_overlay_default_label">VPN</string>
+    <string name="vpn_overlay_needs_permission">Grant “Display over other apps” for this app to enable the overlay</string>
 </resources>

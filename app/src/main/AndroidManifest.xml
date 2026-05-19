@@ -16,6 +16,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Optional overlay pill that surfaces "VPN active · <geo>" over other apps. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <uses-feature
         android:name="android.software.leanback"
         android:required="true" />
@@ -129,5 +132,9 @@
             android:exported="false"
             android:label="@string/vpn_import_title"
             android:screenOrientation="landscape" />
+
+        <service
+            android:name=".vpn.VpnOverlayService"
+            android:exported="false" />
     </application>
 </manifest>

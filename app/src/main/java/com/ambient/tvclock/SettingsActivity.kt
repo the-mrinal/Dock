@@ -14,6 +14,7 @@ import androidx.preference.SwitchPreferenceCompat
 import com.ambient.tvclock.receiver.ReceiverController
 import androidx.lifecycle.lifecycleScope
 import com.ambient.tvclock.vpn.ConfigImportActivity
+import com.ambient.tvclock.vpn.VpnOverlayService
 import com.ambient.tvclock.vpn.VpnPreferences
 import com.ambient.tvclock.vpn.VpnState
 import com.ambient.tvclock.vpn.WireGuardConfigStore
@@ -178,6 +179,29 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(android.provider.Settings.ACTION_VPN_SETTINGS))
                 true
             }
+
+            findPreference<SwitchPreferenceCompat>(VpnPreferences.KEY_OVERLAY_ENABLED)
+                ?.setOnPreferenceChangeListener { _, newValue ->
+                    val ctx = requireContext().applicationContext
+                    if (newValue == true) {
+                        if (!android.provider.Settings.canDrawOverlays(ctx)) {
+                            Toast.makeText(ctx, R.string.vpn_overlay_needs_permission, Toast.LENGTH_LONG).show()
+                            startActivity(
+                                Intent(
+                                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    android.net.Uri.parse("package:${ctx.packageName}"),
+                                )
+                            )
+                            return@setOnPreferenceChangeListener false
+                        }
+                        if (WireGuardStateBus.state.value is VpnState.Up) {
+                            VpnOverlayService.start(ctx)
+                        }
+                    } else {
+                        VpnOverlayService.stop(ctx)
+                    }
+                    true
+                }
         }
 
         private fun updateVpnStatus() {

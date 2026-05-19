@@ -144,6 +144,12 @@
             android:key="vpn_killswitch"
             android:summary="@string/pref_vpn_killswitch_summary"
             android:title="@string/pref_vpn_killswitch_title" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="vpn_overlay_enabled"
+            android:summary="@string/pref_vpn_overlay_summary"
+            android:title="@string/pref_vpn_overlay_title" />
     </PreferenceCategory>
 
     <PreferenceCategory

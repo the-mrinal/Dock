@@ -46,12 +46,16 @@ object WireGuardController {
     fun start(context: Context) {
         val app = context.applicationContext
         scope.launch { connect(app) }
+        if (VpnPreferences.isOverlayEnabled(app) && android.provider.Settings.canDrawOverlays(app)) {
+            VpnOverlayService.start(app)
+        }
     }
 
     /** Fires off an async disconnect. */
-    @Suppress("UNUSED_PARAMETER")
     fun stop(context: Context) {
+        val app = context.applicationContext
         scope.launch { disconnect() }
+        VpnOverlayService.stop(app)
     }
 
     private fun connect(context: Context) {
