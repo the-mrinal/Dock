@@ -1,6 +1,8 @@
 package com.ambient.tvclock
 
 import android.app.Activity
+import android.content.Intent
+import android.net.VpnService
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +12,15 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
 import com.ambient.tvclock.receiver.ReceiverController
+import androidx.lifecycle.lifecycleScope
+import com.ambient.tvclock.vpn.ConfigImportActivity
+import com.ambient.tvclock.vpn.VpnPreferences
+import com.ambient.tvclock.vpn.VpnState
+import com.ambient.tvclock.vpn.WireGuardConfigStore
+import com.ambient.tvclock.vpn.WireGuardController
+import com.ambient.tvclock.vpn.WireGuardStateBus
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -27,6 +38,8 @@ class SettingsActivity : AppCompatActivity() {
     class SettingsFragment : PreferenceFragmentCompat() {
 
         private lateinit var spotifyAuthLauncher: androidx.activity.result.ActivityResultLauncher<android.content.Intent>
+        private lateinit var vpnConsentLauncher: androidx.activity.result.ActivityResultLauncher<android.content.Intent>
+        private var vpnStateJob: Job? = null
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
@@ -38,6 +51,19 @@ class SettingsActivity : AppCompatActivity() {
                     Toast.makeText(requireContext(), R.string.spotify_connected, Toast.LENGTH_SHORT).show()
                     SpotifyQueuePoller(requireContext().applicationContext).publishNow()
                 }
+            }
+            vpnConsentLauncher = registerForActivityResult(
+                ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                val ctx = requireContext().applicationContext
+                if (result.resultCode == Activity.RESULT_OK) {
+                    VpnPreferences.setEnabled(ctx, true)
+                    findPreference<SwitchPreferenceCompat>(VpnPreferences.KEY_VPN_ENABLED)?.isChecked = true
+                    WireGuardController.start(ctx)
+                } else {
+                    Toast.makeText(ctx, R.string.vpn_not_authorized, Toast.LENGTH_LONG).show()
+                }
+                updateVpnStatus()
             }
         }
 
@@ -104,6 +130,73 @@ class SettingsActivity : AppCompatActivity() {
             }
 
             wireReceiverPreferences()
+            wireVpnPreferences()
+        }
+
+        private fun wireVpnPreferences() {
+            findPreference<SwitchPreferenceCompat>(VpnPreferences.KEY_VPN_ENABLED)
+                ?.setOnPreferenceChangeListener { _, newValue ->
+                    val ctx = requireContext().applicationContext
+                    if (newValue == true) {
+                        if (!VpnPreferences.hasConfig(ctx)) {
+                            Toast.makeText(ctx, R.string.pref_vpn_status_no_config, Toast.LENGTH_LONG).show()
+                            return@setOnPreferenceChangeListener false
+                        }
+                        val consent = VpnService.prepare(ctx)
+                        if (consent != null) {
+                            vpnConsentLauncher.launch(consent)
+                            false // wait for the launcher callback to flip the toggle
+                        } else {
+                            VpnPreferences.setEnabled(ctx, true)
+                            WireGuardController.start(ctx)
+                            true
+                        }
+                    } else {
+                        VpnPreferences.setEnabled(ctx, false)
+                        WireGuardController.stop(ctx)
+                        true
+                    }
+                }
+
+            findPreference<Preference>("vpn_receive_config")?.setOnPreferenceClickListener {
+                startActivity(Intent(requireContext(), ConfigImportActivity::class.java))
+                true
+            }
+
+            findPreference<Preference>("vpn_clear_config")?.setOnPreferenceClickListener {
+                val ctx = requireContext().applicationContext
+                WireGuardController.stop(ctx)
+                WireGuardConfigStore(ctx).clear()
+                VpnPreferences.setEnabled(ctx, false)
+                findPreference<SwitchPreferenceCompat>(VpnPreferences.KEY_VPN_ENABLED)?.isChecked = false
+                updateVpnStatus()
+                Toast.makeText(ctx, R.string.pref_vpn_status_no_config, Toast.LENGTH_SHORT).show()
+                true
+            }
+
+            findPreference<Preference>("vpn_killswitch")?.setOnPreferenceClickListener {
+                startActivity(Intent(android.provider.Settings.ACTION_VPN_SETTINGS))
+                true
+            }
+        }
+
+        private fun updateVpnStatus() {
+            val pref = findPreference<Preference>("vpn_status") ?: return
+            val ctx = requireContext().applicationContext
+            val hasConfig = VpnPreferences.hasConfig(ctx)
+            pref.summary = when {
+                !hasConfig -> getString(R.string.pref_vpn_status_no_config)
+                !VpnPreferences.isEnabled(ctx) -> getString(R.string.pref_vpn_status_down)
+                else -> when (val s = WireGuardStateBus.state.value) {
+                    VpnState.Down, VpnState.NoConfig -> getString(R.string.pref_vpn_status_down)
+                    VpnState.Connecting -> getString(R.string.pref_vpn_status_connecting)
+                    is VpnState.Up -> getString(R.string.pref_vpn_status_up, s.peerEndpoint.ifBlank { "—" })
+                    is VpnState.Error -> getString(R.string.pref_vpn_status_error, s.message)
+                }
+            }
+            // Gate Enable VPN + Clear config rows on whether we have a config.
+            findPreference<SwitchPreferenceCompat>(VpnPreferences.KEY_VPN_ENABLED)?.isEnabled = hasConfig
+            findPreference<Preference>("vpn_clear_config")?.isEnabled = hasConfig
         }
 
         private fun wireReceiverPreferences() {
@@ -137,9 +230,19 @@ class SettingsActivity : AppCompatActivity() {
             super.onResume()
             updateNotificationAccessSummary()
             updateSpotifyStatus()
+            updateVpnStatus()
             NotificationAccess.requestListenerReconnect(requireContext())
             NowPlayingSessionReader.publish(requireContext())
             CalendarPoller(requireContext()).publishNow()
+            vpnStateJob = viewLifecycleOwner.lifecycleScope.launch {
+                WireGuardStateBus.state.collect { updateVpnStatus() }
+            }
+        }
+
+        override fun onPause() {
+            vpnStateJob?.cancel()
+            vpnStateJob = null
+            super.onPause()
         }
 
         private fun updateNotificationAccessSummary() {

@@ -124,5 +124,10 @@
             </intent-filter>
         </service>
 
+        <activity
+            android:name=".vpn.ConfigImportActivity"
+            android:exported="false"
+            android:label="@string/vpn_import_title"
+            android:screenOrientation="landscape" />
     </application>
 </manifest>
