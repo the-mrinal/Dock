@@ -101,6 +101,26 @@
             android:paddingBottom="4dp">
 
             <TextView
+                android:id="@+id/textPageStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_status"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="·"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
+
+            <TextView
                 android:id="@+id/textPageHome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
