@@ -1,46 +1,188 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Dock Calendar — day view (artboards 04 / 05).
+
+    Header: blue eyebrow + Manrope-200 68sp date title + meta line
+    ("5 events · 3 with conflicts · 4h 15m booked"). Legend chips top-right
+    (Personal / Work / Conflict). Body is a RecyclerView of mixed row types
+    (single + overlap band, see CalendarEventAdapter). Bottom JBMono hint row.
+
+    Empty state has its own layout (screen_calendar_empty.xml); the binder
+    inflates it lazily under [calendarEmptyContainer] when the day has no
+    events.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:paddingTop="20dp">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/textCalendarScreenTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-light"
-        android:text="@string/calendar_screen_title"
-        android:textColor="@color/text_primary"
-        android:textSize="40sp" />
-
-    <TextView
-        android:id="@+id/textCalendarScreenDate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:fontFamily="sans-serif-light"
-        android:textColor="@color/text_secondary"
-        android:textSize="18sp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerCalendarEvents"
+    <!-- Main day-view stack. Hidden by the binder when the day is empty. -->
+    <LinearLayout
+        android:id="@+id/calendarDayLayout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="20dp"
-        android:clipToPadding="false"
-        android:layout_weight="1"
-        android:paddingBottom="24dp"
-        android:scrollbars="none" />
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingStart="64dp"
+        android:paddingTop="44dp"
+        android:paddingEnd="64dp"
+        android:paddingBottom="0dp">
 
-    <TextView
-        android:id="@+id/textCalendarFooter"
+        <!-- Header: title block + legend chips. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:gravity="bottom"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/jetbrains_mono"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="0.24"
+                    android:text="@string/calendar_eyebrow"
+                    android:textAllCaps="true"
+                    android:textColor="@color/nav_accent_calendar"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textCalendarScreenDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="@font/manrope"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="-0.035"
+                    android:lineSpacingMultiplier="0.95"
+                    android:textColor="@color/dock_text_pri"
+                    android:textSize="68sp" />
+
+                <TextView
+                    android:id="@+id/textCalendarMeta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="@font/manrope"
+                    android:includeFontPadding="false"
+                    android:textColor="#80FFFFFF"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <!-- Legend chips (Personal · Work · Conflict). -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_legend_dot_personal" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="@font/manrope"
+                    android:includeFontPadding="false"
+                    android:text="@string/calendar_legend_personal"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginStart="18dp"
+                    android:background="@drawable/bg_legend_dot_work" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="@font/manrope"
+                    android:includeFontPadding="false"
+                    android:text="@string/calendar_legend_work"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="16sp" />
+
+                <View
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_marginStart="18dp"
+                    android:background="@drawable/bg_legend_dot_conflict" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFamily="@font/manrope"
+                    android:includeFontPadding="false"
+                    android:text="@string/calendar_legend_conflict"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Event list. Mixed single + band rows, see CalendarEventAdapter. -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerCalendarEvents"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="28dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp"
+            android:scrollbars="none" />
+
+        <!-- Bottom hint row, justified. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="40dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textCalendarFooter"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.2"
+                android:textAllCaps="true"
+                android:textColor="#52FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.2"
+                android:text="@string/calendar_hint_right"
+                android:textAllCaps="true"
+                android:textColor="#52FFFFFF"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Empty-state container. Inflated lazily by the binder via ViewStub
+         so the day-view inflation cost is paid even when the user lands on
+         a blank day, while the empty-state inflation only happens when
+         needed. -->
+    <ViewStub
+        android:id="@+id/calendarEmptyStub"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-light"
-        android:gravity="center"
-        android:paddingTop="8dp"
-        android:paddingBottom="4dp"
-        android:textColor="@color/text_tertiary"
-        android:textSize="12sp" />
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:inflatedId="@+id/calendarEmptyRoot"
+        android:layout="@layout/screen_calendar_empty" />
+</FrameLayout>
