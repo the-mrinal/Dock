@@ -2,7 +2,7 @@ package com.ambient.tvclock.receiver.ui
 
 import android.content.Context
 import android.graphics.Color
-import android.graphics.Typeface
+import android.os.SystemClock
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.Gravity
@@ -10,7 +10,9 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import com.ambient.tvclock.R
 import com.ambient.tvclock.receiver.Protocol
 import com.ambient.tvclock.receiver.ReceiverStateBus
@@ -37,10 +39,35 @@ class StreamingOverlay @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
     private val surfaceView: AspectRatioSurfaceView = AspectRatioSurfaceView(context)
-    val senderPill: TextView = TextView(context)
+
+    /**
+     * Composite pill in the upper-right corner. Replaces the legacy single
+     * TextView with an eyebrow ("AIRPLAY · MRINAL'S IPHONE") + a JBMono
+     * session-length subline ("7m 22s"). [setSenderInfo] writes the eyebrow
+     * line; the session timer ticks from [resetSessionClock] until the next
+     * surface destroy.
+     */
+    private val senderPillContainer: LinearLayout = LinearLayout(context)
+    private val senderEyebrow: TextView = TextView(context)
+    private val senderDuration: TextView = TextView(context)
+
+    /** Backwards-compat handle — callers may read the text on the pill. */
+    val senderPill: TextView get() = senderEyebrow
 
     @Volatile
     private var surface: Surface? = null
+
+    private var sessionStartMs: Long = 0L
+    private val durationTicker = object : Runnable {
+        override fun run() {
+            if (sessionStartMs == 0L) return
+            val elapsedSec = ((SystemClock.elapsedRealtime() - sessionStartMs) / 1000L).toInt()
+            val m = elapsedSec / 60
+            val s = elapsedSec % 60
+            senderDuration.text = "${m}m ${s.toString().padStart(2, '0')}s"
+            postDelayed(this, 1_000L)
+        }
+    }
 
     init {
         val surfaceLayout = LayoutParams(
@@ -74,18 +101,36 @@ class StreamingOverlay @JvmOverloads constructor(
                 surface = null
                 ReceiverStateBus.publishVideoSurface(null)
                 Logger.d("StreamingOverlay: surface destroyed")
+                resetSessionClock()
             }
         })
 
-        senderPill.apply {
-            setTextColor(Color.parseColor("#F5F5F5"))
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-            setBackgroundResource(R.drawable.bg_sender_pill)
-            val paddingX = dp(16)
-            val paddingY = dp(6)
-            setPadding(paddingX, paddingY, paddingX, paddingY)
-        }
+        // Pill container: vertical eyebrow + JBMono duration. Backdrop is the
+        // legacy translucent black scrim so the pill stays readable over any
+        // sender's video. Typography matches the redesign's other eyebrows.
+        senderPillContainer.orientation = LinearLayout.VERTICAL
+        senderPillContainer.setBackgroundResource(R.drawable.bg_sender_pill)
+        senderPillContainer.gravity = Gravity.END
+        val padX = dp(18)
+        val padY = dp(10)
+        senderPillContainer.setPadding(padX, padY, padX, padY)
+
+        senderEyebrow.setTextAppearance(R.style.TextAppearance_Dock_Eyebrow)
+        senderEyebrow.setTextColor(Color.parseColor("#F5F5F5"))
+        senderEyebrow.includeFontPadding = false
+        senderEyebrow.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+        senderPillContainer.addView(senderEyebrow)
+
+        senderDuration.setTextAppearance(R.style.TextAppearance_Dock_MonoData)
+        senderDuration.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+        senderDuration.setTextColor(ContextCompat.getColor(context, R.color.dock_text_sec))
+        senderDuration.includeFontPadding = false
+        val durationLp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply { topMargin = dp(2) }
+        senderPillContainer.addView(senderDuration, durationLp)
+
         val pillLayout = LayoutParams(
             LayoutParams.WRAP_CONTENT,
             LayoutParams.WRAP_CONTENT,
@@ -94,7 +139,7 @@ class StreamingOverlay @JvmOverloads constructor(
             val margin = dp(24)
             setMargins(margin, margin, margin, margin)
         }
-        addView(senderPill, pillLayout)
+        addView(senderPillContainer, pillLayout)
     }
 
     fun currentSurface(): Surface? = surface
@@ -113,12 +158,30 @@ class StreamingOverlay @JvmOverloads constructor(
     }
 
     fun setSenderInfo(senderName: String, protocol: Protocol) {
-        val template = when (protocol) {
-            Protocol.AIRPLAY -> R.string.streaming_pill_airplay
-            Protocol.CAST -> R.string.streaming_pill_cast
-            Protocol.MIRACAST -> R.string.streaming_pill_miracast
+        val protoLabel = when (protocol) {
+            Protocol.AIRPLAY -> "AirPlay"
+            Protocol.CAST -> "Cast"
+            Protocol.MIRACAST -> "Miracast"
         }
-        senderPill.text = context.getString(template, senderName)
+        // Eyebrow renders ALL CAPS via the TextAppearance, so we feed plain
+        // "AirPlay · Mrinal's iPhone" here and let the style transform.
+        senderEyebrow.text = "$protoLabel · $senderName"
+        // Start (or restart) the session timer if the pill is showing fresh.
+        if (sessionStartMs == 0L) {
+            sessionStartMs = SystemClock.elapsedRealtime()
+            senderDuration.text = "0m 00s"
+            post(durationTicker)
+        }
+    }
+
+    /**
+     * Reset the session timer (e.g. when the receiver hands off to a new
+     * sender). The next `setSenderInfo` call will restart from zero.
+     */
+    fun resetSessionClock() {
+        sessionStartMs = 0L
+        removeCallbacks(durationTicker)
+        senderDuration.text = ""
     }
 
     private fun dp(value: Int): Int =
