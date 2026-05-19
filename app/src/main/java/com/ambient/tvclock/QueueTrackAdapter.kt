@@ -12,7 +12,16 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.ambient.tvclock.ui.CoverDrawable
 
+/**
+ * Generic queue row adapter (Stream A redesign). Renders into the restyled
+ * `item_queue_track.xml` — translucent card, 64dp cover, 20sp Manrope title,
+ * 16sp artist line. Kept after the redesign because the LegacyMusicScreen
+ * binder used it, but the new MusicScreenBinder mostly routes through
+ * [RecentCardAdapter] (Recently Played) and [PlaylistTracksAdapter]
+ * (playlist drill-in) instead.
+ */
 class QueueTrackAdapter(
     private val onTrackSelected: (SpotifyQueueTrack) -> Unit
 ) : ListAdapter<SpotifyQueueTrack, QueueTrackAdapter.Holder>(DIFF) {
@@ -21,21 +30,12 @@ class QueueTrackAdapter(
     private var attachedRecycler: RecyclerView? = null
 
     fun submit(tracks: List<SpotifyQueueTrack>, onCommit: (() -> Unit)? = null) {
-        // ListAdapter.submitList computes its diff on a background executor;
-        // the commit callback fires after the new list is fully applied so
-        // findViewHolderForAdapterPosition / focus logic can rely on it.
-        if (onCommit != null) {
-            submitList(tracks, onCommit)
-        } else {
-            submitList(tracks)
-        }
+        if (onCommit != null) submitList(tracks, onCommit) else submitList(tracks)
     }
 
     /**
      * Toggles the inline progress bar on the row whose `uri` matches [uri].
-     * Pass `null` to clear loading on all rows. We update bound holders in
-     * place rather than calling `notifyItemChanged` because rebinding would
-     * recreate the ViewHolder and drop DPAD focus mid-loading.
+     * Pass `null` to clear loading on all rows.
      */
     fun setLoadingUri(uri: String?) {
         loadingUri = uri
@@ -69,13 +69,17 @@ class QueueTrackAdapter(
         val track = getItem(position)
         holder.textTitle.text = track.title
         holder.textArtist.text = track.artist.ifEmpty { "—" }
-        AlbumArtLoader.load(track.imageUrl, holder.imageArt)
+
+        // Spotify art preferred; CoverDrawable fallback.
+        val coverSeed = (track.uri.ifBlank { "${track.title}|${track.artist}" })
+        holder.imageArt.setImageDrawable(CoverDrawable(coverSeed))
+        if (track.imageUrl.isNotBlank()) {
+            AlbumArtLoader.load(track.imageUrl, holder.imageArt)
+        }
         holder.applyLoading(track, loadingUri)
 
         val playTrack = {
-            if (track.uri.isNotBlank()) {
-                onTrackSelected(track)
-            }
+            if (track.uri.isNotBlank()) onTrackSelected(track)
         }
         holder.itemView.setOnClickListener { playTrack() }
         holder.itemView.setOnKeyListener { _, keyCode, event ->
@@ -98,7 +102,7 @@ class QueueTrackAdapter(
 
         init {
             imageArt.clipToOutline = true
-            imageArt.outlineProvider = ROUND_6
+            imageArt.outlineProvider = ROUND_8
         }
 
         fun applyLoading(track: SpotifyQueueTrack, loadingUri: String?) {
@@ -108,9 +112,9 @@ class QueueTrackAdapter(
     }
 
     companion object {
-        private val ROUND_6 = object : ViewOutlineProvider() {
+        private val ROUND_8 = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, 6f)
+                outline.setRoundRect(0, 0, view.width, view.height, 8f)
             }
         }
 
