@@ -1,16 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Phase 0 redesign: ArtWashView replaces the legacy ImageView background,
+    BottomNavCapsuleView replaces the 4-dot text indicator. Pager content,
+    streaming overlay, and onboarding pill behaviours are unchanged.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_screen"
+    android:background="@color/dock_bg"
     android:clipChildren="false"
     android:clipToPadding="false"
     android:keepScreenOn="true">
 
-    <!-- Full-bleed blurred album art. Sits behind the safe-area padded content so
-         it reaches every edge of the TV. Alpha is animated by BlurredBackgroundBinder
-         and stays low enough that foreground text remains comfortably readable. -->
+    <!-- Full-bleed blurred art wash. Seed + intensity are driven per-page
+         by MainActivity; sits behind everything else. -->
+    <com.ambient.tvclock.ui.ArtWashView
+        android:id="@id/artWashView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Legacy ImageView kept under the wash because BlurredBackgroundBinder
+         still drives an alpha animation against it; once the per-page redesign
+         lands the legacy binder will be retired and this view goes with it. -->
     <ImageView
         android:id="@+id/imageHomeBackground"
         android:layout_width="match_parent"
@@ -89,90 +102,25 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <LinearLayout
+        <!-- Bottom nav capsule. Replaces the old 4-dot text indicator. The
+             container keeps the `pageIndicatorGroup` id so MainActivity's
+             ambient-mode alpha animations + side-by-side references in
+             existing binders keep working with no churn. -->
+        <FrameLayout
             android:id="@+id/pageIndicatorGroup"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:layout_centerHorizontal="true"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp">
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-            <TextView
-                android:id="@+id/textPageStatus"
+            <com.ambient.tvclock.ui.BottomNavCapsuleView
+                android:id="@id/bottomNavCapsule"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-light"
-                android:paddingStart="12dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="4dp"
-                android:text="@string/page_status"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="·"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/textPageHome"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:paddingStart="12dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="4dp"
-                android:text="@string/page_home"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="·"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/textPageCalendar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-light"
-                android:paddingStart="12dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="4dp"
-                android:text="@string/page_calendar"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="·"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/textPageMusic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-light"
-                android:paddingStart="12dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="4dp"
-                android:text="@string/page_music"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp" />
-        </LinearLayout>
+                android:layout_gravity="center"
+                app:activeDestination="1" />
+        </FrameLayout>
     </RelativeLayout>
 
     <!-- Phase 3: mirroring overlay. Hidden until a sender connects. Sits above

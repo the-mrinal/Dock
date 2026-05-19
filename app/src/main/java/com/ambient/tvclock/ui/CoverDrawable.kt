@@ -78,11 +78,11 @@ class CoverDrawable(private val seed: String) : Drawable() {
             Layout.CIRCLE -> drawCircle(canvas, sx, sy)
             Layout.SPLIT -> drawSplit(canvas, w, h, sx, sy)
             Layout.BARS -> drawBars(canvas, sx, sy)
-            Layout.ARC -> drawArc(canvas, w, h, sx, sy)
+            Layout.ARC -> drawArc(canvas, sx, sy)
             Layout.MESH -> drawMesh(canvas, w, h, sx, sy)
-            Layout.SQUARE -> drawSquare(canvas, w, h, sx, sy)
+            Layout.SQUARE -> drawSquare(canvas, sx, sy)
             Layout.HORIZON -> drawHorizon(canvas, w, h, sx, sy)
-            Layout.RAYS -> drawRays(canvas, w, h, sx, sy)
+            Layout.RAYS -> drawRays(canvas, sx, sy)
         }
 
         // 3. Soft gloss + bottom shadow overlay, matches the SVG's `linear-gradient`.
@@ -134,7 +134,7 @@ class CoverDrawable(private val seed: String) : Drawable() {
         }
     }
 
-    private fun drawArc(canvas: Canvas, w: Float, h: Float, sx: Float, sy: Float) {
+    private fun drawArc(canvas: Canvas, sx: Float, sy: Float) {
         // SVG: M -10 70 Q 50 (20 + q) 110 70 — quadratic Bezier across the canvas.
         tmpPath.reset()
         tmpPath.moveTo(-10f * sx, 70f * sy)
@@ -167,7 +167,7 @@ class CoverDrawable(private val seed: String) : Drawable() {
         paint.alpha = 255
     }
 
-    private fun drawSquare(canvas: Canvas, w: Float, h: Float, sx: Float, sy: Float) {
+    private fun drawSquare(canvas: Canvas, sx: Float, sy: Float) {
         canvas.save()
         canvas.rotate(rot, 50f * sx, 50f * sy)
         paint.shader = null
@@ -206,7 +206,7 @@ class CoverDrawable(private val seed: String) : Drawable() {
         paint.alpha = 255
     }
 
-    private fun drawRays(canvas: Canvas, w: Float, h: Float, sx: Float, sy: Float) {
+    private fun drawRays(canvas: Canvas, sx: Float, sy: Float) {
         canvas.save()
         canvas.translate(50f * sx, 50f * sy)
         canvas.rotate(rot)
