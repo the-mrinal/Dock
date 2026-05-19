@@ -20,7 +20,11 @@ data class SpotifyQueueTrack(
      * continues past it. Blank means we only have an isolated track URI and
      * must fall back to single-track play.
      */
-    val contextUri: String = ""
+    val contextUri: String = "",
+    /** Track duration in milliseconds, 0 when unknown. */
+    val durationMs: Long = 0L,
+    /** Album name (from the track's `album.name`), empty when unknown. */
+    val albumName: String = ""
 )
 
 data class SpotifyQueueSnapshot(

@@ -110,13 +110,8 @@ class PlaylistTracksAdapter(
         val primary = holder.itemView.resources.getColor(R.color.dock_text_pri, null)
         holder.textTitle.setTextColor(if (isPlaying) accent else primary)
 
-        // Album column gets whatever context we have — the queue API doesn't
-        // hand us a track-level album field, so the playlist name (passed via
-        // SpotifyQueueTrack.contextUri) is the closest signal.
         holder.textAlbum.text = albumLabel(track)
-        // Duration not exposed in SpotifyQueueTrack — show a placeholder dash
-        // for now; downstream we'll wire real durations through the model.
-        holder.textDuration.text = "—"
+        holder.textDuration.text = formatDuration(track.durationMs)
 
         // Cover — real art if available, generated cover otherwise.
         val coverSeed = (track.uri.ifBlank { "${track.title}|${track.artist}" })
@@ -143,10 +138,15 @@ class PlaylistTracksAdapter(
         }
     }
 
-    private fun albumLabel(track: SpotifyQueueTrack): String {
-        // Until durations land we surface the artist as the secondary column
-        // for tracks without a contextUri parsable into an album name.
-        return track.artist.ifBlank { "—" }
+    private fun albumLabel(track: SpotifyQueueTrack): String =
+        track.albumName.ifBlank { track.artist.ifBlank { "—" } }
+
+    private fun formatDuration(ms: Long): String {
+        if (ms <= 0L) return "—"
+        val totalSec = (ms / 1000L).toInt()
+        val m = totalSec / 60
+        val s = totalSec % 60
+        return "%d:%02d".format(m, s)
     }
 
     class Holder(view: View) : RecyclerView.ViewHolder(view) {

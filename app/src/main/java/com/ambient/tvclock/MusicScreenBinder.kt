@@ -524,18 +524,14 @@ class MusicScreenBinder(
         refreshPlaybackSoon()
     }
 
-    private fun playCurrentPlaylistFromStart(@Suppress("UNUSED_PARAMETER") shuffle: Boolean) {
+    private fun playCurrentPlaylistFromStart(shuffle: Boolean) {
         val playlist = nav.currentPlaylist ?: return
-        // Shuffle is handled via Spotify's `/me/player/shuffle?state=true`
-        // separately; for now just kick the playlist off from its first
-        // track and let Spotify Connect default settings handle shuffle.
-        // TODO(Stream A polish): explicit POST /me/player/shuffle pre-play.
         if (playlist.isLikedSongs) {
             val tracks = playlistTracksAdapter.currentList
             if (tracks.isEmpty()) return
-            startPlayUris(tracks.take(50).map { it.uri }.filter { it.isNotBlank() }, null)
+            startPlayUris(tracks.take(50).map { it.uri }.filter { it.isNotBlank() }, null, shuffle)
         } else {
-            startPlay(playlist.uri, offsetUri = "", deviceId = null)
+            startPlay(playlist.uri, offsetUri = "", deviceId = null, shuffle = shuffle)
         }
         refreshPlaybackSoon()
     }
@@ -566,7 +562,12 @@ class MusicScreenBinder(
 
     private val loadingSafetyTimeout = Runnable { endLoading() }
 
-    private fun startPlay(contextUri: String, offsetUri: String, deviceId: String?) {
+    private fun startPlay(
+        contextUri: String,
+        offsetUri: String,
+        deviceId: String?,
+        shuffle: Boolean = false
+    ) {
         val activity = findActivity()
         val context = root.context.applicationContext
         playbackExecutor.execute {
@@ -576,15 +577,21 @@ class MusicScreenBinder(
                 offsetUri = offsetUri,
                 deviceId = deviceId
             )
+            // Apply shuffle on the now-active session. Calling this before
+            // playContext often 404s when no device is awake yet; after the
+            // play call succeeds the shuffle endpoint has a session to bind to.
+            if (result == SpotifyPlaybackControl.PlayResult.OK) {
+                SpotifyPlaybackControl.setShuffle(context, shuffle, deviceId)
+            }
             root.post {
                 handlePlaybackResult(activity, result) { newDeviceId ->
-                    startPlay(contextUri, offsetUri, newDeviceId)
+                    startPlay(contextUri, offsetUri, newDeviceId, shuffle)
                 }
             }
         }
     }
 
-    private fun startPlayUris(uris: List<String>, deviceId: String?) {
+    private fun startPlayUris(uris: List<String>, deviceId: String?, shuffle: Boolean = false) {
         if (uris.isEmpty()) return
         val activity = findActivity()
         val context = root.context.applicationContext
@@ -594,9 +601,12 @@ class MusicScreenBinder(
                 uris = uris,
                 deviceId = deviceId
             )
+            if (result == SpotifyPlaybackControl.PlayResult.OK) {
+                SpotifyPlaybackControl.setShuffle(context, shuffle, deviceId)
+            }
             root.post {
                 handlePlaybackResult(activity, result) { newDeviceId ->
-                    startPlayUris(uris, newDeviceId)
+                    startPlayUris(uris, newDeviceId, shuffle)
                 }
             }
         }

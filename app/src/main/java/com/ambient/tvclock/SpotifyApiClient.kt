@@ -673,7 +673,9 @@ object SpotifyApiClient {
             .ifBlank { if (id.isNotEmpty()) "spotify:track:$id" else "" }
         val album = item.optJSONObject("album")
         val imageUrl = pickImageUrl(album?.optJSONArray("images"))
-        return SpotifyQueueTrack(title, artist, imageUrl, uri)
+        val albumName = album?.optString("name", "")?.trim().orEmpty()
+        val durationMs = item.optLong("duration_ms", 0L).coerceAtLeast(0L)
+        return SpotifyQueueTrack(title, artist, imageUrl, uri, durationMs = durationMs, albumName = albumName)
     }
 
     private fun pickImageUrl(images: org.json.JSONArray?): String {

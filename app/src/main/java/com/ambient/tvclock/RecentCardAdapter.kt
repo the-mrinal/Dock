@@ -80,21 +80,31 @@ class RecentCardAdapter(
     }
 
     private fun SpotifyQueueTrack.contextLabel(): String {
-        // The HTML prototype shows "from <album/playlist> · type" — we don't
-        // get that breakdown from the queue API, so just stamp the artist
-        // as a context placeholder when one's not available.
-        return if (contextUri.isNotBlank()) {
-            val kind = when {
-                contextUri.contains("playlist") -> "playlist"
-                contextUri.contains("album") -> "album"
-                contextUri.contains("artist") -> "artist"
-                else -> "context"
+        // Recently-played items carry a context URI but not a human name. The
+        // album case is free — the track itself ships album.name. Playlist
+        // contexts get resolved against the user's owned-playlist cache
+        // (already populated by Browse); on a miss we drop to a generic
+        // label rather than fabricate something. Artist contexts read the
+        // primary artist off the track.
+        if (contextUri.isBlank()) {
+            return if (artist.isNotBlank()) "by $artist" else "—"
+        }
+        return when {
+            contextUri.contains(":album:") -> {
+                if (albumName.isNotBlank()) "from $albumName · album"
+                else if (artist.isNotBlank()) "from album · $artist"
+                else "from album"
             }
-            "from $kind"
-        } else if (artist.isNotBlank()) {
-            "by $artist"
-        } else {
-            "—"
+            contextUri.contains(":playlist:") -> {
+                val id = contextUri.substringAfterLast(':')
+                val name = SpotifyPlaylistCache.getIndex()?.value
+                    ?.firstOrNull { it.id == id }?.name
+                if (!name.isNullOrBlank()) "from $name · playlist" else "from playlist"
+            }
+            contextUri.contains(":artist:") -> {
+                if (artist.isNotBlank()) "by $artist" else "from artist"
+            }
+            else -> "from context"
         }
     }
 
