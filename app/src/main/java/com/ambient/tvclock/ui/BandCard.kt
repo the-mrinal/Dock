@@ -17,11 +17,11 @@ import com.ambient.tvclock.R
 /**
  * A single card inside a calendar overlap band (artboard 05).
  *
- * Renders the per-event chip + tag + title + meta line. Caller drives the
- * card content via [bind]; the left-edge border tint is sourced from the
- * tag color (work coral / personal blue) and shown only while the event is
- * "attending" — declined cards drop it and dim themselves to 62% opacity to
- * match the HTML prototype.
+ * Renders the per-event tag + title + meta line. State is purely
+ * time-relative: PAST events dim to 62% opacity; LIVE events get the
+ * tag-colored 3dp left-edge stripe. We don't infer RSVP (iCal feeds carry
+ * no RSVP signal), so the only state chip the card emits is "Starts HH:MM"
+ * for events that begin partway into a partial-overlap band.
  *
  * The card itself isn't focusable — its [FocusableContainer] parent is.
  */
@@ -31,7 +31,7 @@ class BandCard @JvmOverloads constructor(
     defStyleAttr: Int = 0,
 ) : LinearLayout(context, attrs, defStyleAttr) {
 
-    enum class State { ATTENDING, DECLINED, TENTATIVE }
+    enum class State { LIVE, PAST, UPCOMING }
     enum class Tag { PERSONAL, WORK }
 
     private val tagChip: TextView
@@ -84,9 +84,9 @@ class BandCard @JvmOverloads constructor(
         )
         val tagBgRes = if (isPersonal) R.color.cal_personal_tag else R.color.cal_work_tag
 
-        // Tag chip: filled when attending, outlined when declined/dimmed.
+        // Tag chip: filled when live/upcoming, outlined-and-dim when in the past.
         when (state) {
-            State.DECLINED -> {
+            State.PAST -> {
                 tagChip.setBackgroundResource(
                     if (isPersonal) R.drawable.bg_chip_personal_outline
                     else R.drawable.bg_chip_work_outline
@@ -104,30 +104,20 @@ class BandCard @JvmOverloads constructor(
             if (isPersonal) context.getString(R.string.calendar_legend_personal)
             else context.getString(R.string.calendar_legend_work)
 
-        // Left edge stripe — coral / blue when attending, transparent otherwise.
+        // Left edge stripe — coral / blue when live, transparent otherwise.
         leftStripeColor =
-            if (state == State.ATTENDING) tagDotColor else Color.TRANSPARENT
+            if (state == State.LIVE) tagDotColor else Color.TRANSPARENT
         invalidate()
 
-        // State chip on the right of the eyebrow row: "You're in", "Declined",
-        // "Starts 15:00", or hidden.
-        when {
-            startsAt != null -> {
-                stateChip.visibility = VISIBLE
-                stateChip.text = context.getString(R.string.calendar_starts_at, startsAt)
-                stateChip.setTextColor(ContextCompat.getColor(context, R.color.c_amber))
-            }
-            state == State.DECLINED -> {
-                stateChip.visibility = VISIBLE
-                stateChip.text = context.getString(R.string.calendar_declined)
-                stateChip.setTextColor(0x73FFFFFF.toInt())
-            }
-            state == State.ATTENDING -> {
-                stateChip.visibility = VISIBLE
-                stateChip.text = context.getString(R.string.calendar_attending)
-                stateChip.setTextColor(tagDotColor)
-            }
-            else -> stateChip.visibility = GONE
+        // The only chip we surface on the eyebrow row is "Starts 15:00" for
+        // events that begin partway into a partial-overlap band. iCal carries
+        // no RSVP data so we don't pretend to know attending/declined.
+        if (startsAt != null) {
+            stateChip.visibility = VISIBLE
+            stateChip.text = context.getString(R.string.calendar_starts_at, startsAt)
+            stateChip.setTextColor(ContextCompat.getColor(context, R.color.c_amber))
+        } else {
+            stateChip.visibility = GONE
         }
 
         if (showTime && !timeText.isNullOrBlank()) {

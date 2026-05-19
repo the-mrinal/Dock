@@ -92,9 +92,14 @@ class StatusScreenBinder(
                 currentAirplayAction = AirplayAction.TURN_OFF
             }
             else -> {
+                // Receiver enabled but nothing connected. The HTML only shows
+                // Off / Streaming, so we collapse "Ready" to look like Off; the
+                // detail line carries the sub-state ("Cast from an iPhone…")
+                // and the button still says "Turn off" because pressing it
+                // disables the receiver.
                 airplayColumn.setState(
                     eyebrowText = eyebrowText,
-                    title = context.getString(R.string.airplay_status_ready),
+                    title = context.getString(R.string.airplay_status_off),
                     detail = context.getString(R.string.airplay_detail_ready),
                     actionLabel = context.getString(R.string.airplay_action_turn_off),
                     accent = accent,

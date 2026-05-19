@@ -222,16 +222,14 @@ class CalendarEventAdapter(
             )
             focus.accentColor = accent
 
-            // Heuristic for state: treat any event whose end is in the future
-            // and whose start is in the past or at the band start as
-            // "attending" (the user is sitting in it). Other events in the
-            // band are "tentative" — we don't have RSVP data from the iCal
-            // source so this is best-effort.
+            // Time-relative state: PAST dims the card, LIVE gets the tag-colored
+            // left stripe, UPCOMING is the default. iCal feeds carry no RSVP
+            // signal so we don't infer attending/declined.
             val now = System.currentTimeMillis()
             val state = when {
-                event.endMillis <= now -> BandCard.State.DECLINED  // past — dim
-                event.startMillis <= now && event.endMillis > now -> BandCard.State.ATTENDING
-                else -> BandCard.State.TENTATIVE
+                event.endMillis <= now -> BandCard.State.PAST
+                event.startMillis <= now && event.endMillis > now -> BandCard.State.LIVE
+                else -> BandCard.State.UPCOMING
             }
             val startsAt =
                 if (event.startMillis > band.bandStart)

@@ -54,7 +54,6 @@
 
     <!-- AirPlay status screen. -->
     <string name="airplay_status_off">Off</string>
-    <string name="airplay_status_ready">Ready</string>
     <string name="airplay_status_streaming">Streaming</string>
     <string name="airplay_detail_off">Enable Phone Mirroring in Settings to accept casts</string>
     <string name="airplay_detail_protocol_off">AirPlay is disabled in Settings</string>
@@ -117,8 +116,6 @@
     <string name="calendar_hint_right">↑↓ between rows · ←→ between conflicting events</string>
     <string name="calendar_now_band">Now · %1$d events</string>
     <string name="calendar_partial_overlap">Partial overlap</string>
-    <string name="calendar_attending">You\'re in</string>
-    <string name="calendar_declined">Declined</string>
     <string name="calendar_starts_at">Starts %1$s</string>
     <string name="calendar_minutes_left">%1$dm left</string>
     <string name="calendar_dur_ends">%1$s · ends %2$s</string>
