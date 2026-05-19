@@ -18,9 +18,20 @@ object SpotifyApiClient {
     private const val RECENT_URL = "https://api.spotify.com/v1/me/player/recently-played?limit=50"
     private const val PLAYER_URL = "https://api.spotify.com/v1/me/player"
     private const val DEVICES_URL = "https://api.spotify.com/v1/me/player/devices"
+    private const val PLAYLISTS_URL = "https://api.spotify.com/v1/me/playlists"
+    private const val PLAYLIST_BASE_URL = "https://api.spotify.com/v1/playlists"
     private const val REDIRECT_URI = "com.ambient.tvclock://spotify-callback"
     private const val SCOPES =
-        "user-read-playback-state user-read-currently-playing user-read-recently-played user-modify-playback-state"
+        "user-read-playback-state user-read-currently-playing user-read-recently-played " +
+            "user-modify-playback-state playlist-read-private playlist-read-collaborative"
+
+    // Spotify caps these endpoints at 50/100 per page. We fetch in pages until
+    // either `next` is null or we hit these soft caps — keeps memory bounded
+    // and stays well under the 30s rolling rate-limit window in practice.
+    const val PLAYLISTS_PAGE_LIMIT = 50
+    const val PLAYLIST_TRACKS_PAGE_LIMIT = 100
+    const val PLAYLISTS_MAX = 200
+    const val PLAYLIST_TRACKS_MAX = 500
 
     // Headroom over the UI's display cap (5) so the poller can still filter the
     // currently-playing track without leaving the recently-played list short.
@@ -62,6 +73,16 @@ object SpotifyApiClient {
     data class SpotifyFeed(
         val queue: QueueResult,
         val recent: QueueResult
+    )
+
+    data class PlaylistsResult(
+        val playlists: List<SpotifyPlaylist>,
+        val httpCode: Int
+    )
+
+    data class PlaylistTracksResult(
+        val tracks: List<SpotifyQueueTrack>,
+        val httpCode: Int
     )
 
     private val http = HttpClients.shared
@@ -216,6 +237,151 @@ object SpotifyApiClient {
             Log.w(TAG, "Devices failed: ${e.message}")
             emptyList()
         }
+    }
+
+    /**
+     * Fetches up to [PLAYLISTS_MAX] of the user's playlists, paginating in
+     * [PLAYLISTS_PAGE_LIMIT] chunks. Returns the HTTP code of the first
+     * non-2xx response (or 200 on full success). 403 indicates the user
+     * authenticated before the playlist scopes were added — they need to
+     * reconnect via SpotifyAuthActivity.
+     */
+    fun fetchPlaylists(context: Context): PlaylistsResult {
+        if (isRateLimited()) return PlaylistsResult(emptyList(), 429)
+        val token = ensureAccessToken(context) ?: return PlaylistsResult(emptyList(), 401)
+
+        val collected = mutableListOf<SpotifyPlaylist>()
+        var offset = 0
+        while (collected.size < PLAYLISTS_MAX) {
+            val url = "$PLAYLISTS_URL?limit=$PLAYLISTS_PAGE_LIMIT&offset=$offset"
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build()
+            try {
+                http.newCall(request).execute().use { response ->
+                    val code = response.code
+                    if (code == 429) {
+                        trip429(response.header("Retry-After"))
+                        return PlaylistsResult(collected, 429)
+                    }
+                    if (!response.isSuccessful) {
+                        Log.w(TAG, "Playlists HTTP $code: ${response.body?.string()?.take(120)}")
+                        return PlaylistsResult(collected, code)
+                    }
+                    clearRateLimit()
+                    val json = JSONObject(response.body?.string().orEmpty())
+                    val items = json.optJSONArray("items") ?: return PlaylistsResult(collected, code)
+                    if (items.length() == 0) return PlaylistsResult(collected, code)
+                    for (i in 0 until items.length()) {
+                        if (collected.size >= PLAYLISTS_MAX) break
+                        val item = items.optJSONObject(i) ?: continue
+                        parsePlaylist(item)?.let { collected.add(it) }
+                    }
+                    val next = json.optString("next", "")
+                    if (next.isBlank() || items.length() < PLAYLISTS_PAGE_LIMIT) {
+                        return PlaylistsResult(collected, code)
+                    }
+                    offset += PLAYLISTS_PAGE_LIMIT
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Playlists request failed: ${e.message}")
+                return PlaylistsResult(collected, -1)
+            }
+        }
+        return PlaylistsResult(collected, 200)
+    }
+
+    /**
+     * Fetches up to [PLAYLIST_TRACKS_MAX] tracks for a single playlist. Same
+     * pagination & rate-limit conventions as [fetchPlaylists]. Local files
+     * and null tracks are silently skipped (Spotify includes them in the
+     * paginated stream for legacy reasons).
+     */
+    fun fetchPlaylistTracks(context: Context, playlistId: String): PlaylistTracksResult {
+        if (isRateLimited()) return PlaylistTracksResult(emptyList(), 429)
+        val token = ensureAccessToken(context) ?: return PlaylistTracksResult(emptyList(), 401)
+
+        val collected = mutableListOf<SpotifyQueueTrack>()
+        var offset = 0
+        // Earlier we sent a `fields=` filter to keep the response slim, but
+        // OkHttp's URL encoding of nested parens looked enough like a malformed
+        // query that Spotify returned 403. Fetching the full track object
+        // costs a few KB per page — fine for our caching cadence.
+        while (collected.size < PLAYLIST_TRACKS_MAX) {
+            // Spotify's own `/me/playlists` response advertises the playlist
+            // contents under `/v1/playlists/{id}/items` now; the older
+            // `/tracks` path returns 403 Forbidden for some accounts even
+            // though their docs still document it. Use the URL Spotify hands
+            // back to us — it works for both new and legacy accounts.
+            val url = "$PLAYLIST_BASE_URL/$playlistId/items" +
+                "?limit=$PLAYLIST_TRACKS_PAGE_LIMIT&offset=$offset"
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $token")
+                .get()
+                .build()
+            try {
+                http.newCall(request).execute().use { response ->
+                    val code = response.code
+                    if (code == 429) {
+                        trip429(response.header("Retry-After"))
+                        return PlaylistTracksResult(collected, 429)
+                    }
+                    if (!response.isSuccessful) {
+                        Log.w(TAG, "Playlist tracks HTTP $code: ${response.body?.string()?.take(120)}")
+                        return PlaylistTracksResult(collected, code)
+                    }
+                    clearRateLimit()
+                    val json = JSONObject(response.body?.string().orEmpty())
+                    val items = json.optJSONArray("items") ?: return PlaylistTracksResult(collected, code)
+                    if (items.length() == 0) return PlaylistTracksResult(collected, code)
+                    for (i in 0 until items.length()) {
+                        if (collected.size >= PLAYLIST_TRACKS_MAX) break
+                        val item = items.optJSONObject(i) ?: continue
+                        // Spotify renamed the row's track field too — `/items`
+                        // returns `{ item: {...} }` where `/tracks` used to
+                        // return `{ track: {...} }`. Try the new key first.
+                        val trackObj = item.optJSONObject("item")
+                            ?: item.optJSONObject("track")
+                            ?: continue
+                        parseTrack(trackObj)?.let { collected.add(it) }
+                    }
+                    val next = json.optString("next", "")
+                    if (next.isBlank() || items.length() < PLAYLIST_TRACKS_PAGE_LIMIT) {
+                        return PlaylistTracksResult(collected, code)
+                    }
+                    offset += PLAYLIST_TRACKS_PAGE_LIMIT
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Playlist tracks request failed: ${e.message}")
+                return PlaylistTracksResult(collected, -1)
+            }
+        }
+        return PlaylistTracksResult(collected, 200)
+    }
+
+    private fun parsePlaylist(item: JSONObject): SpotifyPlaylist? {
+        val id = item.optString("id", "").trim()
+        val name = item.optString("name", "").trim()
+        if (id.isEmpty() || name.isEmpty()) return null
+        val imageUrl = pickImageUrl(item.optJSONArray("images"))
+        // Spotify renamed `tracks` → `items` in the simplified playlist
+        // object. Try the new key first, fall back to the legacy one for
+        // any account whose backend still serves the old shape.
+        val trackCount = item.optJSONObject("items")?.optInt("total", -1)
+            ?.takeIf { it >= 0 }
+            ?: item.optJSONObject("tracks")?.optInt("total", 0)
+            ?: 0
+        val ownerName = item.optJSONObject("owner")?.optString("display_name", "").orEmpty()
+        return SpotifyPlaylist(
+            id = id,
+            name = name,
+            imageUrl = imageUrl,
+            trackCount = trackCount,
+            ownerName = ownerName
+        )
     }
 
     private fun parseDevice(item: JSONObject): SpotifyDevice? {

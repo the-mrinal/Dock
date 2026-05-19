@@ -2,6 +2,7 @@ package com.ambient.tvclock
 
 import android.app.Activity
 import android.content.ContextWrapper
+import android.content.Intent
 import android.graphics.Outline
 import android.media.MediaMetadata
 import android.media.session.PlaybackState
@@ -12,6 +13,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.util.concurrent.Executors
@@ -44,11 +46,26 @@ class MusicScreenBinder(
     private val buttonPlay: ImageButton = root.findViewById(R.id.buttonPlayPause)
     private val buttonNext: ImageButton = root.findViewById(R.id.buttonSkipNext)
     private val buttonDeviceCast: ImageButton = root.findViewById(R.id.buttonDeviceCast)
+    private val rowBrowseEntry: View = root.findViewById(R.id.rowBrowseEntry)
+    private val viewDefaultPanel: View = root.findViewById(R.id.viewDefaultPanel)
+    private val viewBrowsePanel: View = root.findViewById(R.id.viewBrowsePanel)
+    private val rowBackToList: View = viewBrowsePanel.findViewById(R.id.rowBackToList)
+    private val textBrowseHeader: TextView = viewBrowsePanel.findViewById(R.id.textBrowseHeader)
+    private val textBrowseHint: TextView = viewBrowsePanel.findViewById(R.id.textBrowseHint)
+    private val recyclerBrowse: RecyclerView = viewBrowsePanel.findViewById(R.id.recyclerBrowse)
 
     private var upNextTrack: SpotifyQueueTrack? = null
     private val artworkState = NowPlayingArtwork.State()
     private var lastBackgroundKey: String? = null
     private val recentAdapter = QueueTrackAdapter { track -> playSelectedTrack(track) }
+
+    private enum class BrowseMode { DEFAULT, PLAYLISTS, TRACKS }
+
+    private var browseMode: BrowseMode = BrowseMode.DEFAULT
+    private var currentPlaylist: SpotifyPlaylist? = null
+    private var lastPlaylistRowIndex: Int = 0
+    private val playlistAdapter = PlaylistAdapter { p -> enterPlaylist(p) }
+    private val playlistTrackAdapter = QueueTrackAdapter { t -> playInPlaylistContext(t) }
 
     init {
         val cardRadius = root.resources.getDimension(R.dimen.now_playing_card_radius)
@@ -65,6 +82,10 @@ class MusicScreenBinder(
         recyclerRecentlyPlayed.adapter = recentAdapter
         recyclerRecentlyPlayed.itemAnimator = null
         recyclerRecentlyPlayed.setHasFixedSize(true)
+
+        recyclerBrowse.layoutManager = LinearLayoutManager(root.context)
+        recyclerBrowse.itemAnimator = null
+        recyclerBrowse.setHasFixedSize(false)
 
         wireTransportButton(buttonPrev) { MediaTransport.skipToPrevious(root.context) }
         wireTransportButton(buttonPlay) { MediaTransport.playPause(root.context) }
@@ -84,10 +105,49 @@ class MusicScreenBinder(
             }
         }
 
+        rowBrowseEntry.setOnClickListener {
+            onControlUsed()
+            enterPlaylists()
+        }
+        rowBrowseEntry.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_UP &&
+                (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
+            ) {
+                onControlUsed()
+                enterPlaylists()
+                true
+            } else {
+                false
+            }
+        }
+
+        rowBackToList.setOnClickListener {
+            onControlUsed()
+            onBackPressed()
+        }
+        rowBackToList.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_UP &&
+                (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
+            ) {
+                onControlUsed()
+                onBackPressed()
+                true
+            } else {
+                false
+            }
+        }
+
         val openDevices: () -> Unit = {
             onControlUsed()
             findActivity()?.let { activity ->
-                SpotifyDevicePicker.show(activity) {
+                SpotifyDevicePicker.show(activity) { deviceId ->
+                    // Cast button = transfer whatever is currently playing
+                    // onto the picked device. No track context to re-send.
+                    playbackExecutor.execute {
+                        SpotifyPlaybackControl.transferToDevice(
+                            activity.applicationContext, deviceId
+                        )
+                    }
                     onControlUsed()
                     refreshPlaybackSoon()
                 }
@@ -104,10 +164,73 @@ class MusicScreenBinder(
                 false
             }
         }
+
+        // The right-panel transport starts hidden until bindNowPlaying flips
+        // it visible; clear the dangling nextFocusRight from XML so RIGHT
+        // page-navs cleanly instead of trapping focus on a GONE button.
+        updateLeftPanelFocusChain()
     }
 
     fun requestControlFocus() {
-        buttonPlay.post { buttonPlay.requestFocus() }
+        // When no Spotify session is active, mediaControlsGroup is View.GONE so
+        // buttonPlay.requestFocus() silently no-ops and the Music page would
+        // land with NO focused view — every D-pad key then has nowhere to
+        // start from. Fall back to a guaranteed-visible focusable.
+        val target = pickFocusTarget()
+        target.post { target.requestFocus() }
+    }
+
+    private fun pickFocusTarget(): View = when {
+        browseMode == BrowseMode.DEFAULT && mediaControls.visibility == View.VISIBLE -> buttonPlay
+        browseMode == BrowseMode.DEFAULT -> rowBrowseEntry
+        else -> rowBackToList
+    }
+
+    /**
+     * Re-arms focus after a bind that may have hidden the previously focused
+     * view. Cheap if focus is already on something visible.
+     */
+    private fun ensureSomethingFocused() {
+        root.post {
+            if (root.findFocus() != null) return@post
+            pickFocusTarget().requestFocus()
+        }
+    }
+
+    /**
+     * Keeps the left panel's `nextFocusRight` pointing at a *visible* target.
+     * When the right-panel transport is GONE (no Spotify session) the chain
+     * must be cleared, otherwise pressing RIGHT from any left-panel row tries
+     * to focus a hidden button and silently fails — UI feels frozen. Calling
+     * this after every `mediaControls.visibility` change keeps the chain
+     * coherent.
+     */
+    private fun updateLeftPanelFocusChain() {
+        val rightTargetId = if (mediaControls.visibility == View.VISIBLE) {
+            R.id.buttonPlayPause
+        } else {
+            View.NO_ID
+        }
+        rowBrowseEntry.nextFocusRightId = rightTargetId
+        upNextContent.nextFocusRightId = rightTargetId
+        rowBackToList.nextFocusRightId = rightTargetId
+    }
+
+    /**
+     * Forwards BACK presses while the music page is in a drill-down state.
+     * Returns true when the press is consumed (drill-down popped a level).
+     * MainActivity calls this before the default activity-level BACK.
+     */
+    fun onBackPressed(): Boolean = when (browseMode) {
+        BrowseMode.TRACKS -> {
+            showPlaylists()
+            true
+        }
+        BrowseMode.PLAYLISTS -> {
+            showDefault()
+            true
+        }
+        BrowseMode.DEFAULT -> false
     }
 
     private fun findActivity(): Activity? {
@@ -145,6 +268,70 @@ class MusicScreenBinder(
         refreshPlaybackSoon()
     }
 
+    private fun playInPlaylistContext(track: SpotifyQueueTrack) {
+        val playlist = currentPlaylist ?: return
+        if (track.uri.isBlank()) return
+        onControlUsed()
+        startPlay(playlist.uri, track.uri, deviceId = null)
+        refreshPlaybackSoon()
+    }
+
+    /**
+     * Fires `playContext` on the background executor and routes the result
+     * through [handlePlaybackResult]. Keeps [contextUri] + [offsetUri] in
+     * the closure so the NO_DEVICE_404 path can retry on whichever device
+     * the user picks from the device picker.
+     */
+    private fun startPlay(contextUri: String, offsetUri: String, deviceId: String?) {
+        val activity = findActivity()
+        val context = root.context.applicationContext
+        playbackExecutor.execute {
+            val result = SpotifyPlaybackControl.playContext(
+                context = context,
+                contextUri = contextUri,
+                offsetUri = offsetUri,
+                deviceId = deviceId
+            )
+            root.post { handlePlaybackResult(activity, result, contextUri, offsetUri) }
+        }
+    }
+
+    private fun handlePlaybackResult(
+        activity: Activity?,
+        result: SpotifyPlaybackControl.PlayResult,
+        contextUri: String,
+        offsetUri: String
+    ) {
+        val context = root.context
+        when (result) {
+            SpotifyPlaybackControl.PlayResult.OK -> Unit
+            SpotifyPlaybackControl.PlayResult.NO_DEVICE_404 -> {
+                if (activity != null) {
+                    // Re-issue the SAME play call against the picked device.
+                    // transferToDevice would just make the device active but
+                    // leaves no context, so the user's chosen track wouldn't
+                    // actually play.
+                    SpotifyDevicePicker.show(activity) { deviceId ->
+                        onControlUsed()
+                        startPlay(contextUri, offsetUri, deviceId)
+                        refreshPlaybackSoon()
+                    }
+                } else {
+                    Toast.makeText(context, R.string.spotify_no_active_device, Toast.LENGTH_LONG).show()
+                }
+            }
+            SpotifyPlaybackControl.PlayResult.PREMIUM_REQUIRED_403 -> {
+                Toast.makeText(context, R.string.spotify_premium_required, Toast.LENGTH_LONG).show()
+            }
+            SpotifyPlaybackControl.PlayResult.RATE_LIMITED_429 -> {
+                Toast.makeText(context, R.string.spotify_queue_rate_limited, Toast.LENGTH_SHORT).show()
+            }
+            SpotifyPlaybackControl.PlayResult.ERROR -> {
+                Toast.makeText(context, R.string.spotify_playlists_api_error, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun refreshPlaybackSoon() {
         val ctx = root.context.applicationContext
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -155,6 +342,200 @@ class MusicScreenBinder(
     private fun roundOutline(radius: Float) = object : ViewOutlineProvider() {
         override fun getOutline(view: View, outline: Outline) {
             outline.setRoundRect(0, 0, view.width, view.height, radius)
+        }
+    }
+
+    private fun showDefault() {
+        browseMode = BrowseMode.DEFAULT
+        currentPlaylist = null
+        viewBrowsePanel.visibility = View.GONE
+        viewDefaultPanel.visibility = View.VISIBLE
+        updateLeftPanelFocusChain()
+        rowBrowseEntry.post { rowBrowseEntry.requestFocus() }
+    }
+
+    private fun showPlaylists() {
+        browseMode = BrowseMode.PLAYLISTS
+        currentPlaylist = null
+        viewDefaultPanel.visibility = View.GONE
+        viewBrowsePanel.visibility = View.VISIBLE
+        textBrowseHeader.text = root.context.getString(R.string.spotify_browse_playlists_header)
+        if (recyclerBrowse.adapter !== playlistAdapter) {
+            recyclerBrowse.adapter = playlistAdapter
+        }
+        loadPlaylists()
+        recyclerBrowse.post {
+            val index = lastPlaylistRowIndex.coerceAtLeast(0)
+            val holder = recyclerBrowse.findViewHolderForAdapterPosition(index)
+            if (holder?.itemView?.requestFocus() != true) {
+                rowBackToList.requestFocus()
+            }
+        }
+    }
+
+    private fun enterPlaylists() {
+        lastPlaylistRowIndex = 0
+        showPlaylists()
+    }
+
+    private fun enterPlaylist(playlist: SpotifyPlaylist) {
+        lastPlaylistRowIndex = playlistAdapter.currentList.indexOf(playlist).coerceAtLeast(0)
+        browseMode = BrowseMode.TRACKS
+        currentPlaylist = playlist
+        viewDefaultPanel.visibility = View.GONE
+        viewBrowsePanel.visibility = View.VISIBLE
+        textBrowseHeader.text = playlist.name
+        if (recyclerBrowse.adapter !== playlistTrackAdapter) {
+            recyclerBrowse.adapter = playlistTrackAdapter
+        }
+        playlistTrackAdapter.submit(emptyList())
+        loadTracks(playlist)
+        recyclerBrowse.post {
+            val holder = recyclerBrowse.findViewHolderForAdapterPosition(0)
+            if (holder?.itemView?.requestFocus() != true) {
+                rowBackToList.requestFocus()
+            }
+        }
+    }
+
+    private fun loadPlaylists() {
+        val activity = findActivity() ?: return
+        textBrowseHint.text = root.context.getString(R.string.spotify_playlists_loading)
+        SpotifyPlaylistRepository.loadPlaylists(activity, cb@{ snapshot ->
+            if (browseMode != BrowseMode.PLAYLISTS) return@cb
+            renderPlaylistsSnapshot(snapshot)
+        })
+    }
+
+    private fun loadTracks(playlist: SpotifyPlaylist) {
+        val activity = findActivity() ?: return
+        textBrowseHint.text = root.context.getString(R.string.spotify_playlists_tracks_loading)
+        SpotifyPlaylistRepository.loadTracks(activity, playlist.id, cb@{ snapshot ->
+            if (browseMode != BrowseMode.TRACKS) return@cb
+            if (currentPlaylist?.id != snapshot.playlistId) return@cb
+            renderTracksSnapshot(snapshot)
+        })
+    }
+
+    private fun renderPlaylistsSnapshot(snapshot: SpotifyPlaylistSnapshot) {
+        val context = root.context
+        when (snapshot.state) {
+            SpotifyPlaylistBrowseState.OK -> {
+                textBrowseHint.visibility = View.GONE
+                recyclerBrowse.visibility = View.VISIBLE
+                playlistAdapter.submit(snapshot.playlists)
+                recyclerBrowse.post {
+                    if (browseMode != BrowseMode.PLAYLISTS) return@post
+                    if (recyclerBrowse.findFocus() == null) {
+                        val index = lastPlaylistRowIndex.coerceAtMost((snapshot.playlists.size - 1).coerceAtLeast(0))
+                        recyclerBrowse.findViewHolderForAdapterPosition(index)?.itemView?.requestFocus()
+                    }
+                }
+            }
+            SpotifyPlaylistBrowseState.LOADING -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_loading)
+                recyclerBrowse.visibility = View.GONE
+            }
+            SpotifyPlaylistBrowseState.EMPTY -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_empty)
+                recyclerBrowse.visibility = View.GONE
+                playlistAdapter.submit(emptyList())
+            }
+            SpotifyPlaylistBrowseState.NEEDS_REAUTH -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_needs_reauth)
+                recyclerBrowse.visibility = View.GONE
+                playlistAdapter.submit(emptyList())
+                launchReauthOnHintTap()
+            }
+            SpotifyPlaylistBrowseState.NOT_LINKED -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_queue_not_linked)
+                recyclerBrowse.visibility = View.GONE
+                playlistAdapter.submit(emptyList())
+            }
+            SpotifyPlaylistBrowseState.RATE_LIMITED -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_queue_rate_limited)
+                recyclerBrowse.visibility = View.GONE
+            }
+            SpotifyPlaylistBrowseState.API_ERROR -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_api_error)
+                recyclerBrowse.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun renderTracksSnapshot(snapshot: SpotifyPlaylistTracksSnapshot) {
+        val context = root.context
+        when (snapshot.state) {
+            SpotifyPlaylistBrowseState.OK -> {
+                textBrowseHint.visibility = View.GONE
+                recyclerBrowse.visibility = View.VISIBLE
+                // submitList's commit callback fires once the new list is
+                // applied, so by the time we ask for the first ViewHolder it
+                // actually exists. A nested post gives the recycler one frame
+                // to bind/layout that ViewHolder before we requestFocus on it.
+                playlistTrackAdapter.submit(snapshot.tracks) {
+                    if (browseMode != BrowseMode.TRACKS) return@submit
+                    recyclerBrowse.post {
+                        if (browseMode != BrowseMode.TRACKS) return@post
+                        val focused = root.findFocus()
+                        val shouldPromote = focused == null || focused === rowBackToList
+                        if (shouldPromote) {
+                            recyclerBrowse.findViewHolderForAdapterPosition(0)
+                                ?.itemView?.requestFocus()
+                        }
+                    }
+                }
+            }
+            SpotifyPlaylistBrowseState.LOADING -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_tracks_loading)
+                recyclerBrowse.visibility = View.GONE
+            }
+            SpotifyPlaylistBrowseState.EMPTY -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_tracks_empty)
+                recyclerBrowse.visibility = View.GONE
+                playlistTrackAdapter.submit(emptyList())
+            }
+            SpotifyPlaylistBrowseState.NEEDS_REAUTH -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_needs_reauth)
+                recyclerBrowse.visibility = View.GONE
+                playlistTrackAdapter.submit(emptyList())
+                launchReauthOnHintTap()
+            }
+            SpotifyPlaylistBrowseState.NOT_LINKED -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_queue_not_linked)
+                recyclerBrowse.visibility = View.GONE
+                playlistTrackAdapter.submit(emptyList())
+            }
+            SpotifyPlaylistBrowseState.RATE_LIMITED -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_queue_rate_limited)
+                recyclerBrowse.visibility = View.GONE
+            }
+            SpotifyPlaylistBrowseState.API_ERROR -> {
+                textBrowseHint.visibility = View.VISIBLE
+                textBrowseHint.text = context.getString(R.string.spotify_playlists_api_error)
+                recyclerBrowse.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun launchReauthOnHintTap() {
+        textBrowseHint.isClickable = true
+        textBrowseHint.isFocusable = true
+        textBrowseHint.setOnClickListener {
+            findActivity()?.let { activity ->
+                activity.startActivity(Intent(activity, SpotifyAuthActivity::class.java))
+            }
         }
     }
 
@@ -169,8 +550,11 @@ class MusicScreenBinder(
             textEmpty.visibility = View.VISIBLE
             imageAlbumBackground.visibility = View.GONE
             waveformPlayback.visibility = View.GONE
+            mediaControls.visibility = View.GONE
             NowPlayingArtwork.reset(artworkState)
             lastBackgroundKey = null
+            updateLeftPanelFocusChain()
+            ensureSomethingFocused()
             return
         }
 
@@ -195,6 +579,7 @@ class MusicScreenBinder(
         } else {
             View.GONE
         }
+        updateLeftPanelFocusChain()
 
         buttonPlay.setImageResource(
             if (track.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
@@ -209,6 +594,7 @@ class MusicScreenBinder(
         NowPlayingArtwork.bind(imageAlbumArt, imagePlaceholder, track, artworkState)
         bindBlurredBackground(track)
         bindProgress(track)
+        ensureSomethingFocused()
     }
 
     private fun bindBlurredBackground(track: NowPlayingInfo) {
@@ -241,6 +627,9 @@ class MusicScreenBinder(
     companion object {
         private val blurExecutor = Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "album-blur").apply { isDaemon = true }
+        }
+        private val playbackExecutor = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "spotify-playback").apply { isDaemon = true }
         }
     }
 
@@ -281,6 +670,7 @@ class MusicScreenBinder(
         bindUpNextPanel(context, snapshot.state, snapshot.upNext)
         bindRecentPanel(context, snapshot.recentState, snapshot.recentlyPlayed)
         updateCastTint(snapshot.activeDeviceName)
+        ensureSomethingFocused()
     }
 
     private fun updateCastTint(deviceName: String?) {

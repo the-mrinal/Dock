@@ -16,8 +16,15 @@ class QueueTrackAdapter(
     private val onTrackSelected: (SpotifyQueueTrack) -> Unit
 ) : ListAdapter<SpotifyQueueTrack, QueueTrackAdapter.Holder>(DIFF) {
 
-    fun submit(tracks: List<SpotifyQueueTrack>) {
-        submitList(tracks)
+    fun submit(tracks: List<SpotifyQueueTrack>, onCommit: (() -> Unit)? = null) {
+        // ListAdapter.submitList computes its diff on a background executor;
+        // the commit callback fires after the new list is fully applied so
+        // findViewHolderForAdapterPosition / focus logic can rely on it.
+        if (onCommit != null) {
+            submitList(tracks, onCommit)
+        } else {
+            submitList(tracks)
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
