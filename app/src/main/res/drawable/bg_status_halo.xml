@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft translucent ring that surrounds the status dot. Tinted programmatically. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#1AFFFFFF" />
+    <stroke
+        android:width="1dp"
+        android:color="#22FFFFFF" />
+</shape>

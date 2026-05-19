@@ -22,7 +22,14 @@ object ReceiverPreferences {
 
     fun isReceiverEnabled(context: Context): Boolean =
         PreferenceManager.getDefaultSharedPreferences(context)
-            .getBoolean(KEY_RECEIVER_ENABLED, false)
+            .getBoolean(KEY_RECEIVER_ENABLED, true)
+
+    fun setReceiverEnabled(context: Context, enabled: Boolean) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .putBoolean(KEY_RECEIVER_ENABLED, enabled)
+            .apply()
+    }
 
     fun isStartOnBootEnabled(context: Context): Boolean =
         PreferenceManager.getDefaultSharedPreferences(context)

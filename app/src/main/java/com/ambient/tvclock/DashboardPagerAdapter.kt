@@ -16,7 +16,9 @@ class DashboardPagerAdapter(
     private val onPageReady: (DashboardPage, View, isNew: Boolean) -> Unit
 ) : RecyclerView.Adapter<DashboardPagerAdapter.PageHolder>() {
 
+    // Order matches DashboardPage indices: STATUS, HOME, CALENDAR, MUSIC.
     private val layouts = intArrayOf(
+        R.layout.screen_status,
         R.layout.screen_home,
         R.layout.screen_calendar,
         R.layout.screen_music

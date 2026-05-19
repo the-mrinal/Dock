@@ -26,6 +26,44 @@
     <string name="page_home">Home</string>
     <string name="page_calendar">Calendar</string>
     <string name="page_music">Music</string>
+    <string name="page_airplay">AirPlay</string>
+    <string name="page_vpn">VPN</string>
+    <string name="page_status">Connect</string>
+    <string name="airplay_action_turn_on">Turn on</string>
+    <string name="airplay_action_turn_off">Turn off</string>
+
+    <!-- VPN status screen. -->
+    <string name="vpn_status_disconnected">Disconnected</string>
+    <string name="vpn_status_connected">Connected</string>
+    <string name="vpn_status_connecting">Connecting…</string>
+    <string name="vpn_status_no_config">Not set up</string>
+    <string name="vpn_status_error">Error</string>
+    <string name="vpn_detail_no_config">Import a WireGuard config in Settings to get started</string>
+    <string name="vpn_detail_disconnected">Tunnel is down · press Connect to bring it up</string>
+    <string name="vpn_detail_connecting">Establishing tunnel…</string>
+    <string name="vpn_detail_connected">Tunnelled via %1$s</string>
+    <string name="vpn_detail_error">%1$s</string>
+    <string name="vpn_chip_protocol">WireGuard</string>
+    <string name="vpn_chip_overlay_off">Overlay off</string>
+    <string name="vpn_chip_overlay_on">Overlay on</string>
+    <string name="vpn_action_connect">Connect</string>
+    <string name="vpn_action_disconnect">Disconnect</string>
+    <string name="vpn_action_connecting">Connecting…</string>
+    <string name="vpn_action_retry">Retry</string>
+    <string name="vpn_action_import_in_settings">Import config in Settings</string>
+
+    <!-- AirPlay status screen. -->
+    <string name="airplay_status_off">Off</string>
+    <string name="airplay_status_ready">Ready</string>
+    <string name="airplay_status_streaming">Streaming</string>
+    <string name="airplay_detail_off">Enable Phone Mirroring in Settings to accept casts</string>
+    <string name="airplay_detail_protocol_off">AirPlay is disabled in Settings</string>
+    <string name="airplay_detail_ready">Cast from an iPhone, iPad, or Mac on this network</string>
+    <string name="airplay_detail_streaming">From %1$s</string>
+    <string name="airplay_chip_device_placeholder">Fire TV</string>
+    <string name="airplay_chip_protocol">AirPlay 2</string>
+
+    <string name="status_screen_footer_settings">Press menu on the remote for settings</string>
 
     <string name="widget_today">Today</string>
     <string name="widget_now_playing">Now playing</string>

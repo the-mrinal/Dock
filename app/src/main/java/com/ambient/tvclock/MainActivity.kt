@@ -2,7 +2,9 @@ package com.ambient.tvclock
 
 import android.app.Activity
 import android.content.Intent
+import android.net.VpnService
 import android.os.Bundle
+import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
@@ -19,6 +21,10 @@ import com.ambient.tvclock.receiver.ActiveConnection
 import com.ambient.tvclock.receiver.ReceiverController
 import com.ambient.tvclock.receiver.ReceiverStateBus
 import com.ambient.tvclock.receiver.ui.StreamingOverlay
+import com.ambient.tvclock.vpn.VpnPreferences
+import com.ambient.tvclock.vpn.VpnState
+import com.ambient.tvclock.vpn.WireGuardController
+import com.ambient.tvclock.vpn.WireGuardStateBus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,12 +42,14 @@ class MainActivity : Activity() {
     private lateinit var textPageHome: TextView
     private lateinit var textPageCalendar: TextView
     private lateinit var textPageMusic: TextView
+    private lateinit var textPageStatus: TextView
     private lateinit var imageHomeBackground: ImageView
     private lateinit var backgroundBinder: BlurredBackgroundBinder
 
     private var homeBinder: HomeScreenBinder? = null
     private var calendarBinder: CalendarScreenBinder? = null
     private var musicBinder: MusicScreenBinder? = null
+    private var statusBinder: StatusScreenBinder? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val oneMinuteMs = 60 * 1000L
@@ -62,6 +70,9 @@ class MainActivity : Activity() {
     private val streamingScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var streamingObserverJob: Job? = null
     private var videoSizeObserverJob: Job? = null
+    private var vpnObserverJob: Job? = null
+    private var currentActiveConnection: ActiveConnection? = null
+    private var currentVpnState: VpnState = VpnState.NoConfig
     private lateinit var nowPlayingPoller: NowPlayingPoller
     private lateinit var calendarPoller: CalendarPoller
     private lateinit var spotifyQueuePoller: SpotifyQueuePoller
@@ -88,6 +99,7 @@ class MainActivity : Activity() {
         textPageHome = findViewById(R.id.textPageHome)
         textPageCalendar = findViewById(R.id.textPageCalendar)
         textPageMusic = findViewById(R.id.textPageMusic)
+        textPageStatus = findViewById(R.id.textPageStatus)
         imageHomeBackground = findViewById(R.id.imageHomeBackground)
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
         streamingOverlay = findViewById(R.id.streamingOverlay)
@@ -134,6 +146,22 @@ class MainActivity : Activity() {
                         }
                     }
                 }
+                DashboardPage.STATUS -> {
+                    if (isNew || statusBinder == null) {
+                        statusBinder = StatusScreenBinder(
+                            view,
+                            onAirplayAction = { action -> handleAirplayAction(action) },
+                            onVpnAction = { action -> handleVpnAction(action) }
+                        )
+                    }
+                    statusBinder?.apply {
+                        bindAirplay(currentActiveConnection)
+                        bindVpn(currentVpnState)
+                    }
+                    if (isNew && currentPage == DashboardPage.STATUS) {
+                        statusBinder?.vpnButton?.post { statusBinder?.vpnButton?.requestFocus() }
+                    }
+                }
             }
         }
 
@@ -145,6 +173,13 @@ class MainActivity : Activity() {
                 when (currentPage) {
                     DashboardPage.MUSIC -> musicBinder?.requestControlFocus()
                     DashboardPage.CALENDAR -> calendarBinder?.requestScrollToCurrent()
+                    DashboardPage.STATUS -> {
+                        statusBinder?.apply {
+                            bindAirplay(currentActiveConnection)
+                            bindVpn(currentVpnState)
+                        }
+                        statusBinder?.vpnButton?.post { statusBinder?.vpnButton?.requestFocus() }
+                    }
                     DashboardPage.HOME -> { /* nothing extra */ }
                 }
             }
@@ -156,11 +191,10 @@ class MainActivity : Activity() {
         calendarPoller = CalendarPoller(this)
         spotifyQueuePoller = SpotifyQueuePoller(this)
 
-        if (savedInstanceState != null) {
-            val pageIndex = savedInstanceState.getInt(KEY_PAGE, 0)
-            dashboardPager.setCurrentItem(pageIndex, false)
-            currentPage = DashboardPage.fromIndex(pageIndex)
-        }
+        val initialIndex = savedInstanceState?.getInt(KEY_PAGE, DashboardPage.HOME.index)
+            ?: DashboardPage.HOME.index
+        dashboardPager.setCurrentItem(initialIndex, false)
+        currentPage = DashboardPage.fromIndex(initialIndex)
         updatePageIndicator()
 
         startClockTicker()
@@ -192,6 +226,12 @@ class MainActivity : Activity() {
                 streamingOverlay.setVideoSize(size?.width ?: 0, size?.height ?: 0)
             }
         }
+        vpnObserverJob = streamingScope.launch {
+            WireGuardStateBus.state.collect { state ->
+                currentVpnState = state
+                statusBinder?.bindVpn(state)
+            }
+        }
     }
 
     override fun onStop() {
@@ -199,6 +239,8 @@ class MainActivity : Activity() {
         streamingObserverJob = null
         videoSizeObserverJob?.cancel()
         videoSizeObserverJob = null
+        vpnObserverJob?.cancel()
+        vpnObserverJob = null
         ReceiverStateBus.setSurfaceProvider(null)
 
         nowPlayingPoller.stop()
@@ -245,26 +287,21 @@ class MainActivity : Activity() {
     }
 
     private fun updatePageIndicator() {
+        applyIndicatorStyle(textPageStatus, DashboardPage.STATUS)
+        applyIndicatorStyle(textPageHome, DashboardPage.HOME)
+        applyIndicatorStyle(textPageCalendar, DashboardPage.CALENDAR)
+        applyIndicatorStyle(textPageMusic, DashboardPage.MUSIC)
+    }
+
+    private fun applyIndicatorStyle(label: TextView, page: DashboardPage) {
         val active = ContextCompat.getColor(this, R.color.text_primary)
         val inactive = ContextCompat.getColor(this, R.color.text_tertiary)
-        textPageHome.setTextColor(if (currentPage == DashboardPage.HOME) active else inactive)
-        textPageCalendar.setTextColor(if (currentPage == DashboardPage.CALENDAR) active else inactive)
-        textPageMusic.setTextColor(if (currentPage == DashboardPage.MUSIC) active else inactive)
-        textPageHome.typeface = if (currentPage == DashboardPage.HOME) {
-            android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-        } else {
-            android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
-        }
-        textPageCalendar.typeface = if (currentPage == DashboardPage.CALENDAR) {
-            android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-        } else {
-            android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
-        }
-        textPageMusic.typeface = if (currentPage == DashboardPage.MUSIC) {
-            android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
-        } else {
-            android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL)
-        }
+        val isActive = currentPage == page
+        label.setTextColor(if (isActive) active else inactive)
+        label.typeface = android.graphics.Typeface.create(
+            if (isActive) "sans-serif-medium" else "sans-serif-light",
+            android.graphics.Typeface.NORMAL
+        )
     }
 
     private fun goToPage(page: DashboardPage) {
@@ -273,13 +310,13 @@ class MainActivity : Activity() {
     }
 
     private fun goNextPage() {
-        if (currentPage.index < DashboardPage.MUSIC.index) {
+        if (currentPage.index < DashboardPage.LAST.index) {
             goToPage(DashboardPage.fromIndex(currentPage.index + 1))
         }
     }
 
     private fun goPreviousPage() {
-        if (currentPage.index > DashboardPage.HOME.index) {
+        if (currentPage.index > 0) {
             goToPage(DashboardPage.fromIndex(currentPage.index - 1))
         }
     }
@@ -287,35 +324,27 @@ class MainActivity : Activity() {
     private fun shouldNavigatePages(keyCode: Int): Boolean {
         val focused = currentFocus ?: return true
 
+        // Lists own their own vertical scroll; horizontal still falls through
+        // to page nav so RIGHT/LEFT remains a 1-click jump between pages.
         if (focused is RecyclerView &&
             (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN)
         ) {
             return false
         }
 
-        if (currentPage != DashboardPage.MUSIC) {
-            return true
+        // Connect page has two side-by-side action buttons. Inside the page,
+        // honour interior focus traversal so the user can walk between the
+        // AirPlay and VPN buttons. Only page-nav from the outermost edge:
+        //   - AirPlay button (leftmost): LEFT page-navs, RIGHT goes interior
+        //   - VPN button (rightmost): RIGHT page-navs, LEFT goes interior
+        if (currentPage == DashboardPage.STATUS) {
+            return when (focused.id) {
+                R.id.buttonAirplayAction -> keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+                R.id.buttonVpnAction -> keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+                else -> true
+            }
         }
-
-        // Music-page navigation contract:
-        //   - LEFT always escapes back to Calendar on the very first press,
-        //     no matter where focus is. The user reached Music with one RIGHT,
-        //     so one LEFT should symmetrically take them back.
-        //   - RIGHT stays "interior" inside the transport bar so users can
-        //     still sweep Play -> Skip Next -> Cast without leaving the page
-        //     (there is no dashboard page to the right of Music anyway).
-        //   - Up Next: LEFT escapes, RIGHT hands off to default focus
-        //     traversal which lands on the Play button (nextFocusRight).
-        //   - Skip Previous is intentionally not on the D-pad path -- remote
-        //     media keys (KEYCODE_MEDIA_PREVIOUS) handle it.
-        return when (focused.id) {
-            R.id.buttonPlayPause -> keyCode == KeyEvent.KEYCODE_DPAD_LEFT
-            R.id.buttonSkipPrevious -> keyCode == KeyEvent.KEYCODE_DPAD_LEFT
-            R.id.buttonSkipNext -> false
-            R.id.buttonDeviceCast -> keyCode != KeyEvent.KEYCODE_DPAD_LEFT
-            R.id.upNextContent -> keyCode != KeyEvent.KEYCODE_DPAD_RIGHT
-            else -> true
-        }
+        return true
     }
 
     private val clockRunnable = object : Runnable {
@@ -466,7 +495,65 @@ class MainActivity : Activity() {
         finishAndRemoveTask()
     }
 
+    private fun handleVpnAction(action: StatusScreenBinder.VpnAction) {
+        val app = applicationContext
+        when (action) {
+            StatusScreenBinder.VpnAction.IMPORT -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+            }
+            StatusScreenBinder.VpnAction.CONNECT -> {
+                if (!VpnPreferences.hasConfig(app)) {
+                    Toast.makeText(app, R.string.pref_vpn_status_no_config, Toast.LENGTH_LONG).show()
+                    return
+                }
+                val consent = VpnService.prepare(app)
+                if (consent != null) {
+                    startActivityForResult(consent, REQUEST_VPN_CONSENT)
+                } else {
+                    VpnPreferences.setEnabled(app, true)
+                    WireGuardController.start(app)
+                }
+            }
+            StatusScreenBinder.VpnAction.DISCONNECT -> {
+                VpnPreferences.setEnabled(app, false)
+                WireGuardController.stop(app)
+            }
+        }
+        resetInactivityWatchdog()
+    }
+
+    private fun handleAirplayAction(action: StatusScreenBinder.AirplayAction) {
+        val app = applicationContext
+        when (action) {
+            StatusScreenBinder.AirplayAction.TURN_ON -> {
+                ReceiverPreferences.setReceiverEnabled(app, true)
+                ReceiverController.start(app)
+            }
+            StatusScreenBinder.AirplayAction.TURN_OFF -> {
+                ReceiverPreferences.setReceiverEnabled(app, false)
+                ReceiverController.stop(app)
+            }
+        }
+        statusBinder?.bindAirplay(currentActiveConnection)
+        resetInactivityWatchdog()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_VPN_CONSENT) {
+            val app = applicationContext
+            if (resultCode == Activity.RESULT_OK) {
+                VpnPreferences.setEnabled(app, true)
+                WireGuardController.start(app)
+            } else {
+                Toast.makeText(app, R.string.vpn_not_authorized, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun applyActiveConnection(connection: ActiveConnection?) {
+        currentActiveConnection = connection
+        statusBinder?.bindAirplay(connection)
         if (connection != null) {
             streamingOverlay.setSenderInfo(connection.senderName, connection.protocol)
             if (!userDismissedOverlay) {
@@ -665,6 +752,7 @@ class MainActivity : Activity() {
 
     companion object {
         private const val KEY_PAGE = "dashboard_page"
+        private const val REQUEST_VPN_CONSENT = 0x5A11
 
         // Wait a moment after fading widgets before the first drift step so the
         // clock visibly settles into its new minimal layout before moving.
