@@ -1,8 +1,28 @@
-# Fire TV Ambient Dock
+<h1 align="center">Dock</h1>
 
-> The always-on control panel for your desk. Plug a Fire TV into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup.
+<p align="center">
+  <em>The always-on ambient screen your desk was missing.</em>
+</p>
 
-![Hero — the ambient screensaver: time, what's playing, what's next on your calendar, nothing else](screenshots/firetv-20260516-193305.png)
+<p align="center">
+  <a href="https://github.com/the-mrinal/Dock/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/the-mrinal/Dock?display_name=tag&style=for-the-badge&color=FFB23A&labelColor=000"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/the-mrinal/Dock?style=for-the-badge&color=66D9FF&labelColor=000"></a>
+  <a href="https://github.com/the-mrinal/Dock/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/the-mrinal/Dock?style=for-the-badge&color=FF5DA2&labelColor=000"></a>
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Android%20TV-FFFFFF?style=for-the-badge&labelColor=000">
+</p>
+
+<p align="center">
+  <strong><a href="https://dock.mrinal.dev">Website</a></strong>
+  · <a href="https://github.com/the-mrinal/Dock/releases/latest">Download APK</a>
+  · <a href="CONTRIBUTING.md">Contributing</a>
+  · <a href="#how-it-works">How it works</a>
+</p>
+
+<p align="center">
+  <img src="screenshots/home.png" alt="The ambient dashboard: clock, today's calendar, now playing">
+</p>
+
+> Plug any Android TV device into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup.
 
 You already have a laptop for the thing you're focused on. You already have a phone for the world reaching in. **You're missing the third screen** — the one that just *sits there* and tells you the time, what meeting is next, and what's playing, without ever asking for a click.
 
@@ -10,68 +30,105 @@ This is that screen.
 
 ---
 
-## What you get
+## Contents
+
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [How it works](#how-it-works)
+- [Releasing](#releasing)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+---
+
+## Features
 
 ### A clock you actually want to look at
 
-A huge, thin, beautifully kerned time display — with seconds that quietly fade away after 90 seconds of stillness so the resting face is just `7:33 PM`. When idle, the whole dashboard melts away into a true-black screensaver and the clock drifts a few pixels every minute so your panel never burns in.
-
-![Active dashboard — clock, today's calendar, now playing, blurred album-art wash](screenshots/firetv-20260516-193325.png)
+A huge, thin, beautifully kerned time display — with seconds that quietly fade away after 90 seconds of stillness so the resting face is just `7:00 PM`. When idle, the whole dashboard melts into a true-black screensaver and the clock drifts a few pixels every minute so your panel never burns in.
 
 ### Your calendar, at the exact moment you need it
 
-The dashboard shows what's happening *now* and what's next. Walk past the screen and you instantly know: *"keep coding"* or *"stand up, meeting in five"*. Tap into the Calendar page for the full timeline of the day — personal and work feeds merged from your Google / Outlook iCal URLs, colour-tagged.
-
-![Calendar page — the day on a single screen, NOW badge on the current event](screenshots/firetv-20260516-193345.png)
+The dashboard shows what's happening *now* and what's next. Walk past the screen and you instantly know: *"keep coding"* or *"stand up, meeting in five."* Tap into the **Calendar** page for the full timeline — personal + work feeds merged from your Google / Outlook iCal URLs, colour-tagged.
 
 ### A remote control for Spotify, on your wall
 
-The Music page is a full-blown Spotify Connect remote: album art, transport buttons, your live queue, your recently played tracks — driven by the actual MediaSession on your TV plus the Spotify Web API. Skip from across the room with the Fire TV remote. Switch playback to your headphones, your kitchen speaker, your living-room TV, all from one focus ring.
+The **Music** page is a full-blown Spotify Connect remote: album art, transport buttons, your live queue, your recently played tracks — driven by the actual MediaSession on your TV plus the Spotify Web API. Skip from across the room with the Android TV remote. Switch playback to your headphones, kitchen speaker, or living-room TV from one focus ring.
 
-![Music page — now playing, transport, up next, recently played](screenshots/firetv-20260516-193428.png)
+### Phone mirroring — AirPlay, Cast, Miracast
 
-### A background that actually breathes
+Flip the switch in Settings and the dock starts advertising itself on your network as a wireless display target for **AirPlay** (iPhone, iPad, Mac), **Google Cast** (Chrome, Android), and **Miracast** (Windows, Android). The dashboard stays calm at rest; the moment a sender connects, it crossfades out and your phone or laptop takes the screen edge-to-edge. A small *"Casting from {device} via AirPlay"* pill rests in the corner, drifting a few pixels every minute (same burn-in protection as the clock). Each protocol is independently toggleable.
 
-Every screen carries a softly blurred wash of the current track's album art — Gaussian-quality, no pixel grid, no harsh edges. When you stop touching the remote, the wash fades to black so the clock owns the room.
+### WireGuard VPN, baked in
 
-### NEW: mirror your phone, your laptop, your whole damn meeting
+The dock ships with a native WireGuard tunnel. Drop a `.conf` from your laptop over the LAN, tap **Connect** on the new **Connect** page, and every byte the TV sends goes through the tunnel — Netflix, Plex, the launcher, everything. A discreet country pill confirms the tunnel is up. The system "Always-on / kill-switch" hook is one tap away so non-VPN traffic gets blocked at the kernel.
 
-The dock now doubles as a wireless display. Flip the **Phone mirroring** switch in Settings and the Fire TV starts advertising itself on your network as a target for:
+### A background that breathes
 
-- **AirPlay** — iPhone, iPad, MacBook
-- **Google Cast** — Chrome, Android, any Cast-aware app
-- **Miracast** — Windows, Android phones without Cast
+Every screen carries a softly blurred wash of the current track's album art — Gaussian-quality (pyramid downsample + 3-pass box blur, plus GPU `RenderEffect` on API 31+). When you stop touching the remote, the wash fades to black so the clock owns the room.
 
-The dashboard stays calm at rest. The moment a sender connects, it crossfades out, your phone or laptop takes the screen edge-to-edge, and a small *"Casting from {your device} via AirPlay"* pill rests in the top-right corner. When the sender disconnects, the dock fades right back. No app switching, no input picker — just press AirPlay on your laptop and you're on the big screen in a second.
+### Quietly good behaviour
 
-A few quiet touches:
-
-- Long-press **BACK** during a session to drop back to the dashboard *without* killing the sender — the pill follows you home until you actually disconnect.
-- That pill drifts a few pixels every minute. Same burn-in protection logic the ambient clock uses.
-- Each protocol is its own toggle, so you can leave AirPlay on but turn off Cast / Miracast advertisements if you only ever mirror from Apple stuff.
-- Off by default. The dashboard is the headline; mirroring is the quiet superpower behind it.
+- **Stay awake** while visible — no screen-off mid-meeting
+- **Sleep timer** so the dock gracefully exits when you go to bed
+- **Burn-in protection** for OLED panels — clock drifts in ambient mode
+- **Android TV native** — uses the remote, D-pad, and media keys exactly as you'd expect
+- **No cloud, no telemetry, no account required** — Spotify is optional and PKCE-based
 
 ---
 
-## Why this exists
+## Screenshots
 
-Most "TV dashboards" out there are either repurposed weather apps, screen-saver photo frames, or someone's home-assistant panel from 2019. None of them sit *gracefully* in an engineer's workspace.
-
-This one does. It's built for the specific moment when you're heads-down in code, you hear a song you love, you glance up, and you want to know — in one beat — *what is this, how long do I have until my next call, am I still on track?* No app, no tab, no notification. Just a calm second screen that already knew.
-
-Side benefits:
-
-- **Stay awake** while visible (no screen-off mid-meeting)
-- **Sleep timer** so it gracefully exits after you go to bed
-- **Burn-in protection** for OLED panels (clock drifts in ambient mode)
-- **Fire TV native** — uses the remote, the D-pad, the media keys exactly as you'd expect
-- **No cloud, no telemetry, no account required** (Spotify connection is optional and PKCE-based)
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <a href="screenshots/home.png"><img src="screenshots/home.png" alt="Home dashboard"></a><br>
+      <sub><b>Home</b> — clock, today's events, now-playing, pager dots</sub>
+    </td>
+    <td align="center" width="50%">
+      <a href="screenshots/connect.png"><img src="screenshots/connect.png" alt="Connect: AirPlay + VPN"></a><br>
+      <sub><b>Connect</b> — AirPlay receiver and WireGuard VPN, side by side</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <a href="screenshots/calendar.png"><img src="screenshots/calendar.png" alt="Calendar day view"></a><br>
+      <sub><b>Calendar</b> — the day on one screen, with personal/work tags</sub>
+    </td>
+    <td align="center" width="50%">
+      <a href="screenshots/music.png"><img src="screenshots/music.png" alt="Music page with transport and queue"></a><br>
+      <sub><b>Music</b> — transport, up next, recently played</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <a href="screenshots/settings-vpn.png"><img src="screenshots/settings-vpn.png" alt="Settings — VPN section" width="80%"></a><br>
+      <sub><b>Settings · VPN</b> — config import over LAN, kill-switch shortcut, indicator overlay</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
-## Get it running in 5 minutes
+## Quick start
 
-### 1. Build & sideload
+### Option 1 — install the pre-built APK (5 minutes)
+
+1. Grab the latest APK for your platform from the [Releases](https://github.com/the-mrinal/Dock/releases/latest) page (`app-firetv-release-*.apk` or `app-googletv-release-*.apk`).
+2. Enable ADB on your TV (Fire OS: Settings → My Fire TV → Developer Options. Google TV: Settings → System → About → tap *Android TV OS build* 7×, then Developer options → USB debugging).
+3. From your laptop:
+   ```bash
+   adb connect <tv-ip>:5555
+   adb install -r app-firetv-release-vX.Y.Z.apk      # or app-googletv-release-vX.Y.Z.apk
+   ```
+4. Launch **Dock** from the Apps row.
+
+> APK builds are produced manually per release (see [Releasing](#releasing) for the why) — not every release has APKs attached. If yours doesn't, build from source below or run `gh workflow run package.yml -f tag=<latest>` on your fork.
+
+### Option 2 — build from source
 
 ```bash
 source scripts/dev-env.sh
@@ -80,13 +137,17 @@ cp local.properties.example local.properties   # set sdk.dir and spotify.clientI
 adb install -r app/build/outputs/apk/firetv/debug/app-firetv-debug.apk
 ```
 
-Fire TV is the default; for Google TV / Android TV use `assembleGoogletvDebug` instead — same code, separate minSdk + applicationId so you can leave both installed if you bounce between devices.
+The `firetv` build flavor is the default and targets `minSdk 25` (older Amazon Fire OS hardware still ships there). For newer Google TV / Android TV / Chromecast devices, use `./gradlew assembleGoogletvDebug` — same code, `minSdk 29`, separate `applicationId` so both can coexist on one device.
 
 `spotify.clientId` comes from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Redirect URI: `com.ambient.tvclock://spotify-callback`. Add your Spotify account under **User Management** (Development Mode).
 
-### 2. Point it at your calendar
+---
 
-Google Calendar → your calendar → **Integrate calendar** → **Secret address in iCal format**. On the TV: **Settings → Personal calendar URL** — paste the link. Or from your Mac:
+## Configuration
+
+### Calendar
+
+Google Calendar → your calendar → **Integrate calendar** → **Secret address in iCal format**. On the TV: **Settings → Personal calendar URL** — paste the link. Or, from your Mac:
 
 ```bash
 ./scripts/set-calendar-urls.sh 192.168.1.4:5555 "https://calendar.google.com/calendar/ical/.../basic.ics"
@@ -94,9 +155,9 @@ Google Calendar → your calendar → **Integrate calendar** → **Secret addres
 
 Work Outlook ICS goes under **Work calendar URL**.
 
-### 3. Let it see your music
+### Spotify
 
-Grant the notification listener so it can read MediaSession metadata from the Spotify TV app:
+Grant the notification listener so the dock can read MediaSession metadata from the Spotify TV app:
 
 ```bash
 LISTENER=com.ambient.tvclock.firetv/com.ambient.tvclock.MediaNotificationListener
@@ -106,56 +167,116 @@ adb shell cmd notification allow_listener $LISTENER
 
 Or just run `./scripts/install-firetv.sh` — it does all three steps in one shot.
 
-### 4. (Optional, Premium) Spotify queue + transport
+For **Premium** users who want queue + remote transport:
 
 1. Add `spotify.clientId` to `local.properties` and rebuild
 2. **Settings → Connect Spotify** — sign in on the TV (WebView)
-3. Play Spotify on the same account; the Fire TV must be the active Connect device for queue data
-4. On **Music**, focus a transport button or a track row and press **OK**
+3. Play Spotify on the same account; this TV must be the active Connect device for queue data
+4. Focus a transport button or track row and press **OK**
 5. Focus **Playing on … · OK to switch** to move playback to another device
 
-### 5. (Optional) Turn on phone mirroring
+### Phone mirroring
 
-**Settings → Phone mirroring (beta) → Enable mirroring receiver.** Set a device name if you want one in the AirPlay picker. Each protocol (AirPlay / Cast / Miracast) is independently toggleable, so you can advertise only what your senders actually use. The dock will start a small foreground service that advertises on the LAN; flip it off and everything goes back to sleep.
+**Settings → Phone mirroring (beta) → Enable mirroring receiver.** Set a device name if you want a custom one in the AirPlay picker. Each protocol (AirPlay / Cast / Miracast) is independently toggleable. The dock starts a small foreground service that advertises on the LAN; flip it off and everything goes back to sleep.
 
----
+### WireGuard VPN
 
-## How to use it
+The dock spins up a short-lived LAN endpoint that accepts a `.conf` upload from your laptop's browser:
+
+```
+Settings → VPN → Receive config from laptop (LAN)
+```
+
+To activate, head to the **Connect** page and press **OK** on the VPN card. The kill-switch lives one tap away under **Settings → VPN → Always-on / kill-switch (system)**.
+
+### Inputs
 
 | Input | Where | What it does |
 |---|---|---|
-| D-pad Left / Right | Anywhere | Switch between Home, Calendar, Music |
+| D-pad Left / Right | Anywhere | Switch between Connect, Home, Calendar, Music |
 | D-pad Up / Down | Calendar | Scroll the day |
-| D-pad / OK | Music | Focus + activate transport, tracks, device switcher |
-| Media keys | Music | Play/pause, skip, previous (works with Fire TV remote media buttons) |
-| Menu / Settings | Anywhere | Settings (calendar URLs, Spotify, ambient timing, sleep timer) |
+| D-pad / OK | Music, Connect | Focus + activate transport, tracks, devices, AirPlay, VPN |
+| Media keys | Music | Play/pause, skip, previous (works with the Android TV remote media buttons) |
+| Menu | Anywhere | Settings |
 
-After your configured idle window (default 90s) the dashboard fades into ambient mode — clock + a single horizontal music ⨯ calendar strip below it. Any keypress brings it back.
+After your configured idle window (default 90s) the dashboard fades into ambient mode — clock plus a single horizontal music × calendar strip below it. Any keypress brings it back.
 
 ---
 
-## Capture screenshots
+## How it works
 
-```bash
-mkdir -p screenshots
-adb exec-out screencap -p > screenshots/$(date +%Y%m%d-%H%M%S).png
+```mermaid
+flowchart TD
+    MA[MainActivity<br/>pager + drift + ambient watchdog] --> DP[DashboardPagerAdapter]
+    DP --> C[Connect<br/>StatusScreenBinder]
+    DP --> H[Home<br/>HomeScreenBinder]
+    DP --> CA[Calendar<br/>CalendarScreenBinder]
+    DP --> M[Music<br/>MusicScreenBinder]
+    DP --> BG[BlurredBackgroundBinder<br/>AlbumArtBlur]
+
+    H --> CP[CalendarPoller<br/>IcalParser]
+    CA --> CP
+
+    H --> NP[NowPlayingPoller<br/>MediaSession]
+    M --> NP
+    M --> SC[SpotifyApiClient<br/>OAuth PKCE]
+
+    C --> RS[ReceiverService<br/>AirPlay / Cast / Miracast]
+    C --> WG[WireGuardTunnel<br/>VPN service]
+
+    RS --> SO[StreamingOverlay<br/>SurfaceView crossfade]
 ```
 
----
-
-## Under the hood
-
 - `MainActivity.kt` — dashboard pager, drift, ambient watchdog, input routing, streaming-overlay crossfade
-- `HomeScreenBinder.kt` / `CalendarScreenBinder.kt` / `MusicScreenBinder.kt` — per-screen view binders
-- `BlurredBackgroundBinder.kt` + `AlbumArtBlur.kt` — full-bleed artwork wash (pyramid downsample + 3-pass box blur ≈ Gaussian, plus a GPU `RenderEffect` pass on API 31+)
+- `Home/Calendar/Music/StatusScreenBinder.kt` — per-page view binders
+- `BlurredBackgroundBinder.kt` + `AlbumArtBlur.kt` — full-bleed artwork wash (pyramid downsample + 3-pass box blur ≈ Gaussian, GPU `RenderEffect` pass on API 31+)
 - `CalendarPoller.kt` / `IcalParser.kt` — iCal feed polling, every 15 min
-- `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue/recently-played
+- `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue / recently-played
 - `NowPlayingPoller.kt` — MediaSession bridge
-- `receiver/ReceiverService.kt` — foreground service hosting AirPlay / Google Cast / Miracast advertisements, plus the RTSP + MediaCodec pipeline for the AirPlay video stream
-- `receiver/ui/StreamingOverlay.kt` — full-bleed SurfaceView that the dashboard crossfades into when a sender connects
+- `receiver/ReceiverService.kt` — foreground service hosting AirPlay / Google Cast / Miracast, plus the RTSP + MediaCodec pipeline for the AirPlay video stream
+- `receiver/ui/StreamingOverlay.kt` — full-bleed SurfaceView the dashboard crossfades into when a sender connects
+- `vpn/` — WireGuard tunnel manager + the LAN config-import endpoint
 
-Built on plain Android views (no Compose, no React Native) so it stays buttery on older Fire TV hardware.
+Built on plain Android views (no Compose, no React Native) so it stays buttery on older Android TV hardware.
 
 ---
 
-*If you've got a spare monitor and a Fire TV stick in a drawer somewhere, give this 5 minutes. It's the kind of small infrastructure you don't realise was missing from your desk until it's there.*
+## Releasing
+
+This project uses [semantic-release](https://semantic-release.gitbook.io/semantic-release) driven by [Conventional Commits](https://www.conventionalcommits.org/).
+
+- Every PR title is a Conventional Commit (`feat:`, `fix:`, `perf:`, …)
+- Releases are cut **locally** with the `/release` Claude Code skill or `npx semantic-release --no-ci` — no CI cost
+- Building and attaching APKs is a separate `workflow_dispatch` step: `gh workflow run package.yml -f tag=vX.Y.Z`
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full release flow and commit conventions.
+
+---
+
+## Contributing
+
+Pull requests welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening one — there's a small but firm set of conventions around commit messages, scope, and "what won't be merged" (cloud deps, telemetry, interruptive features). For bugs and feature ideas, use the [issue templates](.github/ISSUE_TEMPLATE).
+
+---
+
+## License
+
+[Apache License 2.0](LICENSE). The patent grant matters for the WireGuard, AirPlay, and codec code paths — please don't strip the LICENSE if you fork.
+
+---
+
+## Acknowledgements
+
+- [WireGuard for Android](https://git.zx2c4.com/wireguard-android/) — `com.wireguard.android:tunnel`
+- [dd-plist](https://github.com/3breadt/dd-plist) — Apple plist parsing for AirPlay session attributes
+- [OkHttp](https://square.github.io/okhttp/) and [Bouncy Castle](https://www.bouncycastle.org/) — networking + crypto
+- [Timber](https://github.com/JakeWharton/timber) — logging
+- [Spotify Web API](https://developer.spotify.com/documentation/web-api) — queue / device control
+- The screen-saver photo frames of the world — for being almost-but-not-quite what I wanted
+
+---
+
+<p align="center">
+  <sub>If you've got a spare monitor and an Android TV stick in a drawer somewhere, give this five minutes.</sub><br>
+  <sub>It's the kind of small infrastructure you don't realise was missing from your desk until it's there.</sub>
+</p>

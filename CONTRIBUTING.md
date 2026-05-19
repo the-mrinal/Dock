@@ -1,4 +1,4 @@
-# Contributing to Fire TV Dock
+# Contributing to Dock
 
 Thanks for thinking about contributing. This document covers the conventions you'll need to follow so your changes can land smoothly.
 
@@ -45,7 +45,7 @@ Every commit (and every PR title, since we squash) follows [Conventional Commits
 A breaking change is signalled by `!` after the type (or a `BREAKING CHANGE:` footer) and triggers a major bump:
 
 ```
-feat!: drop API 25 (Fire TV Stick gen 1) support
+feat!: drop API 25 support (raises minSdk from 25 to 29)
 ```
 
 ### Scope (optional)
@@ -144,6 +144,6 @@ Use the issue templates in [`.github/ISSUE_TEMPLATE`](.github/ISSUE_TEMPLATE). F
 - New cloud dependencies. The dock is intentionally local-only.
 - New analytics, crash reporting, or telemetry.
 - Features that demand the screen's attention (notifications, modals, popovers). The whole point is that the dock *doesn't* interrupt you.
-- Compose or RN rewrites of existing screens. Plain views stay snappy on cheap Fire TV hardware; that's a feature.
+- Compose or RN rewrites of existing screens. Plain views stay snappy on cheap Android TV hardware; that's a feature.
 
 If you're unsure whether something is in scope, open an issue first and ask.
