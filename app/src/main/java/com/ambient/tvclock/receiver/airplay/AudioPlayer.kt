@@ -1,0 +1,455 @@
+package com.ambient.tvclock.receiver.airplay
+
+import android.media.AudioAttributes
+import android.media.AudioFormat
+import android.media.AudioTrack
+import android.media.MediaCodec
+import android.media.MediaFormat
+import com.ambient.tvclock.util.Logger
+import java.nio.ByteBuffer
+import javax.crypto.Cipher
+import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
+
+/**
+ * AudioPlayer — Decrypts, decodes, and plays the AirPlay mirror audio stream.
+ *
+ * AirPlay 2 mirror audio arrives as RTP-framed UDP packets on port 6000:
+ *
+ * 1. **Receive** (handled by `AirPlayReceiver.startMirrorAudioReceiver`):
+ *    raw UDP datagram → byte array passed to [playAudioPacket].
+ * 2. **Filter no-data markers**: Apple sends 16-byte keep-alives whose payload
+ *    is the literal `00 68 34 00`; UxPlay drops them in `raop_buffer.c` because
+ *    they are not audio. We do the same — playing them produces noise.
+ * 3. **Deduplicate**: each AAC-ELD frame is sent three times by Apple in the
+ *    pattern `0 0 1 0 1 2 1 2 3 …` (resilience-via-redundancy). We dedup by
+ *    the 16-bit RTP sequence number to feed each frame to the decoder exactly
+ *    once. Empirically confirmed on Mac AirPlay 2 mirror via hex-dump.
+ * 4. **Decrypt (AES-CBC)**: only the first `(len/16)*16` bytes of the payload
+ *    are encrypted; any trailing `len % 16` bytes are plaintext. UxPlay
+ *    resets the CBC cipher between packets — we mirror that by reinitialising
+ *    the [Cipher] for each packet with the original SETUP `ekey`/`eiv`.
+ * 5. **Decode (AAC-ELD via MediaCodec)**: the decrypted bytes are one
+ *    AAC-ELD frame. We feed them to a hardware decoder configured with the
+ *    AudioSpecificConfig derived from sample rate + channels (44.1 kHz stereo
+ *    → `F8 E8 50 00`, matching Apple's SDP `config=`).
+ * 6. **Output (AudioTrack)**: drained PCM goes straight to the system audio
+ *    output.
+ *
+ * Anything other than AAC-ELD is currently dropped silently — ALAC support is
+ * deferred (no on-device decoder for Mac AirPlay 2 mirror in the current scope).
+ */
+class AudioPlayer {
+
+    private var audioTrack: AudioTrack? = null
+
+    // Cached SETUP keys + a single Cipher instance we re-init per packet. UxPlay
+    // calls `aes_cbc_reset(...)` after every `aes_cbc_decrypt` — we mirror that,
+    // but avoid the per-packet `Cipher.getInstance(...)` JCA provider lookup
+    // (≈100µs each — at ~90 packets/sec that's enough to nibble into latency on
+    // the Fire TV's low-end CPU and was a measurable cause of the audio hiccup).
+    private var aesKeySpec: SecretKeySpec? = null
+    private var aesIvSpec: IvParameterSpec? = null
+    private var cbcCipher: Cipher? = null
+
+    // Sample rate (Hz). RTP audio timestamps tick at this rate, and the decoder
+    // outputs PCM at this rate; both are needed for ts→µs conversion.
+    private var sampleRate: Int = 44100
+
+    // AAC-ELD hardware decoder. Null when not yet initialised or when MediaCodec
+    // failed to start (the receiver then silently drops audio rather than
+    // pumping garbage bytes into AudioTrack).
+    private var aacDecoder: MediaCodec? = null
+    private val codecBufferInfo = MediaCodec.BufferInfo()
+
+    private val seqnumWindow = SeqnumDedup(DEDUP_WINDOW_SIZE)
+    private var firstPcmLogged = false
+
+    @Volatile
+    private var isInitialized = false
+
+    /**
+     * Initialises the AudioPlayer for a mirror session.
+     *
+     * @param aesKey     16-byte AES-128 key from the SETUP `ekey`, or null if unencrypted.
+     * @param aesIv      16-byte IV from the SETUP `eiv`, or null if unencrypted.
+     * @param sampleRate Audio sample rate in Hz (44100 for Mac AirPlay 2 mirror).
+     * @param channels   Channel count (2 = stereo for Mac AirPlay 2 mirror).
+     */
+    fun initialize(aesKey: ByteArray?, aesIv: ByteArray?, sampleRate: Int, channels: Int) {
+        if (isInitialized) {
+            Logger.w("AudioPlayer.initialize() called twice — ignoring")
+            return
+        }
+
+        if (aesKey != null || aesIv != null) {
+            require(aesKey != null && aesKey.size == AES_KEY_LENGTH_BYTES) {
+                "AES key must be exactly $AES_KEY_LENGTH_BYTES bytes, got ${aesKey?.size}"
+            }
+            require(aesIv != null && aesIv.size == AES_KEY_LENGTH_BYTES) {
+                "AES IV must be exactly $AES_KEY_LENGTH_BYTES bytes, got ${aesIv?.size}"
+            }
+            aesKeySpec = SecretKeySpec(aesKey, "AES")
+            aesIvSpec = IvParameterSpec(aesIv)
+            cbcCipher = Cipher.getInstance("AES/CBC/NoPadding")
+        }
+
+        this.sampleRate = sampleRate
+        initializeAacDecoder(sampleRate, channels)
+        initializeAudioTrack(sampleRate, channels)
+        isInitialized = true
+        Logger.i("AudioPlayer initialized (${sampleRate}Hz, $channels ch, AAC-ELD via AES-CBC)")
+    }
+
+    /**
+     * Filters, dedups, decrypts, decodes, and plays one mirror-audio UDP packet.
+     *
+     * Safe to call from any thread — MediaCodec and AudioTrack APIs are
+     * thread-safe for this single-producer use. The receive loop in
+     * [AirPlayReceiver] calls this for every UDP datagram.
+     */
+    fun playAudioPacket(rtpPacket: ByteArray) {
+        if (!isInitialized) return
+
+        try {
+            // Step 2 — drop "no-data" markers.
+            if (isNoDataMarker(rtpPacket)) return
+
+            // Need at least 1 byte of payload after the 12-byte RTP header.
+            if (rtpPacket.size <= RTP_HEADER_BYTES) return
+
+            // Step 3 — dedup. Apple sends every AAC frame three times.
+            val seqnum = rtpSeqnum(rtpPacket)
+            if (!seqnumWindow.recordIfNew(seqnum)) return
+
+            // Step 4 — AES-CBC decrypt the payload (key/iv from SETUP).
+            val encrypted = rtpPacket.copyOfRange(RTP_HEADER_BYTES, rtpPacket.size)
+            val decrypted = decryptCbc(encrypted)
+
+            // Real presentation timestamp from the RTP header. RTP audio
+            // timestamps tick at the sample rate (44.1 kHz for Mac mirror), so
+            // converting to microseconds gives MediaCodec the rate reference it
+            // needs to schedule PCM output. Passing 0L here caused noticeable
+            // hiccups because the decoder had no timing baseline.
+            val rtpTs = rtpTimestamp(rtpPacket)
+            val ptsUs = rtpTs * 1_000_000L / sampleRate
+
+            // Step 5/6 — feed to AAC-ELD decoder; drain PCM into AudioTrack.
+            val codec = aacDecoder ?: return
+            try {
+                feedDecoder(codec, decrypted, ptsUs)
+                drainDecoder(codec)
+            } catch (e: IllegalStateException) {
+                // mediaserver crashed (often when the video decoder dies first);
+                // tear down so we go silent instead of looping the same error
+                // per packet for the rest of the session.
+                Logger.e("AAC-ELD decoder entered error state — disabling for this session", e)
+                try { codec.release() } catch (_: Exception) { /* non-fatal */ }
+                aacDecoder = null
+            }
+        } catch (e: Exception) {
+            Logger.e("Error playing audio packet", e)
+        }
+    }
+
+    /** Releases all audio resources. Call when streaming ends. */
+    fun release() {
+        Logger.d("Releasing AudioPlayer")
+        try {
+            audioTrack?.stop()
+            audioTrack?.release()
+        } catch (e: Exception) {
+            Logger.e("Error releasing AudioTrack (non-fatal)", e)
+        }
+        try {
+            aacDecoder?.stop()
+            aacDecoder?.release()
+        } catch (e: Exception) {
+            Logger.e("Error releasing AAC decoder (non-fatal)", e)
+        }
+        audioTrack = null
+        aacDecoder = null
+        aesKeySpec = null
+        aesIvSpec = null
+        cbcCipher = null
+        firstPcmLogged = false
+        seqnumWindow.clear()
+        isInitialized = false
+    }
+
+    /**
+     * Decrypts `payload` with AES-128-CBC per UxPlay `raop_buffer.c`:
+     * only the first `(len/16)*16` bytes are encrypted; any remainder is
+     * carried through verbatim. The cipher is re-initialised for every packet,
+     * matching UxPlay's `aes_cbc_reset(...)` after each `aes_cbc_decrypt`.
+     */
+    internal fun decryptCbc(payload: ByteArray): ByteArray {
+        val cipher = cbcCipher ?: return payload
+        val keySpec = aesKeySpec ?: return payload
+        val ivSpec = aesIvSpec ?: return payload
+        val out = ByteArray(payload.size)
+        val encryptedLen = (payload.size / AES_BLOCK_BYTES) * AES_BLOCK_BYTES
+        if (encryptedLen > 0) {
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec)
+            val decrypted = cipher.doFinal(payload, 0, encryptedLen)
+            System.arraycopy(decrypted, 0, out, 0, encryptedLen)
+        }
+        if (encryptedLen < payload.size) {
+            System.arraycopy(payload, encryptedLen, out, encryptedLen, payload.size - encryptedLen)
+        }
+        return out
+    }
+
+    /**
+     * Creates and starts an AAC-ELD MediaCodec for the given stream parameters.
+     *
+     * MediaCodec failure here is non-fatal: we log and leave [aacDecoder] null,
+     * which causes [playAudioPacket] to silently drop frames instead of crashing.
+     */
+    private fun initializeAacDecoder(sampleRate: Int, channels: Int) {
+        try {
+            val asc = buildAacEldAsc(sampleRate, channels)
+            val format = MediaFormat.createAudioFormat(
+                MediaFormat.MIMETYPE_AUDIO_AAC,
+                sampleRate,
+                channels
+            ).apply {
+                setByteBuffer("csd-0", ByteBuffer.wrap(asc))
+            }
+            val codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_AAC)
+            codec.configure(format, null, null, 0)
+            codec.start()
+            aacDecoder = codec
+            Logger.i("AAC-ELD decoder started (ASC=${asc.toHex()})")
+        } catch (e: Exception) {
+            Logger.e("Failed to start AAC-ELD decoder — audio will be silent for this session", e)
+            aacDecoder = null
+        }
+    }
+
+    private fun feedDecoder(codec: MediaCodec, payload: ByteArray, ptsUs: Long) {
+        val inputBufferIndex = codec.dequeueInputBuffer(INPUT_BUFFER_TIMEOUT_US)
+        if (inputBufferIndex < 0) {
+            Logger.v("AudioPlayer: no input buffer available, dropping AAC frame")
+            return
+        }
+        val inputBuffer = codec.getInputBuffer(inputBufferIndex) ?: return
+        inputBuffer.clear()
+        inputBuffer.put(payload)
+        codec.queueInputBuffer(inputBufferIndex, 0, payload.size, ptsUs, 0)
+    }
+
+    private fun drainDecoder(codec: MediaCodec) {
+        val track = audioTrack ?: return
+        var outIndex = codec.dequeueOutputBuffer(codecBufferInfo, 0)
+        while (outIndex >= 0) {
+            if (codecBufferInfo.size > 0) {
+                val outputBuffer = codec.getOutputBuffer(outIndex)
+                if (outputBuffer != null) {
+                    val pcm = ByteArray(codecBufferInfo.size)
+                    outputBuffer.position(codecBufferInfo.offset)
+                    outputBuffer.limit(codecBufferInfo.offset + codecBufferInfo.size)
+                    outputBuffer.get(pcm, 0, codecBufferInfo.size)
+                    if (!firstPcmLogged) {
+                        Logger.i("AAC-ELD decoder produced first PCM frame (${pcm.size} bytes)")
+                        firstPcmLogged = true
+                    }
+                    track.write(pcm, 0, pcm.size, AudioTrack.WRITE_NON_BLOCKING)
+                }
+            }
+            codec.releaseOutputBuffer(outIndex, false)
+            outIndex = codec.dequeueOutputBuffer(codecBufferInfo, 0)
+        }
+    }
+
+    private fun initializeAudioTrack(sampleRate: Int, channels: Int) {
+        val channelConfig = when (channels) {
+            1 -> AudioFormat.CHANNEL_OUT_MONO
+            2 -> AudioFormat.CHANNEL_OUT_STEREO
+            else -> {
+                Logger.w("Unsupported channel count: $channels — defaulting to stereo")
+                AudioFormat.CHANNEL_OUT_STEREO
+            }
+        }
+
+        val minBufferSize = AudioTrack.getMinBufferSize(
+            sampleRate,
+            channelConfig,
+            AudioFormat.ENCODING_PCM_16BIT
+        )
+        // Buffer = ~500ms of audio. Fire TV's min buffer is small (~25-50ms);
+        // a 1-2 frame stall in the AAC decode pipeline (or a brief mediaserver
+        // hiccup) shows up as audible drop-outs at that depth. 500ms is enough
+        // slack to absorb burst variation from MediaCodec without adding
+        // noticeable lip-sync drift — AudioTrack still drains in real time so
+        // the buffer fills only on bursts, not steady-state.
+        val bytesPerSecond = sampleRate * channels * 2  // 16-bit PCM
+        val desiredBufferSize = bytesPerSecond / 2       // 500 ms
+        val bufferSize = maxOf(minBufferSize * 2, desiredBufferSize)
+
+        audioTrack = AudioTrack.Builder()
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                    .build()
+            )
+            .setAudioFormat(
+                AudioFormat.Builder()
+                    .setSampleRate(sampleRate)
+                    .setChannelMask(channelConfig)
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .build()
+            )
+            .setBufferSizeInBytes(bufferSize)
+            .setTransferMode(AudioTrack.MODE_STREAM)
+            .build()
+
+        audioTrack!!.play()
+        Logger.d("AudioTrack initialized: ${sampleRate}Hz, $channels ch, buffer=$bufferSize bytes")
+    }
+
+    companion object {
+        private const val AES_KEY_LENGTH_BYTES = 16
+        private const val AES_BLOCK_BYTES = 16
+        private const val RTP_HEADER_BYTES = 12
+        private const val INPUT_BUFFER_TIMEOUT_US = 10_000L
+        private const val DEDUP_WINDOW_SIZE = 32
+
+        // ISO/IEC 14496-3 §1.6.3.4 sample rate index table.
+        private val MPEG4_SAMPLE_RATES = intArrayOf(
+            96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050,
+            16000, 12000, 11025, 8000, 7350
+        )
+
+        // Apple's empty-frame keep-alive payload (UxPlay raop_buffer.c).
+        private val NO_DATA_MARKER = byteArrayOf(0x00, 0x68, 0x34, 0x00)
+
+        /**
+         * Returns the 16-bit RTP sequence number from bytes [2..3] of an RTP packet.
+         * Assumes the packet is at least 4 bytes long — callers must check.
+         */
+        internal fun rtpSeqnum(packet: ByteArray): Int =
+            ((packet[2].toInt() and 0xFF) shl 8) or (packet[3].toInt() and 0xFF)
+
+        /**
+         * Returns the 32-bit RTP timestamp from bytes [4..7] of an RTP packet.
+         * For AirPlay 2 mirror audio, this ticks at the audio sample rate
+         * (44.1 kHz on Mac), advancing by [frame size] = 480 between AAC-ELD frames.
+         * Assumes the packet is at least 8 bytes long — callers must check.
+         */
+        internal fun rtpTimestamp(packet: ByteArray): Long =
+            ((packet[4].toLong() and 0xFF) shl 24) or
+                ((packet[5].toLong() and 0xFF) shl 16) or
+                ((packet[6].toLong() and 0xFF) shl 8) or
+                (packet[7].toLong() and 0xFF)
+
+        /**
+         * AirPlay sends an empty 16-byte packet (12 RTP header + 4 marker bytes
+         * `00 68 34 00`) as a keep-alive/sync. UxPlay also accepts length=12 as
+         * a no-data marker (header alone). Both must be filtered before decode.
+         */
+        internal fun isNoDataMarker(packet: ByteArray): Boolean {
+            if (packet.size == RTP_HEADER_BYTES) return true
+            if (packet.size != RTP_HEADER_BYTES + NO_DATA_MARKER.size) return false
+            for (i in NO_DATA_MARKER.indices) {
+                if (packet[RTP_HEADER_BYTES + i] != NO_DATA_MARKER[i]) return false
+            }
+            return true
+        }
+
+        /**
+         * Builds the MPEG-4 AudioSpecificConfig for ER AAC ELD with the given
+         * stream parameters — what MediaCodec consumes as CSD-0.
+         *
+         * Layout (ISO/IEC 14496-3):
+         *   5-bit AOT escape = 31
+         *   6-bit (AOT - 32) = 7 → 39 = ER AAC ELD
+         *   4-bit samplingFrequencyIndex
+         *   4-bit channelConfiguration
+         *   1-bit frameLengthFlag = 1 (480 samples per frame, AirPlay's choice)
+         *   4× 1-bit resilience flags = 0
+         *   1-bit ldSbrPresentFlag = 0
+         *   4-bit eldExtType = 0 (ELDEXT_TERM)
+         *
+         * 44.1 kHz stereo → `F8 E8 50 00`, matching Apple's SDP `config=`.
+         */
+        internal fun buildAacEldAsc(sampleRate: Int, channels: Int): ByteArray {
+            val srIndex = MPEG4_SAMPLE_RATES.indexOf(sampleRate).let { idx ->
+                if (idx < 0) MPEG4_SAMPLE_RATES.indexOf(44100) else idx
+            }
+            val w = BitWriter()
+            w.write(31, 5)         // AOT escape
+            w.write(7, 6)          // 39 - 32 → ER AAC ELD
+            w.write(srIndex, 4)
+            w.write(channels, 4)
+            w.write(1, 1)          // frameLengthFlag = 1 (480 samples)
+            w.write(0, 4)          // four resilience flags
+            w.write(0, 1)          // ldSbrPresentFlag
+            w.write(0, 4)          // eldExtType = ELDEXT_TERM
+            return w.toByteArray()
+        }
+
+        private fun ByteArray.toHex(): String = joinToString("") { "%02X".format(it) }
+    }
+
+    /**
+     * MSB-first bit writer used by [buildAacEldAsc]. Zero-pads to byte boundary.
+     */
+    internal class BitWriter {
+        private val bytes = ArrayList<Byte>()
+        private var current = 0
+        private var bitsFilled = 0
+
+        fun write(value: Int, bits: Int) {
+            var remaining = bits
+            while (remaining > 0) {
+                val take = minOf(8 - bitsFilled, remaining)
+                val chunk = (value ushr (remaining - take)) and ((1 shl take) - 1)
+                current = (current shl take) or chunk
+                bitsFilled += take
+                remaining -= take
+                if (bitsFilled == 8) {
+                    bytes.add(current.toByte())
+                    current = 0
+                    bitsFilled = 0
+                }
+            }
+        }
+
+        fun toByteArray(): ByteArray {
+            if (bitsFilled > 0) {
+                bytes.add((current shl (8 - bitsFilled)).toByte())
+                current = 0
+                bitsFilled = 0
+            }
+            return bytes.toByteArray()
+        }
+    }
+
+    /**
+     * Sliding-window RTP sequence-number deduplicator. Each AAC-ELD frame is
+     * sent three times in Apple's `0 0 1 0 1 2 …` pattern; we feed each
+     * frame to MediaCodec exactly once by remembering recently-seen seqnums.
+     *
+     * 16-bit RTP seqnum wraps every 65 536 packets (~12 minutes at 92 fps);
+     * the [windowSize] only needs to be large enough to cover the triple-send
+     * dispersion (≤ ~6 packets) — 32 is a comfortable safety margin.
+     */
+    internal class SeqnumDedup(private val windowSize: Int) {
+        private val recent = LinkedHashSet<Int>()
+
+        /** Adds [seq] to the window if new; returns true if this seqnum is fresh. */
+        fun recordIfNew(seq: Int): Boolean {
+            if (!recent.add(seq)) return false
+            if (recent.size > windowSize) {
+                val it = recent.iterator()
+                it.next()
+                it.remove()
+            }
+            return true
+        }
+
+        fun clear() { recent.clear() }
+    }
+}

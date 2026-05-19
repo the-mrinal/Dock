@@ -62,6 +62,59 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="category_receiver"
+        android:title="@string/pref_category_receiver">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="receiver_enabled"
+            android:summary="@string/pref_receiver_enabled_summary"
+            android:title="@string/pref_receiver_enabled_title" />
+
+        <EditTextPreference
+            android:dependency="receiver_enabled"
+            android:key="receiver_device_name"
+            android:summary="@string/pref_receiver_device_name_summary"
+            android:title="@string/pref_receiver_device_name_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:dependency="receiver_enabled"
+            android:key="receiver_airplay_enabled"
+            android:summary="@string/pref_receiver_airplay_summary"
+            android:title="@string/pref_receiver_airplay_title" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:dependency="receiver_enabled"
+            android:key="receiver_cast_enabled"
+            android:summary="@string/pref_receiver_cast_summary"
+            android:title="@string/pref_receiver_cast_title" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:dependency="receiver_enabled"
+            android:key="receiver_miracast_enabled"
+            android:summary="@string/pref_receiver_miracast_summary"
+            android:title="@string/pref_receiver_miracast_title" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:dependency="receiver_enabled"
+            android:key="receiver_airplay_pin"
+            android:summary="@string/pref_receiver_pin_summary"
+            android:title="@string/pref_receiver_pin_title" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:dependency="receiver_enabled"
+            android:key="receiver_start_on_boot"
+            android:summary="@string/pref_receiver_start_on_boot_summary"
+            android:title="@string/pref_receiver_start_on_boot_title" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_sleep"
         android:title="@string/pref_category_sleep">
 

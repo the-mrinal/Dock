@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
+import android.view.View
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -14,6 +15,17 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
+import com.ambient.tvclock.receiver.ActiveConnection
+import com.ambient.tvclock.receiver.ReceiverController
+import com.ambient.tvclock.receiver.ReceiverStateBus
+import com.ambient.tvclock.receiver.ui.StreamingOverlay
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class MainActivity : Activity() {
@@ -38,6 +50,17 @@ class MainActivity : Activity() {
 
     private var currentPage = DashboardPage.HOME
     private var ambientMode = false
+    // Receiver subsystem entry point. Started/stopped by SettingsActivity's master toggle.
+    @Suppress("unused")
+    private val receiverController = ReceiverController
+    private lateinit var streamingOverlay: StreamingOverlay
+    private lateinit var onboardingPill: LinearLayout
+    private var streamingActive = false
+    // Set by long-press BACK while mirroring: hides the overlay but keeps the sender's
+    // session alive. Reset when activeConnection becomes null (sender disconnects).
+    private var userDismissedOverlay = false
+    private val streamingScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var streamingObserverJob: Job? = null
     private lateinit var nowPlayingPoller: NowPlayingPoller
     private lateinit var calendarPoller: CalendarPoller
     private lateinit var spotifyQueuePoller: SpotifyQueuePoller
@@ -66,6 +89,13 @@ class MainActivity : Activity() {
         textPageMusic = findViewById(R.id.textPageMusic)
         imageHomeBackground = findViewById(R.id.imageHomeBackground)
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
+        streamingOverlay = findViewById(R.id.streamingOverlay)
+        onboardingPill = findViewById(R.id.onboardingPill)
+        findViewById<View>(R.id.onboardingDismiss).setOnClickListener {
+            OnboardingPreferences.markDismissed(this)
+            updateOnboardingVisibility()
+        }
+        OnboardingPreferences.ensureFirstLaunchRecorded(this)
 
         dashboardPager.isUserInputEnabled = false
         dashboardPager.offscreenPageLimit = 1
@@ -110,6 +140,7 @@ class MainActivity : Activity() {
             override fun onPageSelected(position: Int) {
                 currentPage = DashboardPage.fromIndex(position)
                 updatePageIndicator()
+                updateOnboardingVisibility()
                 when (currentPage) {
                     DashboardPage.MUSIC -> musicBinder?.requestControlFocus()
                     DashboardPage.CALENDAR -> calendarBinder?.requestScrollToCurrent()
@@ -148,9 +179,20 @@ class MainActivity : Activity() {
         nowPlayingPoller.start()
         calendarPoller.start()
         spotifyQueuePoller.start()
+
+        ReceiverStateBus.setSurfaceProvider { streamingOverlay.currentSurface() }
+        streamingObserverJob = streamingScope.launch {
+            ReceiverStateBus.activeConnection.collect { connection ->
+                applyActiveConnection(connection)
+            }
+        }
     }
 
     override fun onStop() {
+        streamingObserverJob?.cancel()
+        streamingObserverJob = null
+        ReceiverStateBus.setSurfaceProvider(null)
+
         nowPlayingPoller.stop()
         calendarPoller.stop()
         spotifyQueuePoller.stop()
@@ -166,6 +208,16 @@ class MainActivity : Activity() {
         NotificationAccess.requestListenerReconnect(this)
         nowPlayingPoller.publishNow()
         calendarPoller.publishNow()
+        updateOnboardingVisibility()
+    }
+
+    private fun updateOnboardingVisibility() {
+        if (!::onboardingPill.isInitialized) return
+        val shouldShow = currentPage == DashboardPage.HOME
+            && !streamingActive
+            && !ambientMode
+            && OnboardingPreferences.shouldShowMirroringTip(this)
+        onboardingPill.visibility = if (shouldShow) View.VISIBLE else View.GONE
     }
 
     private fun applyNowPlaying(info: NowPlayingInfo?) {
@@ -347,6 +399,7 @@ class MainActivity : Activity() {
 
         mainHandler.removeCallbacks(drifterRunnable)
         mainHandler.postDelayed(drifterRunnable, AMBIENT_DRIFT_KICKOFF_MS)
+        updateOnboardingVisibility()
     }
 
     private fun exitAmbientMode() {
@@ -355,6 +408,7 @@ class MainActivity : Activity() {
 
         homeBinder?.setWidgetsAmbient(false)
         backgroundBinder.setAmbient(false)
+        updateOnboardingVisibility()
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
             .alpha(1f)
@@ -404,7 +458,93 @@ class MainActivity : Activity() {
         finishAndRemoveTask()
     }
 
+    private fun applyActiveConnection(connection: ActiveConnection?) {
+        if (connection != null) {
+            streamingOverlay.setSenderInfo(connection.senderName, connection.protocol)
+            if (!userDismissedOverlay) {
+                setStreamingActive(true)
+            }
+        } else {
+            userDismissedOverlay = false
+            setStreamingActive(false)
+        }
+    }
+
+    private fun setStreamingActive(active: Boolean) {
+        if (streamingActive == active) return
+        streamingActive = active
+        if (active) {
+            exitAmbientMode()
+            mainHandler.removeCallbacks(enterAmbientRunnable)
+            mainHandler.removeCallbacks(fadeSecondsRunnable)
+            mainHandler.removeCallbacks(watchdogRunnable)
+            nowPlayingPoller.stop()
+            calendarPoller.stop()
+            spotifyQueuePoller.stop()
+
+            streamingOverlay.visibility = View.VISIBLE
+            streamingOverlay.bringToFront()
+            streamingOverlay.animate().cancel()
+            streamingOverlay.animate().alpha(1f).setDuration(STREAMING_FADE_MS).start()
+            contentDisplayGroup.animate().cancel()
+            contentDisplayGroup.animate().alpha(0f).setDuration(STREAMING_FADE_MS).start()
+            pageIndicatorGroup.animate().cancel()
+            pageIndicatorGroup.animate().alpha(0f).setDuration(STREAMING_FADE_MS).start()
+
+            streamingOverlay.senderPill.translationX = 0f
+            streamingOverlay.senderPill.translationY = 0f
+            mainHandler.removeCallbacks(pillBurnInRunnable)
+            mainHandler.postDelayed(pillBurnInRunnable, PILL_DRIFT_INTERVAL_MS)
+        } else {
+            streamingOverlay.animate().cancel()
+            streamingOverlay.animate()
+                .alpha(0f)
+                .setDuration(STREAMING_FADE_MS)
+                .withEndAction { streamingOverlay.visibility = View.GONE }
+                .start()
+            contentDisplayGroup.animate().cancel()
+            contentDisplayGroup.animate().alpha(1f).setDuration(STREAMING_FADE_MS).start()
+            pageIndicatorGroup.animate().cancel()
+            pageIndicatorGroup.animate().alpha(1f).setDuration(STREAMING_FADE_MS).start()
+
+            mainHandler.removeCallbacks(pillBurnInRunnable)
+            streamingOverlay.senderPill.animate().cancel()
+
+            nowPlayingPoller.start()
+            calendarPoller.start()
+            spotifyQueuePoller.start()
+            resetInactivityWatchdog()
+        }
+        updateOnboardingVisibility()
+    }
+
+    private val pillBurnInRunnable = object : Runnable {
+        override fun run() {
+            if (!streamingActive) return
+            val density = resources.displayMetrics.density
+            val driftXPx = (PILL_DRIFT_X_DP * density).toInt()
+            val driftYPx = (PILL_DRIFT_Y_DP * density).toInt()
+            val tx = Random.nextInt(-driftXPx, driftXPx + 1).toFloat()
+            val ty = Random.nextInt(-driftYPx, driftYPx + 1).toFloat()
+            streamingOverlay.senderPill.animate()
+                .translationX(tx)
+                .translationY(ty)
+                .setDuration(PILL_DRIFT_DURATION_MS)
+                .start()
+            mainHandler.postDelayed(this, PILL_DRIFT_INTERVAL_MS)
+        }
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (streamingActive) {
+            if (keyCode == KeyEvent.KEYCODE_BACK) {
+                // Start tracking so onKeyLongPress can fire after the long-press
+                // threshold. onKeyUp handles the short release.
+                event?.startTracking()
+                return true
+            }
+            return super.onKeyDown(keyCode, event)
+        }
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
                 if (shouldNavigatePages(keyCode)) {
@@ -485,9 +625,34 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
+        if (streamingActive && keyCode == KeyEvent.KEYCODE_BACK) {
+            // Long-press BACK: hide the overlay but keep the sender connected.
+            // Dashboard returns; user can come back to the stream by waiting
+            // for the next emit, or disconnecting via Settings.
+            userDismissedOverlay = true
+            setStreamingActive(false)
+            return true
+        }
+        return super.onKeyLongPress(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (streamingActive && keyCode == KeyEvent.KEYCODE_BACK) {
+            // Only fires for a short release — isTracking() returns false once
+            // onKeyLongPress consumed the event.
+            if (event != null && event.isTracking && !event.isCanceled) {
+                ReceiverController.stop(applicationContext)
+                return true
+            }
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         mainHandler.removeCallbacksAndMessages(null)
+        streamingScope.cancel()
     }
 
     companion object {
@@ -514,5 +679,18 @@ class MainActivity : Activity() {
         // Seconds remain visible for 90s after the last input, then crossfade
         // away so the resting clock face is just h:mm AM/PM.
         private const val SECONDS_VISIBLE_AFTER_INPUT_MS = 90_000L
+
+        // Dashboard ↔ streaming overlay crossfade. 300ms is short enough to feel
+        // immediate but long enough that the SurfaceView's first frame typically
+        // lands before the alpha animation completes.
+        private const val STREAMING_FADE_MS = 300L
+
+        // Burn-in protection for the sender pill: nudge by a small random offset
+        // every minute. The pill sits in a fixed screen corner for the entire
+        // duration of a mirroring session, so without this it would etch in.
+        private const val PILL_DRIFT_INTERVAL_MS = 60_000L
+        private const val PILL_DRIFT_DURATION_MS = 1_400L
+        private const val PILL_DRIFT_X_DP = 8
+        private const val PILL_DRIFT_Y_DP = 4
     }
 }

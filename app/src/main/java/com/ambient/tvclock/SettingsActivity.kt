@@ -9,11 +9,13 @@ import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
+import com.ambient.tvclock.receiver.ReceiverController
 
 class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        OnboardingPreferences.markSettingsVisited(this)
         if (savedInstanceState == null) {
             supportFragmentManager
                 .beginTransaction()
@@ -99,6 +101,35 @@ class SettingsActivity : AppCompatActivity() {
                     .show()
                 updateSpotifyStatus()
                 true
+            }
+
+            wireReceiverPreferences()
+        }
+
+        private fun wireReceiverPreferences() {
+            findPreference<SwitchPreferenceCompat>(ReceiverPreferences.KEY_RECEIVER_ENABLED)
+                ?.setOnPreferenceChangeListener { _, newValue ->
+                    val ctx = requireContext().applicationContext
+                    if (newValue == true) ReceiverController.start(ctx)
+                    else ReceiverController.stop(ctx)
+                    true
+                }
+
+            val restartOnChange = Preference.OnPreferenceChangeListener { _, _ ->
+                val ctx = requireContext().applicationContext
+                if (ReceiverPreferences.isReceiverEnabled(ctx)) {
+                    ReceiverController.restart(ctx)
+                }
+                true
+            }
+            for (key in arrayOf(
+                ReceiverPreferences.KEY_AIRPLAY_ENABLED,
+                ReceiverPreferences.KEY_CAST_ENABLED,
+                ReceiverPreferences.KEY_MIRACAST_ENABLED,
+                ReceiverPreferences.KEY_AIRPLAY_PIN,
+                ReceiverPreferences.KEY_DEVICE_NAME,
+            )) {
+                findPreference<Preference>(key)?.onPreferenceChangeListener = restartOnChange
             }
         }
 
