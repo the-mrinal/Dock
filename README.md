@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://dock.example.com">Website</a></strong>
+  <strong><a href="https://dock.mrinal.dev">Website</a></strong>
   · <a href="https://github.com/the-mrinal/Dock/releases/latest">Download APK</a>
   · <a href="CONTRIBUTING.md">Contributing</a>
   · <a href="#how-it-works">How it works</a>

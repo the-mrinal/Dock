@@ -26,8 +26,8 @@ android {
         applicationId = "com.ambient.tvclock"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0"
+        versionCode = 10000
+        versionName = "1.0.0"
         buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$spotifyClientId\"")
     }
 
