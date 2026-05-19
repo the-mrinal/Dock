@@ -28,7 +28,17 @@ import com.ambient.tvclock.util.Logger
  *   decoder.decodeNalUnit(nalUnitBytes)                    // call for each video chunk
  *   decoder.release()                                       // call when done
  */
-class VideoDecoder(private val outputSurface: Surface) {
+class VideoDecoder(
+    private val outputSurface: Surface,
+    /**
+     * Called whenever the source video dimensions become known or change.
+     * Fires on the IO thread once after [initialize] (using SPS-parsed size)
+     * and again from [releaseOutputBuffers] each time MediaCodec reports
+     * `INFO_OUTPUT_FORMAT_CHANGED` (using the cropped output rect — the
+     * authoritative size that survives mid-stream resolution swaps).
+     */
+    private val onVideoSize: ((width: Int, height: Int) -> Unit)? = null
+) {
 
     // The underlying hardware decoder — null until initialize() is called
     private var mediaCodec: MediaCodec? = null
@@ -36,6 +46,12 @@ class VideoDecoder(private val outputSurface: Surface) {
     // Track whether the decoder has been initialized (to prevent double-init)
     @Volatile
     private var isInitialized = false
+
+    // Last (width, height) reported via onVideoSize. Suppresses duplicate
+    // emissions when MediaCodec's INFO_OUTPUT_FORMAT_CHANGED fires repeatedly
+    // with the same crop rect.
+    private var lastReportedWidth = 0
+    private var lastReportedHeight = 0
 
     /**
      * Initializes the MediaCodec decoder with the video stream parameters from the SDP.
@@ -100,7 +116,17 @@ class VideoDecoder(private val outputSurface: Surface) {
         mediaCodec!!.start()
 
         isInitialized = true
+        reportVideoSize(actualWidth, actualHeight)
         Logger.i("H.264 decoder initialized successfully")
+    }
+
+    /** Emits a video-size update through [onVideoSize] if the size actually changed. */
+    private fun reportVideoSize(width: Int, height: Int) {
+        if (width <= 0 || height <= 0) return
+        if (width == lastReportedWidth && height == lastReportedHeight) return
+        lastReportedWidth = width
+        lastReportedHeight = height
+        onVideoSize?.invoke(width, height)
     }
 
     /**
@@ -178,10 +204,66 @@ class VideoDecoder(private val outputSurface: Surface) {
         val bufferInfo = MediaCodec.BufferInfo()
         var outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
 
-        while (outputBufferIndex >= 0) {
-            // render=true: display this decoded frame on the Surface
-            codec.releaseOutputBuffer(outputBufferIndex, true)
+        while (true) {
+            if (outputBufferIndex >= 0) {
+                // render=true: display this decoded frame on the Surface
+                codec.releaseOutputBuffer(outputBufferIndex, true)
+            } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                // First buffer is preceded by a format-changed event that carries
+                // the cropped output rectangle. iOS senders also re-emit this when
+                // the user rotates their phone mid-mirror — propagating the new
+                // dimensions is what lets the overlay re-letterbox correctly.
+                handleOutputFormatChanged(codec.outputFormat)
+            } else {
+                // INFO_TRY_AGAIN_LATER or any other negative value → nothing more
+                // to drain this iteration.
+                break
+            }
             outputBufferIndex = codec.dequeueOutputBuffer(bufferInfo, 0)
+        }
+    }
+
+    /**
+     * Extracts the visible (cropped) dimensions from a MediaCodec output format
+     * and forwards them to [onVideoSize]. The crop keys aren't documented in the
+     * public API surface but are emitted by every Android H.264 decoder we care
+     * about; we fall back to the uncropped width/height when they're absent.
+     */
+    private fun handleOutputFormatChanged(format: MediaFormat) {
+        val cropLeft   = if (format.containsKey(KEY_CROP_LEFT))   format.getInteger(KEY_CROP_LEFT)   else 0
+        val cropRight  = if (format.containsKey(KEY_CROP_RIGHT))  format.getInteger(KEY_CROP_RIGHT)  else -1
+        val cropTop    = if (format.containsKey(KEY_CROP_TOP))    format.getInteger(KEY_CROP_TOP)    else 0
+        val cropBottom = if (format.containsKey(KEY_CROP_BOTTOM)) format.getInteger(KEY_CROP_BOTTOM) else -1
+
+        val codedW = if (format.containsKey(MediaFormat.KEY_WIDTH))  format.getInteger(MediaFormat.KEY_WIDTH)  else 0
+        val codedH = if (format.containsKey(MediaFormat.KEY_HEIGHT)) format.getInteger(MediaFormat.KEY_HEIGHT) else 0
+
+        val width = if (cropRight >= cropLeft) cropRight - cropLeft + 1 else codedW
+        val height = if (cropBottom >= cropTop) cropBottom - cropTop + 1 else codedH
+        Logger.i("Decoder output format changed: ${width}x${height} " +
+                 "(coded=${codedW}x${codedH}, crop=[$cropLeft,$cropTop,$cropRight,$cropBottom])")
+        reportVideoSize(width, height)
+    }
+
+    /**
+     * Rebinds the decoder's output to a new [Surface] without re-creating the
+     * codec. Required when [com.ambient.tvclock.receiver.ui.StreamingOverlay]'s
+     * SurfaceView gets resized for aspect-ratio correction — that resize
+     * destroys the original Surface and the codec would otherwise keep writing
+     * into a dead buffer, which on iPhone manifests as corrupted AES-decrypted
+     * NAL payloads downstream. A no-op if the codec hasn't been initialized.
+     *
+     * The new surface should be format/size-compatible with the original
+     * configure() call; modern Android H.264 decoders tolerate buffer-size
+     * changes via this path.
+     */
+    fun setOutputSurface(surface: Surface) {
+        val codec = mediaCodec ?: return
+        try {
+            codec.setOutputSurface(surface)
+            Logger.i("VideoDecoder: rebound MediaCodec onto new output surface")
+        } catch (e: Exception) {
+            Logger.e("VideoDecoder: setOutputSurface failed (non-fatal)", e)
         }
     }
 
@@ -205,6 +287,8 @@ class VideoDecoder(private val outputSurface: Surface) {
         } finally {
             mediaCodec = null
             isInitialized = false
+            lastReportedWidth = 0
+            lastReportedHeight = 0
         }
     }
 
@@ -212,6 +296,15 @@ class VideoDecoder(private val outputSurface: Surface) {
         // How long to wait for an input buffer before giving up (microseconds)
         // 10ms = 10,000µs. This is a short wait to keep latency low.
         private const val INPUT_BUFFER_TIMEOUT_US = 10_000L
+
+        // MediaFormat crop-rect keys. Declared as constants in MediaFormat
+        // starting on API 29 (KEY_CROP_RIGHT etc.) but the underlying string
+        // keys are emitted by every Android H.264 decoder on the platforms
+        // we ship to, so we use the string form to keep the minSdk path clean.
+        private const val KEY_CROP_LEFT   = "crop-left"
+        private const val KEY_CROP_RIGHT  = "crop-right"
+        private const val KEY_CROP_TOP    = "crop-top"
+        private const val KEY_CROP_BOTTOM = "crop-bottom"
 
         /**
          * Parses the H.264 SPS NAL unit to extract the actual video resolution.

@@ -78,3 +78,13 @@ data class ActiveConnection(
 enum class Protocol {
     AIRPLAY, MIRACAST, CAST
 }
+
+/**
+ * VideoSize — Source video dimensions reported by the active decoder.
+ *
+ * Used to drive aspect-ratio-preserving layout in the mirroring overlay: a
+ * portrait phone (e.g. 1170×2532) must render upright with pillarbox bars on
+ * a horizontal TV, not be stretched to 16:9. The dimensions reflect the
+ * cropped output (visible pixels), not the H.264 coded picture size.
+ */
+data class VideoSize(val width: Int, val height: Int)

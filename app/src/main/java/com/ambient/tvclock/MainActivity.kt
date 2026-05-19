@@ -61,6 +61,7 @@ class MainActivity : Activity() {
     private var userDismissedOverlay = false
     private val streamingScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var streamingObserverJob: Job? = null
+    private var videoSizeObserverJob: Job? = null
     private lateinit var nowPlayingPoller: NowPlayingPoller
     private lateinit var calendarPoller: CalendarPoller
     private lateinit var spotifyQueuePoller: SpotifyQueuePoller
@@ -186,11 +187,18 @@ class MainActivity : Activity() {
                 applyActiveConnection(connection)
             }
         }
+        videoSizeObserverJob = streamingScope.launch {
+            ReceiverStateBus.videoSize.collect { size ->
+                streamingOverlay.setVideoSize(size?.width ?: 0, size?.height ?: 0)
+            }
+        }
     }
 
     override fun onStop() {
         streamingObserverJob?.cancel()
         streamingObserverJob = null
+        videoSizeObserverJob?.cancel()
+        videoSizeObserverJob = null
         ReceiverStateBus.setSurfaceProvider(null)
 
         nowPlayingPoller.stop()

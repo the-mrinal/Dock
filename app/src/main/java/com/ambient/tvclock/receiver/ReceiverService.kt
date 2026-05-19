@@ -76,6 +76,12 @@ class ReceiverService : Service() {
     private fun setActiveConnection(connection: ActiveConnection?) {
         _activeConnection.value = connection
         ReceiverStateBus.publishActiveConnection(connection)
+        // The video-size state is meaningful only while a connection is live.
+        // Reset on disconnect so a returning sender doesn't briefly inherit the
+        // previous sender's aspect ratio before its first SPS lands.
+        if (connection == null) {
+            ReceiverStateBus.publishVideoSize(null)
+        }
     }
 
     // Receiver instances — null when not running
@@ -196,6 +202,9 @@ class ReceiverService : Service() {
             videoSurfaceProvider = { ReceiverStateBus.currentSurface() },
             onSenderNameChanged = { name ->
                 pendingSenderName = name.ifEmpty { "AirPlay Sender" }
+            },
+            onVideoSize = { w, h ->
+                ReceiverStateBus.publishVideoSize(VideoSize(w, h))
             },
             onStateChanged = { state ->
                 _airPlayState.value = state
