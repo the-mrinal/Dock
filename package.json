@@ -2,7 +2,7 @@
   "name": "fire-tv-dock-release-tooling",
   "version": "0.0.0-private",
   "private": true,
-  "description": "Local release tooling for the Fire TV Dock Android app. Not shipped, not part of the Android build.",
+  "description": "Local release tooling for the Dock Android app. Not shipped, not part of the Android build.",
   "type": "module",
   "scripts": {
     "release": "semantic-release --no-ci",

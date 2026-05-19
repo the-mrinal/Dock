@@ -1,8 +1,8 @@
 ---
-description: Cut a new semantic-release for Fire TV Dock from main (local CLI, no CI).
+description: Cut a new semantic-release for Dock from main (local CLI, no CI).
 ---
 
-You are running a release for the Fire TV Dock Android repo. The convention is documented in `CONTRIBUTING.md`: Conventional Commits drive `semantic-release`, releases happen locally (not in CI), and APK builds are a separate manually-triggered workflow.
+You are running a release for the Dock Android repo. The convention is documented in `CONTRIBUTING.md`: Conventional Commits drive `semantic-release`, releases happen locally (not in CI), and APK builds are a separate manually-triggered workflow.
 
 Walk through the following steps. **Stop and tell the user** if any check fails — do not paper over a dirty state.
 

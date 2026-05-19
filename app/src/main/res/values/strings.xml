@@ -60,7 +60,7 @@
     <string name="airplay_detail_protocol_off">AirPlay is disabled in Settings</string>
     <string name="airplay_detail_ready">Cast from an iPhone, iPad, or Mac on this network</string>
     <string name="airplay_detail_streaming">From %1$s</string>
-    <string name="airplay_chip_device_placeholder">Fire TV</string>
+    <string name="airplay_chip_device_placeholder">Dock</string>
     <string name="airplay_chip_protocol">AirPlay 2</string>
 
     <string name="status_screen_footer_settings">Press menu on the remote for settings</string>
@@ -68,12 +68,12 @@
     <string name="widget_today">Today</string>
     <string name="widget_now_playing">Now playing</string>
     <string name="calendar_screen_title">Today</string>
-    <string name="music_empty_state">Start Spotify on Fire TV to see playback here</string>
+    <string name="music_empty_state">Start Spotify on this TV to see playback here</string>
     <string name="up_next">Up next</string>
     <string name="recently_played">Recently played</string>
     <string name="music_section_up_next">Up next</string>
     <string name="music_section_recent">Recently played</string>
-    <string name="music_playing_on_tv">Playing on Fire TV</string>
+    <string name="music_playing_on_tv">Playing on this TV</string>
     <string name="music_playing_on_device">Playing on %1$s · OK to switch</string>
     <string name="spotify_pick_device">Choose where to play</string>
     <string name="spotify_no_devices">No Spotify devices found. Open Spotify on a device first.</string>
@@ -98,7 +98,7 @@
 
     <string name="pref_category_sleep">Sleep timer</string>
     <string name="pref_inactivity_timeout_title">Auto-exit after inactivity</string>
-    <string name="pref_inactivity_timeout_summary">Closes the app and allows Fire TV to sleep when no remote input is detected</string>
+    <string name="pref_inactivity_timeout_summary">Closes the app and allows the TV to sleep when no remote input is detected</string>
 
     <string name="timeout_30_min">30 minutes</string>
     <string name="timeout_1_hour">1 hour</string>
@@ -129,7 +129,7 @@
     <string name="pref_show_now_playing_title">Show media on dashboard</string>
     <string name="pref_show_now_playing_summary">Show a music widget on Home when Spotify or other media is playing</string>
     <string name="pref_notification_access_title">Media access permission</string>
-    <string name="notification_access_required">Required once so the app can read active media sessions. Tap to open settings, or grant via ADB on Fire TV.</string>
+    <string name="notification_access_required">Required once so the app can read active media sessions. Tap to open settings, or grant via ADB.</string>
     <string name="notification_access_granted">Granted — now playing will appear when Spotify is playing.</string>
 
     <string name="pref_category_receiver">Phone mirroring (beta)</string>
@@ -161,7 +161,7 @@
     <string name="spotify_auth_loading">Connecting to Spotify…</string>
     <string name="spotify_connect_failed">Could not connect to Spotify. Try again.</string>
     <string name="spotify_queue_not_linked">Link Spotify in Settings (Menu) for up next</string>
-    <string name="spotify_queue_not_playing">Play Spotify on this Fire TV to load the queue</string>
+    <string name="spotify_queue_not_playing">Play Spotify on this TV to load the queue</string>
     <string name="spotify_queue_empty">Queue not available — use the same Premium account on this TV</string>
     <string name="spotify_queue_api_error">Spotify queue unavailable (check Premium &amp; Development Mode access)</string>
     <string name="spotify_recent_not_linked">Link Spotify in Settings for recently played</string>

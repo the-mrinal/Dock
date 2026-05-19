@@ -1,19 +1,19 @@
-<h1 align="center">Fire TV Dock</h1>
+<h1 align="center">Dock</h1>
 
 <p align="center">
   <em>The always-on ambient screen your desk was missing.</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/the-mrinal/fire_tv/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/the-mrinal/fire_tv?display_name=tag&style=for-the-badge&color=FFB23A&labelColor=000"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/the-mrinal/fire_tv?style=for-the-badge&color=66D9FF&labelColor=000"></a>
-  <a href="https://github.com/the-mrinal/fire_tv/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/the-mrinal/fire_tv?style=for-the-badge&color=FF5DA2&labelColor=000"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/platform-Fire%20TV%20%7C%20Google%20TV-FFFFFF?style=for-the-badge&labelColor=000">
+  <a href="https://github.com/the-mrinal/Dock/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/the-mrinal/Dock?display_name=tag&style=for-the-badge&color=FFB23A&labelColor=000"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/the-mrinal/Dock?style=for-the-badge&color=66D9FF&labelColor=000"></a>
+  <a href="https://github.com/the-mrinal/Dock/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/the-mrinal/Dock?style=for-the-badge&color=FF5DA2&labelColor=000"></a>
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Android%20TV-FFFFFF?style=for-the-badge&labelColor=000">
 </p>
 
 <p align="center">
-  <strong><a href="https://firetv-dock.example.com">Website</a></strong>
-  · <a href="https://github.com/the-mrinal/fire_tv/releases/latest">Download APK</a>
+  <strong><a href="https://dock.example.com">Website</a></strong>
+  · <a href="https://github.com/the-mrinal/Dock/releases/latest">Download APK</a>
   · <a href="CONTRIBUTING.md">Contributing</a>
   · <a href="#how-it-works">How it works</a>
 </p>
@@ -22,7 +22,7 @@
   <img src="screenshots/home.png" alt="The ambient dashboard: clock, today's calendar, now playing">
 </p>
 
-> Plug a Fire TV into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup.
+> Plug any Android TV device into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup.
 
 You already have a laptop for the thing you're focused on. You already have a phone for the world reaching in. **You're missing the third screen** — the one that just *sits there* and tells you the time, what meeting is next, and what's playing, without ever asking for a click.
 
@@ -56,11 +56,11 @@ The dashboard shows what's happening *now* and what's next. Walk past the screen
 
 ### A remote control for Spotify, on your wall
 
-The **Music** page is a full-blown Spotify Connect remote: album art, transport buttons, your live queue, your recently played tracks — driven by the actual MediaSession on your TV plus the Spotify Web API. Skip from across the room with the Fire TV remote. Switch playback to your headphones, kitchen speaker, or living-room TV from one focus ring.
+The **Music** page is a full-blown Spotify Connect remote: album art, transport buttons, your live queue, your recently played tracks — driven by the actual MediaSession on your TV plus the Spotify Web API. Skip from across the room with the Android TV remote. Switch playback to your headphones, kitchen speaker, or living-room TV from one focus ring.
 
 ### Phone mirroring — AirPlay, Cast, Miracast
 
-Flip the switch in Settings and the Fire TV starts advertising itself on your network as a wireless display target for **AirPlay** (iPhone, iPad, Mac), **Google Cast** (Chrome, Android), and **Miracast** (Windows, Android). The dashboard stays calm at rest; the moment a sender connects, it crossfades out and your phone or laptop takes the screen edge-to-edge. A small *"Casting from {device} via AirPlay"* pill rests in the corner, drifting a few pixels every minute (same burn-in protection as the clock). Each protocol is independently toggleable.
+Flip the switch in Settings and the dock starts advertising itself on your network as a wireless display target for **AirPlay** (iPhone, iPad, Mac), **Google Cast** (Chrome, Android), and **Miracast** (Windows, Android). The dashboard stays calm at rest; the moment a sender connects, it crossfades out and your phone or laptop takes the screen edge-to-edge. A small *"Casting from {device} via AirPlay"* pill rests in the corner, drifting a few pixels every minute (same burn-in protection as the clock). Each protocol is independently toggleable.
 
 ### WireGuard VPN, baked in
 
@@ -75,7 +75,7 @@ Every screen carries a softly blurred wash of the current track's album art — 
 - **Stay awake** while visible — no screen-off mid-meeting
 - **Sleep timer** so the dock gracefully exits when you go to bed
 - **Burn-in protection** for OLED panels — clock drifts in ambient mode
-- **Fire TV native** — uses the remote, D-pad, and media keys exactly as you'd expect
+- **Android TV native** — uses the remote, D-pad, and media keys exactly as you'd expect
 - **No cloud, no telemetry, no account required** — Spotify is optional and PKCE-based
 
 ---
@@ -117,12 +117,12 @@ Every screen carries a softly blurred wash of the current track's album art — 
 
 ### Option 1 — install the pre-built APK (5 minutes)
 
-1. Grab the latest APK for your platform from the [Releases](https://github.com/the-mrinal/fire_tv/releases/latest) page (`app-firetv-release-*.apk` or `app-googletv-release-*.apk`).
-2. Enable ADB on your Fire TV (Settings → My Fire TV → Developer Options → ADB debugging).
+1. Grab the latest APK for your platform from the [Releases](https://github.com/the-mrinal/Dock/releases/latest) page (`app-firetv-release-*.apk` or `app-googletv-release-*.apk`).
+2. Enable ADB on your TV (Fire OS: Settings → My Fire TV → Developer Options. Google TV: Settings → System → About → tap *Android TV OS build* 7×, then Developer options → USB debugging).
 3. From your laptop:
    ```bash
-   adb connect <fire-tv-ip>:5555
-   adb install -r app-firetv-release-vX.Y.Z.apk
+   adb connect <tv-ip>:5555
+   adb install -r app-firetv-release-vX.Y.Z.apk      # or app-googletv-release-vX.Y.Z.apk
    ```
 4. Launch **Dock** from the Apps row.
 
@@ -137,7 +137,7 @@ cp local.properties.example local.properties   # set sdk.dir and spotify.clientI
 adb install -r app/build/outputs/apk/firetv/debug/app-firetv-debug.apk
 ```
 
-Fire TV is the default; for Google TV / Android TV use `assembleGoogletvDebug` — same code, separate `minSdk` + `applicationId` so both can coexist on one device.
+The `firetv` build flavor is the default and targets `minSdk 25` (older Amazon Fire OS hardware still ships there). For newer Google TV / Android TV / Chromecast devices, use `./gradlew assembleGoogletvDebug` — same code, `minSdk 29`, separate `applicationId` so both can coexist on one device.
 
 `spotify.clientId` comes from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Redirect URI: `com.ambient.tvclock://spotify-callback`. Add your Spotify account under **User Management** (Development Mode).
 
@@ -171,7 +171,7 @@ For **Premium** users who want queue + remote transport:
 
 1. Add `spotify.clientId` to `local.properties` and rebuild
 2. **Settings → Connect Spotify** — sign in on the TV (WebView)
-3. Play Spotify on the same account; the Fire TV must be the active Connect device for queue data
+3. Play Spotify on the same account; this TV must be the active Connect device for queue data
 4. Focus a transport button or track row and press **OK**
 5. Focus **Playing on … · OK to switch** to move playback to another device
 
@@ -196,7 +196,7 @@ To activate, head to the **Connect** page and press **OK** on the VPN card. The 
 | D-pad Left / Right | Anywhere | Switch between Connect, Home, Calendar, Music |
 | D-pad Up / Down | Calendar | Scroll the day |
 | D-pad / OK | Music, Connect | Focus + activate transport, tracks, devices, AirPlay, VPN |
-| Media keys | Music | Play/pause, skip, previous (works with the Fire TV remote media buttons) |
+| Media keys | Music | Play/pause, skip, previous (works with the Android TV remote media buttons) |
 | Menu | Anywhere | Settings |
 
 After your configured idle window (default 90s) the dashboard fades into ambient mode — clock plus a single horizontal music × calendar strip below it. Any keypress brings it back.
@@ -237,7 +237,7 @@ flowchart TD
 - `receiver/ui/StreamingOverlay.kt` — full-bleed SurfaceView the dashboard crossfades into when a sender connects
 - `vpn/` — WireGuard tunnel manager + the LAN config-import endpoint
 
-Built on plain Android views (no Compose, no React Native) so it stays buttery on older Fire TV hardware.
+Built on plain Android views (no Compose, no React Native) so it stays buttery on older Android TV hardware.
 
 ---
 
@@ -277,6 +277,6 @@ Pull requests welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening on
 ---
 
 <p align="center">
-  <sub>If you've got a spare monitor and a Fire TV stick in a drawer somewhere, give this five minutes.</sub><br>
+  <sub>If you've got a spare monitor and an Android TV stick in a drawer somewhere, give this five minutes.</sub><br>
   <sub>It's the kind of small infrastructure you don't realise was missing from your desk until it's there.</sub>
 </p>

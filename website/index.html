@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fire TV Dock — The ambient screen your desk was missing.</title>
-  <meta name="description" content="Plug a Fire TV into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup. Clock, calendar, Spotify remote, phone mirroring, WireGuard VPN. No cloud." />
+  <title>Dock — The ambient screen your desk was missing.</title>
+  <meta name="description" content="Plug any Android TV device into a spare monitor and turn that dusty second screen into the calmest, most useful surface in your setup. Clock, calendar, Spotify remote, phone mirroring, WireGuard VPN. No cloud." />
 
-  <!-- TODO: replace firetv-dock.example.com with the real domain before deploying -->
-  <link rel="canonical" href="https://firetv-dock.example.com/" />
-  <meta property="og:title" content="Fire TV Dock" />
+  <!-- TODO: replace dock.example.com with the real domain before deploying -->
+  <link rel="canonical" href="https://dock.example.com/" />
+  <meta property="og:title" content="Dock" />
   <meta property="og:description" content="The ambient screen your desk was missing." />
-  <meta property="og:image" content="https://firetv-dock.example.com/og.png" />
-  <meta property="og:url" content="https://firetv-dock.example.com/" />
+  <meta property="og:image" content="https://dock.example.com/og.png" />
+  <meta property="og:url" content="https://dock.example.com/" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Fire TV Dock" />
+  <meta name="twitter:title" content="Dock" />
   <meta name="twitter:description" content="The ambient screen your desk was missing." />
-  <meta name="twitter:image" content="https://firetv-dock.example.com/og.png" />
+  <meta name="twitter:image" content="https://dock.example.com/og.png" />
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="style.css" />
@@ -25,7 +25,7 @@
   <a class="skip-link" href="#hero">Skip to content</a>
 
   <header class="nav">
-    <a class="brand" href="#hero" aria-label="Fire TV Dock — home">
+    <a class="brand" href="#hero" aria-label="Dock — home">
       <span class="brand-mark" aria-hidden="true"></span>
       <span class="brand-name">DOCK</span>
     </a>
@@ -33,7 +33,7 @@
       <a href="#features">Features</a>
       <a href="#screenshots">Screenshots</a>
       <a href="#install">Install</a>
-      <a href="https://github.com/the-mrinal/fire_tv" rel="noopener">GitHub</a>
+      <a href="https://github.com/the-mrinal/Dock" rel="noopener">GitHub</a>
     </nav>
   </header>
 
@@ -48,22 +48,22 @@
         </h1>
 
         <p class="hero-sub">
-          Plug a Fire TV into a spare monitor and turn that dusty second screen
+          Plug any Android TV device into a spare monitor and turn that dusty second screen
           into the calmest, most useful surface in your setup.
           No cloud. No telemetry. No account required.
         </p>
 
         <div class="hero-cta">
-          <a class="btn btn-primary" href="https://github.com/the-mrinal/fire_tv/releases/latest" rel="noopener">
+          <a class="btn btn-primary" href="https://github.com/the-mrinal/Dock/releases/latest" rel="noopener">
             Download APK
           </a>
-          <a class="btn btn-secondary" href="https://github.com/the-mrinal/fire_tv" rel="noopener">
+          <a class="btn btn-secondary" href="https://github.com/the-mrinal/Dock" rel="noopener">
             Star on GitHub
           </a>
         </div>
 
         <p class="hero-meta">
-          Apache 2.0 · Fire TV &amp; Google TV · Built on plain Android views — buttery on old hardware
+          Apache 2.0 · Android TV (Fire OS &amp; Google TV) · Built on plain Android views — buttery on old hardware
         </p>
       </div>
     </section>
@@ -159,15 +159,15 @@
       <div class="install-grid">
         <div class="install-card">
           <h3>1. Grab the APK</h3>
-          <p>From the <a href="https://github.com/the-mrinal/fire_tv/releases/latest" rel="noopener">latest release</a>. Pick the build for your platform.</p>
+          <p>From the <a href="https://github.com/the-mrinal/Dock/releases/latest" rel="noopener">latest release</a>. Pick the build for your platform.</p>
           <pre><code>app-firetv-release-vX.Y.Z.apk
 app-googletv-release-vX.Y.Z.apk</code></pre>
         </div>
 
         <div class="install-card">
           <h3>2. ADB into your TV</h3>
-          <p>Enable ADB on the TV (Settings → My Fire TV → Developer Options).</p>
-          <pre><code>adb connect &lt;fire-tv-ip&gt;:5555
+          <p>Enable ADB on the TV. Fire OS: Settings → My Fire TV → Developer Options. Google TV: Settings → System → About → tap <em>Android TV OS build</em> 7× → Developer options.</p>
+          <pre><code>adb connect &lt;tv-ip&gt;:5555
 adb install -r app-firetv-release-*.apk</code></pre>
         </div>
 
@@ -176,7 +176,7 @@ adb install -r app-firetv-release-*.apk</code></pre>
           <p>Open <strong>Dock</strong>. Press Menu, paste your iCal URL, optionally connect Spotify. Done.</p>
           <p class="hint">
             Building from source?
-            <a href="https://github.com/the-mrinal/fire_tv#option-2--build-from-source" rel="noopener">See the README</a>.
+            <a href="https://github.com/the-mrinal/Dock#option-2--build-from-source" rel="noopener">See the README</a>.
           </p>
         </div>
       </div>
@@ -206,13 +206,13 @@ adb install -r app-firetv-release-*.apk</code></pre>
     <div class="footer-inner">
       <div>
         <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-name">Fire TV Dock</span>
+        <span class="brand-name">Dock</span>
       </div>
       <nav class="footer-links">
-        <a href="https://github.com/the-mrinal/fire_tv" rel="noopener">GitHub</a>
-        <a href="https://github.com/the-mrinal/fire_tv/releases" rel="noopener">Releases</a>
-        <a href="https://github.com/the-mrinal/fire_tv/blob/main/LICENSE" rel="noopener">License</a>
-        <a href="https://github.com/the-mrinal/fire_tv/blob/main/CONTRIBUTING.md" rel="noopener">Contributing</a>
+        <a href="https://github.com/the-mrinal/Dock" rel="noopener">GitHub</a>
+        <a href="https://github.com/the-mrinal/Dock/releases" rel="noopener">Releases</a>
+        <a href="https://github.com/the-mrinal/Dock/blob/main/LICENSE" rel="noopener">License</a>
+        <a href="https://github.com/the-mrinal/Dock/blob/main/CONTRIBUTING.md" rel="noopener">Contributing</a>
       </nav>
       <p class="footer-copy">
         Apache 2.0 · No cloud · No telemetry

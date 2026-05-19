@@ -2,7 +2,7 @@
 PR title MUST follow Conventional Commits. Examples:
   feat(music): add device-switcher long-press
   fix(vpn): clear stale tunnel handle on cold-start
-  feat!: drop API 25 (Fire TV Stick gen 1)
+  feat!: drop API 25 support
 Anything else will block the next release. See CONTRIBUTING.md.
 -->
 
@@ -29,11 +29,11 @@ Drag the file into this textarea.
 
 ## Testing notes
 
-<!-- How did you verify this? Which flavor? Fire TV gen 2/3? Google TV? Real hardware or emulator? -->
+<!-- How did you verify this? Which flavor (firetv / googletv)? Which device (Fire TV gen?, Google TV, Onn, Chromecast, emulator)? -->
 
 - [ ] `./gradlew assembleFiretvDebug` passes
 - [ ] `./gradlew lintFiretvDebug` clean (or new warnings are acknowledged below)
-- [ ] Verified on real Fire TV / Google TV hardware
+- [ ] Verified on real Android TV hardware (state which device + flavor in the notes above)
 - [ ] Ambient mode and idle behaviour still calm (no new wake-ups, no new draw-on-idle)
 
 ## Release impact
