@@ -6,3 +6,7 @@ app/.cxx/
 local.properties
 .DS_Store
 .idea/
+
+# Claude Code local config (per-user, not for source control)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

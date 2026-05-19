@@ -1,0 +1,87 @@
+name: Bug report
+description: Something in the dock isn't working the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more concrete you can be, the faster it gets fixed.
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Fire TV Stick (gen?), Fire TV Cube, Chromecast with Google TV, Onn box, etc.
+      placeholder: "Fire TV Stick 4K Max (gen 2)"
+    validations:
+      required: true
+
+  - type: input
+    id: os_version
+    attributes:
+      label: OS / Fire OS version
+      placeholder: "Fire OS 8.0.1 / Android 11"
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: From Settings → About, or the version code in the APK filename.
+      placeholder: "2.0 (versionCode 2)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: flavor
+    attributes:
+      label: Flavor
+      options:
+        - firetv
+        - googletv
+        - I don't know
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened
+      description: One or two sentences on the wrong behaviour.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the dock
+        2. Press D-pad Right twice to land on Music
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: |
+        If you can grab them:  `adb logcat -d AndroidRuntime:E *:S | tail -200`
+      render: shell
+
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched existing issues for this bug.
+          required: true
