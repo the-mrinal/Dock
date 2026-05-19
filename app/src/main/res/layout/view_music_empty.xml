@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Music empty state (Stream A, artboard 13).
+    Centered column: 220dp dashed music tile + eyebrow + Manrope-200 84sp
+    "Quiet for now." + body copy + Browse / Change-device CTAs.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/viewMusicEmpty"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="@dimen/music_empty_tile_size"
+        android:layout_height="@dimen/music_empty_tile_size"
+        android:background="@drawable/bg_empty_tile_dashed">
+
+        <ImageView
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_music_note"
+            android:tint="@color/dock_text_quat" />
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:text="@string/music_empty_eyebrow"
+        android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+        android:textColor="@color/dock_accent_chartreuse" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:maxWidth="1100dp"
+        android:text="@string/music_empty_title"
+        android:textAppearance="@style/TextAppearance.Dock.Title.Large"
+        android:textSize="84sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:maxWidth="760dp"
+        android:text="@string/music_empty_body"
+        android:fontFamily="@font/manrope"
+        android:textColor="@color/dock_text_sec"
+        android:textSize="24sp"
+        android:lineSpacingMultiplier="1.5" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="horizontal">
+
+        <com.ambient.tvclock.ui.FocusableContainer
+            android:id="@+id/emptyBrowseFocus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:accentColor="@color/dock_accent_chartreuse"
+            app:focusRadius="999dp"
+            app:proxyFocus="true">
+
+            <LinearLayout
+                android:id="@+id/emptyBrowseCta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dock_card_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="32dp"
+                android:paddingTop="20dp"
+                android:paddingEnd="30dp"
+                android:paddingBottom="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/music_empty_browse_cta"
+                    android:fontFamily="@font/manrope"
+                    android:textColor="@color/dock_text_pri"
+                    android:textSize="22sp" />
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_chevron_right"
+                    android:tint="@color/dock_text_pri" />
+            </LinearLayout>
+        </com.ambient.tvclock.ui.FocusableContainer>
+
+        <com.ambient.tvclock.ui.FocusableContainer
+            android:id="@+id/emptyDeviceFocus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            app:accentColor="@color/dock_accent_chartreuse"
+            app:focusRadius="999dp"
+            app:proxyFocus="true">
+
+            <LinearLayout
+                android:id="@+id/emptyDeviceCta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dock_card_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="30dp"
+                android:paddingTop="20dp"
+                android:paddingEnd="30dp"
+                android:paddingBottom="20dp">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_devices"
+                    android:tint="@color/dock_text_sec" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/music_empty_change_device_cta"
+                    android:fontFamily="@font/manrope"
+                    android:textColor="@color/dock_text_sec"
+                    android:textSize="22sp" />
+            </LinearLayout>
+        </com.ambient.tvclock.ui.FocusableContainer>
+    </LinearLayout>
+</LinearLayout>

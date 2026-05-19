@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Music NowPlaying sub-view (Stream A, artboards 11–12).
+
+    Stacks:
+      1. HeroNowPlaying — 472dp cover (left) + right pane (eyebrow / device
+         chip / Manrope-200 96sp title / artist / album+year / 6dp progress /
+         transport row).
+      2. UpNextStrip   — full-width card.
+      3. RecentlyPlayed — 5-col horizontal row of RecentCards.
+
+    The MusicScreenBinder swaps this view in/out as the default sub-view of
+    the Music page. The page-level TopChrome lives in `screen_music.xml`.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/viewMusicNowPlaying"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:descendantFocusability="afterDescendants"
+    android:orientation="vertical">
+
+    <!-- ── 1. HeroNowPlaying ──────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/heroNowPlaying"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/music_hero_cover_size"
+        android:baselineAligned="false"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="horizontal">
+
+        <!-- 472dp cover, focusable via wrapper. -->
+        <com.ambient.tvclock.ui.FocusableContainer
+            android:id="@+id/heroArtFocus"
+            android:layout_width="@dimen/music_hero_cover_size"
+            android:layout_height="@dimen/music_hero_cover_size"
+            app:accentColor="@color/dock_accent_chartreuse"
+            app:focusRadius="18dp"
+            app:focusScale="1.03"
+            app:proxyFocus="true">
+
+            <FrameLayout
+                android:id="@+id/heroArtContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/dock_bg_elev">
+
+                <ImageView
+                    android:id="@+id/heroArtImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/cd_album_art"
+                    android:scaleType="centerCrop" />
+            </FrameLayout>
+        </com.ambient.tvclock.ui.FocusableContainer>
+
+        <!-- Right pane. -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="@dimen/music_hero_gap"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical">
+
+            <!-- Top row: eyebrow (left) + device chip (right). -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="top"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <!-- Eyebrow: bars + "Playing from playlist" -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.ambient.tvclock.ui.VuBarsView
+                            android:id="@+id/heroEyebrowBars"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="8dp"
+                            app:barColor="@color/dock_accent_chartreuse" />
+
+                        <TextView
+                            android:id="@+id/heroEyebrow"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/music_now_playing_from_playlist"
+                            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                            android:textColor="@color/dock_accent_chartreuse" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/heroContext"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/manrope"
+                        android:maxLines="1"
+                        android:text="@string/music_now_playing_context"
+                        android:textColor="@color/dock_text_pri"
+                        android:textSize="22sp" />
+                </LinearLayout>
+
+                <!-- Device chip — focusable pill that opens device picker. -->
+                <com.ambient.tvclock.ui.FocusableContainer
+                    android:id="@+id/heroDeviceFocus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:accentColor="@color/dock_accent_chartreuse"
+                    app:focusRadius="999dp"
+                    app:proxyFocus="true">
+
+                    <LinearLayout
+                        android:id="@+id/heroDeviceChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_dock_card_pill"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingTop="12dp"
+                        android:paddingEnd="18dp"
+                        android:paddingBottom="12dp">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_tv"
+                            android:tint="@color/dock_accent_chartreuse" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="@string/music_device_on_label"
+                            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                            android:textColor="@color/dock_text_sec" />
+
+                        <TextView
+                            android:id="@+id/heroDeviceName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:ellipsize="end"
+                            android:fontFamily="@font/manrope"
+                            android:maxLines="1"
+                            android:text="@string/music_device_default_name"
+                            android:textColor="@color/dock_text_pri"
+                            android:textSize="16sp" />
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="14dp"
+                            android:layout_marginStart="14dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@color/dock_border_strong" />
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_devices"
+                            android:tint="@color/dock_text_pri" />
+                    </LinearLayout>
+                </com.ambient.tvclock.ui.FocusableContainer>
+            </LinearLayout>
+
+            <!-- Title (Manrope 200, 96sp). -->
+            <TextView
+                android:id="@+id/heroTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textAppearance="@style/TextAppearance.Dock.HeroTitle" />
+
+            <!-- Artist (Manrope 400, 34sp). -->
+            <TextView
+                android:id="@+id/heroArtist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:maxLines="1"
+                android:textColor="@color/dock_text_pri"
+                android:textSize="34sp"
+                android:letterSpacing="-0.01" />
+
+            <!-- Album · year (Manrope 400, 18sp). -->
+            <TextView
+                android:id="@+id/heroAlbumYear"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.Dock.Body.Medium"
+                android:textColor="@color/dock_text_ter" />
+
+            <!-- Spacer pushes progress + transport row to the bottom of the hero. -->
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Progress bar (6dp track + 16dp thumb halo). -->
+            <com.ambient.tvclock.PlaybackProgressBar
+                android:id="@+id/heroProgress"
+                android:layout_width="match_parent"
+                android:layout_height="24dp" />
+
+            <!-- Time labels (current / -remaining). Mono. -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/heroTimeCurrent"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Dock.MonoData"
+                    android:textColor="@color/dock_text_pri" />
+
+                <TextView
+                    android:id="@+id/heroTimeRemaining"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Dock.MonoData"
+                    android:textColor="@color/dock_text_ter" />
+            </LinearLayout>
+
+            <!-- Transport row: Prev | Play | Next ............... Queue. -->
+            <LinearLayout
+                android:id="@+id/heroTransport"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.ambient.tvclock.ui.FocusableContainer
+                    android:id="@+id/heroPrevFocus"
+                    android:layout_width="@dimen/music_transport_secondary"
+                    android:layout_height="@dimen/music_transport_secondary"
+                    app:accentColor="@color/dock_accent_chartreuse"
+                    app:focusRadius="999dp"
+                    app:proxyFocus="true">
+
+                    <ImageButton
+                        android:id="@+id/heroButtonPrev"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_dock_transport_secondary"
+                        android:contentDescription="@string/cd_skip_previous"
+                        android:padding="22dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_skip_previous"
+                        android:tint="@color/dock_text_pri" />
+                </com.ambient.tvclock.ui.FocusableContainer>
+
+                <com.ambient.tvclock.ui.FocusableContainer
+                    android:id="@+id/heroPlayFocus"
+                    android:layout_width="@dimen/music_transport_primary"
+                    android:layout_height="@dimen/music_transport_primary"
+                    android:layout_marginStart="28dp"
+                    app:accentColor="@color/dock_accent_chartreuse"
+                    app:focusRadius="999dp"
+                    app:focusScale="1.06"
+                    app:proxyFocus="true">
+
+                    <ImageButton
+                        android:id="@+id/heroButtonPlay"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_dock_play_primary"
+                        android:contentDescription="@string/cd_play_pause"
+                        android:padding="26dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_pause"
+                        android:tint="@color/dock_bg" />
+                </com.ambient.tvclock.ui.FocusableContainer>
+
+                <com.ambient.tvclock.ui.FocusableContainer
+                    android:id="@+id/heroNextFocus"
+                    android:layout_width="@dimen/music_transport_secondary"
+                    android:layout_height="@dimen/music_transport_secondary"
+                    android:layout_marginStart="28dp"
+                    app:accentColor="@color/dock_accent_chartreuse"
+                    app:focusRadius="999dp"
+                    app:proxyFocus="true">
+
+                    <ImageButton
+                        android:id="@+id/heroButtonNext"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_dock_transport_secondary"
+                        android:contentDescription="@string/cd_skip_next"
+                        android:padding="22dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_skip_next"
+                        android:tint="@color/dock_text_pri" />
+                </com.ambient.tvclock.ui.FocusableContainer>
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <com.ambient.tvclock.ui.FocusableContainer
+                    android:id="@+id/heroQueueFocus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/music_transport_secondary"
+                    app:accentColor="@color/dock_accent_chartreuse"
+                    app:focusRadius="999dp"
+                    app:proxyFocus="true">
+
+                    <LinearLayout
+                        android:id="@+id/heroQueueChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_dock_card_pill"
+                        android:clickable="true"
+                        android:focusable="false"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="18dp"
+                        android:paddingEnd="22dp">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_queue"
+                            android:tint="@color/dock_text_pri" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="@string/music_now_playing_queue"
+                            android:textAppearance="@style/TextAppearance.Dock.Label.Large" />
+                    </LinearLayout>
+                </com.ambient.tvclock.ui.FocusableContainer>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ── 2. UpNextStrip ─────────────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/music_section_gap"
+        android:orientation="vertical">
+
+        <com.ambient.tvclock.ui.EyebrowView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:eyebrowText="Up Next" />
+
+        <com.ambient.tvclock.ui.FocusableContainer
+            android:id="@+id/upNextFocus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:accentColor="@color/dock_accent_chartreuse"
+            app:focusRadius="14dp"
+            app:proxyFocus="true">
+
+            <FrameLayout
+                android:id="@+id/upNextCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_dock_card"
+                android:minHeight="88dp"
+                android:paddingStart="16dp"
+                android:paddingTop="16dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/upNextCover"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:contentDescription="@null"
+                        android:scaleType="centerCrop" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="22dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/upNextTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:fontFamily="@font/manrope"
+                            android:maxLines="1"
+                            android:textColor="@color/dock_text_pri"
+                            android:textSize="20sp" />
+
+                        <TextView
+                            android:id="@+id/upNextArtist"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:ellipsize="end"
+                            android:fontFamily="@font/manrope"
+                            android:maxLines="1"
+                            android:textColor="@color/dock_text_sec"
+                            android:textSize="16sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/upNextHint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="@string/music_press_ok_to_jump"
+                        android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                        android:textColor="@color/dock_text_ter" />
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_marginStart="10dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_chevron_right"
+                        android:tint="@color/dock_text_ter" />
+                </LinearLayout>
+
+                <!-- Inline loading bar sits on the bottom edge of the card. -->
+                <ProgressBar
+                    android:id="@+id/upNextLoading"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:layout_gravity="bottom"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/dock_accent_chartreuse"
+                    android:visibility="gone" />
+            </FrameLayout>
+        </com.ambient.tvclock.ui.FocusableContainer>
+
+        <TextView
+            android:id="@+id/upNextHintText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.Dock.Body.Medium"
+            android:textColor="@color/dock_text_ter"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- ── 3. RecentlyPlayedRow ───────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <com.ambient.tvclock.ui.EyebrowView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:eyebrowText="Recently Played" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/music_recent_hint"
+                android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                android:textColor="@color/dock_text_ter" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recentRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
+
+        <TextView
+            android:id="@+id/recentHintText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.Dock.Body.Medium"
+            android:textColor="@color/dock_text_ter"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

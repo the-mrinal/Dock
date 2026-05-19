@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Device picker row (Stream A, artboard 16). 56dp icon tile (active state
+    tinted accent) + name + sub + trailing chevron OR "Playing" + VuBars.
+-->
+<com.ambient.tvclock.ui.FocusableContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:accentColor="@color/dock_accent_chartreuse"
+    app:focusRadius="12dp"
+    app:proxyFocus="true">
+
+    <LinearLayout
+        android:id="@+id/deviceRowRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingTop="18dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="18dp">
+
+        <FrameLayout
+            android:id="@+id/deviceIconTile"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_device_icon">
+
+            <ImageView
+                android:id="@+id/deviceIcon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:tint="@color/dock_text_sec" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/deviceName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:maxLines="1"
+                android:textColor="@color/dock_text_pri"
+                android:textSize="22sp" />
+
+            <TextView
+                android:id="@+id/deviceSub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:maxLines="1"
+                android:textColor="@color/dock_text_sec"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- Trailing slot — either chevron (inactive) or VuBars + "Playing" (active). -->
+        <FrameLayout
+            android:id="@+id/deviceTrailing"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/deviceChevron"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_chevron_right"
+                android:tint="@color/dock_text_ter" />
+
+            <LinearLayout
+                android:id="@+id/deviceActiveLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.ambient.tvclock.ui.VuBarsView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginEnd="8dp"
+                    app:barColor="@color/dock_accent_chartreuse" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/music_device_active_label"
+                    android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                    android:textColor="@color/dock_accent_chartreuse" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+</com.ambient.tvclock.ui.FocusableContainer>
