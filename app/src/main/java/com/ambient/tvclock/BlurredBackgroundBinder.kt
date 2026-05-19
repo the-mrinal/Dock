@@ -103,8 +103,16 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
                 null
             }
             mainHandler.post {
+                // Stale: a newer bind has overtaken this one — drop it.
                 if (lastKey != key) return@post
-                if (prepared != null) applyBitmap(prepared)
+                if (prepared != null) {
+                    applyBitmap(prepared)
+                } else {
+                    // Blur failed for this bitmap. Roll lastKey back so the
+                    // next bind() for the same track can retry instead of
+                    // short-circuiting on the now-stale key match.
+                    lastKey = null
+                }
             }
         }
     }

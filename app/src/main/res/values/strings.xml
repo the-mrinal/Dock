@@ -68,7 +68,7 @@
     <string name="widget_today">Today</string>
     <string name="widget_now_playing">Now playing</string>
     <string name="calendar_screen_title">Today</string>
-    <string name="music_empty_state">Start Spotify on this TV to see playback here</string>
+    <string name="music_empty_state">Pick a track on the left to play it on this TV. The Spotify app may appear briefly.</string>
     <string name="up_next">Up next</string>
     <string name="recently_played">Recently played</string>
     <string name="music_section_up_next">Up next</string>
@@ -172,6 +172,26 @@
     <string name="spotify_reconnect_for_recent">Reconnect Spotify in Settings to enable recently played</string>
     <string name="tap_to_play_track">Select · OK to play</string>
     <string name="spotify_reconnect_for_controls">Reconnect Spotify in Settings for play/skip controls</string>
+
+    <!-- Playlist browser. -->
+    <string name="spotify_browse_playlists">Browse playlists</string>
+    <string name="spotify_browse_back">← Back</string>
+    <string name="spotify_browse_playlists_header">Your playlists</string>
+    <string name="spotify_playlists_empty">No playlists yet — add some in Spotify first</string>
+    <string name="spotify_playlists_tracks_empty">This playlist is empty</string>
+    <string name="spotify_playlists_needs_reauth">Reconnect Spotify in Settings to browse playlists</string>
+    <string name="spotify_playlists_loading">Loading playlists…</string>
+    <string name="spotify_playlists_tracks_loading">Loading tracks…</string>
+    <string name="spotify_playlists_api_error">Could not load playlists — try again</string>
+    <string name="spotify_premium_required">Spotify Premium required for playback</string>
+    <string name="spotify_no_active_device">No active Spotify device — pick one to play on</string>
+    <string name="spotify_launch_on_this_tv">▶ Launch Spotify on this TV</string>
+    <string name="spotify_launching_hint">Opening Spotify on this TV. Come back and press OK on the track again in a few seconds.</string>
+    <string name="spotify_no_devices_with_launch">No Spotify devices found. Launch Spotify on this TV to register it as a playback target.</string>
+    <plurals name="spotify_playlist_track_count">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
 
     <string name="now_playing_badge">Now playing</string>
     <string name="listening_to">Listening to</string>

@@ -9,5 +9,6 @@ data class SpotifyDevice(
 
 data class SpotifyPlayerState(
     val device: SpotifyDevice?,
-    val isPlaying: Boolean
+    val isPlaying: Boolean,
+    val contextUri: String = ""
 )

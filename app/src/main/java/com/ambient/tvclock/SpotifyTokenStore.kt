@@ -12,6 +12,7 @@ object SpotifyTokenStore {
     private const val KEY_REFRESH = "refresh_token"
     private const val KEY_EXPIRES = "expires_at"
     private const val KEY_VERIFIER = "pkce_verifier"
+    private const val KEY_USER_ID = "user_id"
 
     private fun prefs(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
@@ -62,6 +63,13 @@ object SpotifyTokenStore {
         val token = getAccessToken(context) ?: return false
         if (token.isBlank()) return false
         return System.currentTimeMillis() < prefs(context).getLong(KEY_EXPIRES, 0L)
+    }
+
+    fun getUserId(context: Context): String? =
+        prefs(context).getString(KEY_USER_ID, null)?.takeIf { it.isNotBlank() }
+
+    fun saveUserId(context: Context, userId: String) {
+        prefs(context).edit().putString(KEY_USER_ID, userId).apply()
     }
 
     fun clear(context: Context) {

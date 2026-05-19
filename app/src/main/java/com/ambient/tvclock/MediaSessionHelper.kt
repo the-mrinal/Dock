@@ -35,10 +35,16 @@ object MediaSessionHelper {
             ?: description.description?.toString()?.trim()
             ?: ""
 
-        val artwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+        val rawArtwork = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
             ?: description.iconBitmap
+        // Spotify drips a small icon-shaped placeholder before real album art
+        // during track changes; if we let it through, the home & music-screen
+        // blur binders treat it as the new artwork and either flash the icon
+        // or get stuck on it. Drop placeholders here so every downstream view
+        // sees `null` (which they already handle as "show local fallback").
+        val artwork = if (ArtworkClassifier.looksLikeAlbumArt(rawArtwork)) rawArtwork else null
 
         val mediaUri = metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_URI)?.trim()
             ?: metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)?.trim()

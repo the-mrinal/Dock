@@ -677,6 +677,12 @@ class MainActivity : Activity() {
         }
 
         if (currentPage == DashboardPage.MUSIC) {
+            if (keyCode == KeyEvent.KEYCODE_BACK) {
+                if (musicBinder?.onBackPressed() == true) {
+                    resetInactivityWatchdog()
+                    return true
+                }
+            }
             if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
                 val focused = currentFocus
                 if (focused != null && focused.performClick()) {
