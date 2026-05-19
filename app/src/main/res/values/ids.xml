@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pre-declared view IDs for views constructed in Kotlin (no XML layout).
+    Layout files referencing the same IDs share these declarations.
+-->
+<resources>
+    <item name="eyebrowLabel" type="id" />
+    <item name="pillButtonLabel" type="id" />
+    <item name="navDestConnect" type="id" />
+    <item name="navDestHome" type="id" />
+    <item name="navDestCalendar" type="id" />
+    <item name="navDestMusic" type="id" />
+    <item name="artWashView" type="id" />
+    <item name="bottomNavCapsule" type="id" />
+</resources>
