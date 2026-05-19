@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Recently Played card (Stream A). 16dp card with square cover + title +
+    artist + mono context line. Width is supplied by the parent (grid cell).
+    Cover height is enforced in code (RecentCardAdapter.onBindViewHolder) so
+    the square aspect ratio survives across the 5 columns at 1920×1080.
+-->
+<com.ambient.tvclock.ui.FocusableContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:accentColor="@color/dock_accent_chartreuse"
+    app:focusRadius="14dp"
+    app:proxyFocus="true">
+
+    <LinearLayout
+        android:id="@+id/recentCardRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_dock_card"
+        android:clickable="true"
+        android:focusable="false"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/recentCover"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginBottom="14dp"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop" />
+
+        <TextView
+            android:id="@+id/recentTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/manrope"
+            android:maxLines="1"
+            android:textColor="@color/dock_text_pri"
+            android:textSize="19sp" />
+
+        <TextView
+            android:id="@+id/recentArtist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/manrope"
+            android:maxLines="1"
+            android:textColor="@color/dock_text_sec"
+            android:textSize="15sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="10dp"
+            android:background="@color/dock_border" />
+
+        <TextView
+            android:id="@+id/recentContext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="0.04"
+            android:maxLines="1"
+            android:textColor="@color/dock_text_ter"
+            android:textSize="12sp" />
+    </LinearLayout>
+</com.ambient.tvclock.ui.FocusableContainer>

@@ -1,67 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Up Next queue row (Stream A). The Music NowPlaying view ships a single
+    inline UpNextStrip card (`view_music_now_playing.xml`), but this item
+    layout is kept and restyled for any RecyclerView that wants to render
+    a Spotify queue entry in the same visual language.
+-->
+<com.ambient.tvclock.ui.FocusableContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_track_row_focus"
-    android:clickable="true"
-    android:focusable="true">
+    app:accentColor="@color/dock_accent_chartreuse"
+    app:focusRadius="14dp"
+    app:proxyFocus="true">
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/queueRowRoot"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:minHeight="64dp"
-        android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="8dp"
-        android:paddingBottom="8dp">
-
-        <ImageView
-            android:id="@+id/imageQueueArt"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/bg_album_frame"
-            android:contentDescription="@null"
-            android:scaleType="centerCrop" />
+        android:background="@drawable/bg_dock_card"
+        android:clickable="true"
+        android:focusable="false">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:minHeight="88dp"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="16dp">
 
-            <TextView
-                android:id="@+id/textQueueTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif-medium"
-                android:maxLines="1"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp" />
+            <ImageView
+                android:id="@+id/imageQueueArt"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop" />
 
-            <TextView
-                android:id="@+id/textQueueArtist"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif"
-                android:maxLines="1"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+                android:layout_marginStart="22dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textQueueTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/manrope"
+                    android:maxLines="1"
+                    android:textColor="@color/dock_text_pri"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/textQueueArtist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/manrope"
+                    android:maxLines="1"
+                    android:textColor="@color/dock_text_sec"
+                    android:textSize="16sp" />
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progressQueueLoading"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:layout_gravity="bottom"
-        android:indeterminate="true"
-        android:indeterminateTint="@color/accent_spotify"
-        android:visibility="gone" />
-</FrameLayout>
+        <ProgressBar
+            android:id="@+id/progressQueueLoading"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/dock_accent_chartreuse"
+            android:visibility="gone" />
+    </FrameLayout>
+</com.ambient.tvclock.ui.FocusableContainer>

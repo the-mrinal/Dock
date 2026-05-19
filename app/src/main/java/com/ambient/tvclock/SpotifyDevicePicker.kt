@@ -5,29 +5,33 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.fragment.app.FragmentActivity
 import kotlin.concurrent.thread
 
+/**
+ * Entry-point façade for the redesigned Spotify Connect device picker
+ * (Stream A, artboard 16).
+ *
+ * Public API is unchanged: [show] takes an [Activity] + a `(deviceId)`
+ * callback. Under the hood it fetches the device list off the UI thread,
+ * then routes to [SpotifyDevicePickerDialogFragment] when hosted on a
+ * [FragmentActivity], or falls back to an [AlertDialog] otherwise (test
+ * harnesses, headless contexts).
+ */
 object SpotifyDevicePicker {
 
-    // Package names of Spotify clients that can act as Spotify Connect playback
-    // endpoints when launched on the host device. The dedicated TV app is the
-    // expected Fire TV / Google TV install; the phone/tablet app shows up as
-    // a fallback on some sideloaded configurations.
+    // Package names of Spotify clients that can act as Spotify Connect
+    // playback endpoints when launched on the host device. The dedicated
+    // TV app is the expected Fire TV / Google TV install; the phone/tablet
+    // app shows up as a fallback on some sideloaded configurations.
     private val SPOTIFY_PACKAGES = listOf(
         "com.spotify.tv.android",
         "com.spotify.music"
     )
 
-    private sealed class Entry {
-        class LaunchLocal(val packageName: String) : Entry()
-        class Device(val device: SpotifyDevice) : Entry()
-    }
-
     /**
-     * Shows the device picker. The caller decides what to do with the
-     * selected device id via [onDeviceSelected] — the cast button wants to
-     * transfer current playback, a 404-fallback wants to (re-)play a specific
-     * track on the chosen device.
+     * Shows the device picker dialog. Fetches devices on a background
+     * thread, then hops to UI thread to inflate the redesigned dialog.
      */
     fun show(activity: Activity, onDeviceSelected: (deviceId: String) -> Unit) {
         if (!SpotifyTokenStore.isConnected(activity)) {
@@ -62,31 +66,48 @@ object SpotifyDevicePicker {
             return
         }
 
-        val entries = buildList<Entry> {
-            // Put the launch action first — when no Connect devices exist
-            // anywhere, it's the only way the user can play anything on this
-            // TV, so it deserves the top of the focus list.
-            if (localSpotifyPackage != null) {
-                add(Entry.LaunchLocal(localSpotifyPackage))
-            }
-            devices.forEach { add(Entry.Device(it)) }
+        val fragmentActivity = activity as? FragmentActivity
+        if (fragmentActivity != null) {
+            SpotifyDevicePickerDialogFragment.show(
+                fragmentActivity,
+                devices,
+                localSpotifyPackage,
+                onLaunchLocal = { pkg ->
+                    launchSpotifyApp(activity, pkg)
+                    Toast.makeText(
+                        activity,
+                        R.string.spotify_launching_hint,
+                        Toast.LENGTH_LONG
+                    ).show()
+                },
+                onDeviceSelected = onDeviceSelected
+            )
+            return
         }
 
+        // Fallback: fragment-less host (shouldn't happen in production but
+        // keeps tests / instrumentation harnesses functional). Build the
+        // same list inline via AlertDialog.
+        val entries = buildList<PickerEntry> {
+            if (localSpotifyPackage != null) {
+                add(PickerEntry.LaunchLocal(localSpotifyPackage))
+            }
+            devices.forEach { add(PickerEntry.Device(it)) }
+        }
         val labels = entries.map { entry ->
             when (entry) {
-                is Entry.LaunchLocal -> activity.getString(R.string.spotify_launch_on_this_tv)
-                is Entry.Device -> {
+                is PickerEntry.LaunchLocal -> activity.getString(R.string.spotify_launch_on_this_tv)
+                is PickerEntry.Device -> {
                     val active = if (entry.device.isActive) " ✓" else ""
                     "${entry.device.name}$active"
                 }
             }
         }.toTypedArray()
-
         AlertDialog.Builder(activity)
             .setTitle(R.string.spotify_pick_device)
             .setItems(labels) { _, which ->
                 when (val entry = entries[which]) {
-                    is Entry.LaunchLocal -> {
+                    is PickerEntry.LaunchLocal -> {
                         launchSpotifyApp(activity, entry.packageName)
                         Toast.makeText(
                             activity,
@@ -94,13 +115,16 @@ object SpotifyDevicePicker {
                             Toast.LENGTH_LONG
                         ).show()
                     }
-                    is Entry.Device -> {
-                        onDeviceSelected(entry.device.id)
-                    }
+                    is PickerEntry.Device -> onDeviceSelected(entry.device.id)
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    private sealed class PickerEntry {
+        class LaunchLocal(val packageName: String) : PickerEntry()
+        class Device(val device: SpotifyDevice) : PickerEntry()
     }
 
     private fun findInstalledSpotifyApp(context: Context): String? {

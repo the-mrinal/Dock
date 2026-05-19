@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Primary transport button (96dp circle). Filled chartreuse with the
+     HTML's box-shadow approximated by a 1dp dimmer stroke. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/dock_accent_chartreuse" />
+</shape>

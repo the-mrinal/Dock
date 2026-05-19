@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Music Browse Playlists (Stream A, artboard 14). Replaces the legacy
+    `view_browse_playlists.xml`. Eyebrow + Manrope-200 76sp "Playlists"
+    title + 4-col grid + bottom legend row.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/viewMusicBrowse"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="vertical">
+
+        <!-- Header row: title (left) + tabs (right). -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/music_section_gap"
+            android:baselineAligned="false"
+            android:gravity="bottom"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/browseEyebrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="@string/music_browse_eyebrow"
+                    android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                    android:textColor="@color/dock_accent_chartreuse" />
+
+                <TextView
+                    android:id="@+id/browseTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/music_browse_title"
+                    android:textAppearance="@style/TextAppearance.Dock.Title.Large"
+                    android:textSize="76sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/browseRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
+
+        <TextView
+            android:id="@+id/browseHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:textAppearance="@style/TextAppearance.Dock.Body.Large"
+            android:textColor="@color/dock_text_sec"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Bottom legend row (absolute-positioned, matches HTML's
+         `position: absolute; bottom: 28px`). -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="6dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/music_browse_legend_ok_open"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_text_ter" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="30dp"
+            android:text="@string/music_browse_legend_back"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_text_ter" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="30dp"
+            android:text="@string/music_browse_legend_nav"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_text_ter" />
+    </LinearLayout>
+</FrameLayout>

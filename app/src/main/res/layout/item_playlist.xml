@@ -1,52 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Playlist card for the 4-col Browse grid (Stream A, artboard 14).
+    Square cover + 22sp title + secondary line + tabular count.
+-->
+<com.ambient.tvclock.ui.FocusableContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_track_row_focus"
-    android:clickable="true"
-    android:focusable="true"
-    android:gravity="center_vertical"
-    android:minHeight="64dp"
-    android:orientation="horizontal"
-    android:paddingStart="4dp"
-    android:paddingTop="8dp"
-    android:paddingEnd="8dp"
-    android:paddingBottom="8dp">
-
-    <ImageView
-        android:id="@+id/imagePlaylistArt"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:background="@drawable/bg_album_frame"
-        android:contentDescription="@null"
-        android:scaleType="centerCrop" />
+    app:accentColor="@color/dock_accent_chartreuse"
+    app:focusRadius="16dp"
+    app:proxyFocus="true">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:id="@+id/playlistCardRoot"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:background="@drawable/bg_dock_card"
+        android:clickable="true"
+        android:focusable="false"
+        android:orientation="vertical"
+        android:padding="18dp">
+
+        <ImageView
+            android:id="@+id/imagePlaylistArt"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop" />
 
         <TextView
             android:id="@+id/textPlaylistName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/manrope"
             android:maxLines="1"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp" />
+            android:textColor="@color/dock_text_pri"
+            android:textSize="22sp" />
 
-        <TextView
-            android:id="@+id/textPlaylistMeta"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:ellipsize="end"
-            android:fontFamily="sans-serif"
-            android:maxLines="1"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="6dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/textPlaylistMeta"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:maxLines="1"
+                android:textColor="@color/dock_text_sec"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/textPlaylistCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:textColor="@color/dock_text_ter"
+                android:textSize="13sp" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</com.ambient.tvclock.ui.FocusableContainer>

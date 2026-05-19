@@ -2,20 +2,28 @@ package com.ambient.tvclock
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.Choreographer
 import android.view.View
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 
 /**
- * A plain horizontal playback progress bar.
+ * Music NowPlaying playback bar.
  *
- * The played portion is Spotify green, the rest is a dim track. Between
- * metadata updates we extrapolate the playhead from
- * `lastPositionUpdateTime + playbackSpeed`, so the green region glides
+ * Restyled for the Dock redesign (Stream A) to match the HTML prototype:
+ * a 6dp pill-shaped track, a 16dp accent thumb at the playhead with a 4dp
+ * soft halo. The played portion is filled with the page accent (chartreuse
+ * by default). Between metadata updates we extrapolate the playhead from
+ * `lastPositionUpdateTime + playbackSpeed` so the green region glides
  * smoothly toward the end of the track instead of stepping in chunks.
+ *
+ * Set [accentColor] to flip the fill / thumb (used by the empty-state +
+ * device picker which both inherit the page accent token).
  */
 class PlaybackProgressBar @JvmOverloads constructor(
     context: Context,
@@ -24,14 +32,41 @@ class PlaybackProgressBar @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val density = resources.displayMetrics.density
-    private val trackThicknessDp = 3f
+
+    /** Track thickness — 6dp per HTML spec. */
+    private val trackThicknessPx = 6f * density
+
+    /** Thumb diameter — 16dp per HTML spec, with a 4dp halo painted at 0x33 alpha. */
+    private val thumbDiameterPx = 16f * density
+    private val thumbRadiusPx = thumbDiameterPx / 2f
+    private val thumbHaloPx = 4f * density
+
+    private val accentDefault = ContextCompat.getColor(context, R.color.dock_accent_chartreuse)
+
+    /** Page accent. Drives both fill + thumb. */
+    var accentColor: Int = accentDefault
+        set(value) {
+            field = value
+            paintProgress.color = value
+            paintThumb.color = value
+            paintThumbHalo.color = ColorUtils.setAlphaComponent(value, 0x33)
+            invalidate()
+        }
 
     private val paintTrack = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x33FFFFFF
+        color = 0x1AFFFFFF // rgba(255,255,255,0.10) — matches T.borderStrong-adjacent
         style = Paint.Style.FILL
     }
     private val paintProgress = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF1DB954.toInt()
+        color = accentDefault
+        style = Paint.Style.FILL
+    }
+    private val paintThumb = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = accentDefault
+        style = Paint.Style.FILL
+    }
+    private val paintThumbHalo = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = ColorUtils.setAlphaComponent(accentDefault, 0x33)
         style = Paint.Style.FILL
     }
 
@@ -91,15 +126,21 @@ class PlaybackProgressBar @JvmOverloads constructor(
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
 
-        val thicknessPx = (trackThicknessDp * density).coerceAtMost(h)
-        val top = (h - thicknessPx) / 2f
-        val bottom = top + thicknessPx
-        val radius = thicknessPx / 2f
+        // We need vertical room for: 6dp track + a 16dp + 4dp halo thumb stuck
+        // on top. The widget's parent gives us at least 24dp; centre everything
+        // on the track's midline.
+        val centerY = h / 2f
+        val trackTop = centerY - trackThicknessPx / 2f
+        val trackBottom = centerY + trackThicknessPx / 2f
+        val trackRadius = trackThicknessPx / 2f
 
-        rect.set(0f, top, w, bottom)
-        canvas.drawRoundRect(rect, radius, radius, paintTrack)
+        // 1. Background pill — full width.
+        rect.set(0f, trackTop, w, trackBottom)
+        canvas.drawRoundRect(rect, trackRadius, trackRadius, paintTrack)
 
         if (trackDurationMs <= 0L) return
+
+        // 2. Computed playhead. Smooth-glide via elapsedRealtime extrapolation.
         val nowMs = SystemClock.elapsedRealtime()
         val livePosition = if (isPlaying) {
             val deltaMs = (nowMs - anchorElapsedRealtimeMs).coerceAtLeast(0L)
@@ -107,10 +148,19 @@ class PlaybackProgressBar @JvmOverloads constructor(
         } else {
             trackPositionMs
         }.coerceIn(0L, trackDurationMs)
-        val playedX = w * (livePosition.toFloat() / trackDurationMs.toFloat())
+        val fraction = livePosition.toFloat() / trackDurationMs.toFloat()
+        // Inset by thumb radius so the thumb never visually wanders off the edge.
+        val usableW = (w - thumbDiameterPx).coerceAtLeast(0f)
+        val playedX = thumbRadiusPx + usableW * fraction
+
+        // 3. Played pill.
         if (playedX > 0f) {
-            rect.set(0f, top, playedX, bottom)
-            canvas.drawRoundRect(rect, radius, radius, paintProgress)
+            rect.set(0f, trackTop, playedX, trackBottom)
+            canvas.drawRoundRect(rect, trackRadius, trackRadius, paintProgress)
         }
+
+        // 4. Thumb halo + thumb on the playhead.
+        canvas.drawCircle(playedX, centerY, thumbRadiusPx + thumbHaloPx, paintThumbHalo)
+        canvas.drawCircle(playedX, centerY, thumbRadiusPx, paintThumb)
     }
 }

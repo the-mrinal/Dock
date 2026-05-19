@@ -12,7 +12,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="240dp"
-    android:background="@drawable/bg_dock_card"
+    android:background="@drawable/bg_dock_card_lg"
     android:orientation="vertical"
     android:padding="28dp">
 
