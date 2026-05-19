@@ -13,14 +13,9 @@ import com.ambient.tvclock.R
 
 /**
  * Calendar feeds page. Same SharedPreferences keys as the legacy
- * `preferences.xml` — only the UI changes.
- *
- * Notes:
- *  - Refresh interval is fixed at 15 min today (CalendarPreferences.POLL_MS).
- *    The HTML shows "Every 5 minutes"; we show the actual current value so the
- *    UI doesn't lie. When a multi-value setting lands we'll wire a chooser.
- *  - "Tomorrow preview on Home" doesn't exist as a pref today. We persist it
- *    under a new key but treat it as cosmetic until a binder reads it.
+ * `preferences.xml` — only the UI changes. Refresh interval is fixed at
+ * `CalendarPreferences.POLL_MS` (5 min); when a multi-value setting lands
+ * we'll wire a chooser.
  */
 class CalendarSettingsFragment :
     SettingsScreenFragment(R.layout.fragment_settings_calendar) {

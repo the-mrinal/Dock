@@ -13,3 +13,6 @@ local.properties
 
 # Release tooling: pulled by `npm install`, not for source control.
 node_modules/
+
+# Claude Code agent worktrees
+.claude/worktrees/

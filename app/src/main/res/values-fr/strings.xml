@@ -51,33 +51,9 @@
     <string name="notification_status_streaming">Diffusion depuis %1$s</string>
 
     <!-- ── Settings section headers ────────────────────────────── -->
-    <string name="settings_section_display">Affichage</string>
-    <string name="settings_section_protocols">Protocoles</string>
-    <string name="settings_section_service">Service</string>
-    <string name="settings_section_developer">Développeur</string>
-    <string name="settings_section_about">À propos</string>
 
     <!-- ── Settings row labels ─────────────────────────────────── -->
-    <string name="setting_display_name">Nom de l\'appareil</string>
-    <string name="setting_display_name_placeholder">Nom de l\'appareil système utilisé</string>
-    <string name="setting_display_name_dialog_hint">Laisser vide pour utiliser le nom de l\'appareil système</string>
-    <string name="setting_display_name_reset">Réinitialiser par défaut</string>
-    <string name="setting_airplay_enabled">Récepteur AirPlay</string>
-    <string name="setting_airplay_subtitle">Accepter les connexions depuis macOS</string>
-    <string name="setting_miracast_enabled">Récepteur Miracast</string>
-    <string name="setting_miracast_subtitle">Accepter les connexions depuis Windows et Android</string>
-    <string name="setting_cast_enabled">Récepteur Google Cast</string>
-    <string name="setting_cast_subtitle">Accepter les connexions depuis Chrome et Android</string>
-    <string name="setting_airplay_pin">Exiger un code PIN pour AirPlay</string>
-    <string name="setting_airplay_pin_subtitle">Non disponible — la connexion utilise l\'appairage automatique</string>
-    <string name="setting_start_on_boot">Démarrer au démarrage</string>
-    <string name="setting_debug_overlay">Superposition de débogage</string>
-    <string name="setting_debug_overlay_subtitle">Afficher FPS et latence sur l\'écran de diffusion</string>
-    <string name="setting_version">Version</string>
-    <string name="setting_reset_defaults">Réinitialiser les paramètres</string>
 
     <!-- ── Waiting screen ──────────────────────────────────────── -->
-    <string name="waiting_subtitle">Ouvrez AirPlay sur votre Mac et sélectionnez cet appareil</string>
-    <string name="waiting_device_label">Cet appareil :</string>
 
 </resources>

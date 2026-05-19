@@ -149,9 +149,6 @@
     <string name="calendar_last_updated">Updated %1$s</string>
     <string name="calendar_fetch_error">Could not refresh calendar</string>
 
-    <string name="pref_category_sleep">Sleep timer</string>
-    <string name="pref_inactivity_timeout_title">Auto-exit after inactivity</string>
-    <string name="pref_inactivity_timeout_summary">Closes the app and allows the TV to sleep when no remote input is detected</string>
 
     <string name="timeout_30_min">30 minutes</string>
     <string name="timeout_1_hour">1 hour</string>
@@ -160,8 +157,6 @@
     <string name="timeout_6_hours">6 hours</string>
     <string name="timeout_never">Never (stay awake until you exit)</string>
 
-    <string name="pref_ambient_delay_title">Fade widgets when idle</string>
-    <string name="pref_ambient_delay_summary">After this much time without remote input, the calendar and now playing widgets fade out and the clock starts a slow drift to protect the screen</string>
 
     <string name="ambient_off">Off (always show widgets)</string>
     <string name="ambient_30_seconds">30 seconds</string>
@@ -170,42 +165,11 @@
     <string name="ambient_2_minutes">2 minutes</string>
     <string name="ambient_5_minutes">5 minutes</string>
 
-    <string name="pref_category_calendar">Calendar</string>
-    <string name="pref_show_calendar_title">Show calendar</string>
-    <string name="pref_show_calendar_summary">Display today\'s events on Home and Calendar screens</string>
-    <string name="pref_personal_calendar_url_title">Personal calendar URL</string>
-    <string name="pref_personal_calendar_url_summary">Google Calendar secret iCal link</string>
-    <string name="pref_work_calendar_url_title">Work calendar URL (optional)</string>
-    <string name="pref_work_calendar_url_summary">Outlook ICS link when available — leave empty for now</string>
 
-    <string name="pref_category_now_playing">Now playing</string>
-    <string name="pref_show_now_playing_title">Show media on dashboard</string>
-    <string name="pref_show_now_playing_summary">Show a music widget on Home when Spotify or other media is playing</string>
-    <string name="pref_notification_access_title">Media access permission</string>
     <string name="notification_access_required">Required once so the app can read active media sessions. Tap to open settings, or grant via ADB.</string>
     <string name="notification_access_granted">Granted — now playing will appear when Spotify is playing.</string>
 
-    <string name="pref_category_receiver">Phone mirroring (beta)</string>
-    <string name="pref_receiver_enabled_title">Enable mirroring receiver</string>
-    <string name="pref_receiver_enabled_summary">Let nearby phones and laptops cast to this device</string>
-    <string name="pref_receiver_device_name_title">Device name</string>
-    <string name="pref_receiver_device_name_summary">Shown to senders in the AirPlay/Cast picker. Leave blank to use the system name.</string>
-    <string name="pref_receiver_airplay_title">AirPlay receiver</string>
-    <string name="pref_receiver_airplay_summary">Accept connections from macOS and iPhone</string>
-    <string name="pref_receiver_cast_title">Google Cast receiver</string>
-    <string name="pref_receiver_cast_summary">Accept connections from Chrome and Android</string>
-    <string name="pref_receiver_miracast_title">Miracast receiver</string>
-    <string name="pref_receiver_miracast_summary">Accept connections from Windows and Android</string>
-    <string name="pref_receiver_pin_title">Require PIN for AirPlay</string>
-    <string name="pref_receiver_pin_summary">Show a 4-digit confirmation code on screen before allowing the connection</string>
-    <string name="pref_receiver_start_on_boot_title">Start on device boot</string>
-    <string name="pref_receiver_start_on_boot_summary">Keep advertising as soon as the device powers on</string>
 
-    <string name="pref_category_spotify">Spotify API</string>
-    <string name="pref_spotify_connect_title">Connect Spotify</string>
-    <string name="pref_spotify_connect_summary">Link your account for up next and recently played (Premium, Development Mode)</string>
-    <string name="pref_spotify_disconnect_title">Disconnect Spotify</string>
-    <string name="pref_spotify_disconnect_summary">Remove stored tokens from this device</string>
     <string name="spotify_connected">Spotify connected</string>
     <string name="spotify_not_connected">Not connected — tap Connect Spotify</string>
     <string name="spotify_no_client_id">Add spotify.clientId to local.properties and rebuild</string>
@@ -291,21 +255,11 @@
     <string name="music_now_playing_queue">Queue</string>
 
     <!-- VPN (WireGuard) settings + import flow. -->
-    <string name="pref_category_vpn">VPN (WireGuard)</string>
-    <string name="pref_vpn_enabled_title">Enable VPN</string>
-    <string name="pref_vpn_enabled_summary">Route all device traffic through the imported WireGuard tunnel</string>
-    <string name="pref_vpn_status_title">Status</string>
     <string name="pref_vpn_status_no_config">No config imported</string>
     <string name="pref_vpn_status_down">Down</string>
     <string name="pref_vpn_status_connecting">Connecting…</string>
     <string name="pref_vpn_status_up">Up · peer %1$s</string>
     <string name="pref_vpn_status_error">Error: %1$s</string>
-    <string name="pref_vpn_receive_config_title">Receive config from laptop (LAN)</string>
-    <string name="pref_vpn_receive_config_summary">Spin up a short-lived LAN endpoint to accept a .conf upload</string>
-    <string name="pref_vpn_clear_config_title">Clear config</string>
-    <string name="pref_vpn_clear_config_summary">Delete the imported WireGuard config from this device</string>
-    <string name="pref_vpn_killswitch_title">Always-on / kill-switch (system)</string>
-    <string name="pref_vpn_killswitch_summary">Open Android\'s VPN settings to enable Always-on VPN and block non-VPN traffic</string>
 
     <string name="vpn_import_title">Receive WireGuard config</string>
     <string name="vpn_import_url_label">Open this in any browser on your laptop or phone:</string>
@@ -325,8 +279,6 @@
     <string name="vpn_connect_failed">Could not start VPN: %1$s</string>
     <string name="vpn_not_authorized">Grant VPN permission to enable the tunnel</string>
 
-    <string name="pref_vpn_overlay_title">Show VPN indicator overlay</string>
-    <string name="pref_vpn_overlay_summary">A small “🔒 country” pill in the corner while VPN is up — visible even over Netflix or the launcher</string>
     <string name="vpn_overlay_default_label">VPN</string>
     <string name="vpn_overlay_needs_permission">Grant “Display over other apps” for this app to enable the overlay</string>
 
@@ -352,7 +304,7 @@
     <string name="settings_calendar_personal_label">Personal calendar (iCal)</string>
     <string name="settings_calendar_work_label">Work calendar (iCal)</string>
     <string name="settings_calendar_refresh_label">Refresh interval</string>
-    <string name="settings_calendar_refresh_value">Every 15 minutes</string>
+    <string name="settings_calendar_refresh_value">Every 5 minutes</string>
     <string name="settings_calendar_show_label">Show calendar on dashboard</string>
     <string name="settings_calendar_tomorrow_label">Tomorrow preview on Home</string>
     <string name="settings_calendar_reset_label">Remove all calendars…</string>
