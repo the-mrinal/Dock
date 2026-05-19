@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Internal layout inflated by PrefRow. The outer FocusableContainer paints
+    the 2dp white accent border + halo on focus; the inner surface is the
+    focusable target so D-pad lands on the row exactly.
+
+    The PrefRow class is itself a FrameLayout — `merge` keeps us from doubling
+    up wrappers.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.ambient.tvclock.ui.FocusableContainer
+        android:id="@+id/prefRowFocus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:accentColor="#FFFFFFFF"
+        app:focusRadius="12dp"
+        app:focusScale="1.02">
+
+        <FrameLayout
+            android:id="@+id/prefRowSurface"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="20dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|start"
+                android:layout_marginEnd="120dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/prefRowLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/manrope"
+                    android:textColor="@color/dock_text_pri"
+                    android:textFontWeight="500"
+                    android:textSize="19sp" />
+
+                <TextView
+                    android:id="@+id/prefRowHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/manrope"
+                    android:textColor="#80FFFFFF"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/prefRowValueSlot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|end">
+
+                <TextView
+                    android:id="@+id/prefRowValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/jetbrains_mono"
+                    android:maxLines="1"
+                    android:maxWidth="520dp"
+                    android:textColor="#99FFFFFF"
+                    android:textFontWeight="500"
+                    android:textSize="16sp" />
+            </FrameLayout>
+        </FrameLayout>
+    </com.ambient.tvclock.ui.FocusableContainer>
+</merge>

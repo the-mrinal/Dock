@@ -1,105 +1,245 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Artboard 10 — Settings · LAN .conf drop. Rebuilt against the HTML spec:
+    green status dot + eyebrow on top, Manrope-200 64sp H1, 420dp white-padded
+    QR card on the left, URL card + drag hint + amber listening pill on the
+    right, Cancel pill bottom-left, reassurance copy bottom-right.
+
+    The activity wraps the LAN listener + countdown unchanged; only the binding
+    surface moves.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF000000"
-    android:padding="48dp">
+    android:background="@color/dock_bg"
+    android:paddingStart="80dp"
+    android:paddingEnd="80dp"
+    android:paddingTop="56dp"
+    android:paddingBottom="56dp">
 
-    <TextView
-        android:id="@+id/import_title"
+    <com.ambient.tvclock.ui.ArtWashView
+        android:id="@+id/importArtWash"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/vpn_import_title"
-        android:textColor="#FFFFFFFF"
-        android:textSize="36sp"
-        android:textStyle="bold"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/import_url_label"
+    <!-- ─────────── Header ─────────── -->
+
+    <LinearLayout
+        android:id="@+id/importHeader"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="@string/vpn_import_url_label"
-        android:textColor="#FFCCCCCC"
-        android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/import_title" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <View
+            android:id="@+id/importStatusDot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/vpn_drop_status_dot" />
+
+        <TextView
+            android:id="@+id/importEyebrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="0.24"
+            android:text="@string/vpn_drop_eyebrow"
+            android:textAllCaps="true"
+            android:textColor="@color/c_vpn"
+            android:textFontWeight="600"
+            android:textSize="13sp" />
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/import_url_value"
-        android:layout_width="0dp"
+        android:id="@+id/importTitle"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:fontFamily="monospace"
-        android:textColor="#FF00E676"
-        android:textSize="32sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/manrope"
+        android:letterSpacing="-0.03"
+        android:text="@string/vpn_drop_title"
+        android:textColor="@color/dock_text_pri"
+        android:textFontWeight="200"
+        android:textSize="64sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/import_url_label" />
+        app:layout_constraintTop_toBottomOf="@id/importHeader" />
 
     <TextView
-        android:id="@+id/import_pin_label"
+        android:id="@+id/importBlurb"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="@string/vpn_import_pin_label"
-        android:textColor="#FFCCCCCC"
-        android:textSize="18sp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/manrope"
+        android:lineSpacingMultiplier="1.45"
+        android:maxWidth="760dp"
+        android:text="@string/vpn_drop_blurb"
+        android:textColor="#8CFFFFFF"
+        android:textFontWeight="300"
+        android:textSize="22sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/import_url_value" />
+        app:layout_constraintTop_toBottomOf="@id/importTitle"
+        app:layout_constraintWidth_max="wrap" />
 
-    <TextView
-        android:id="@+id/import_pin_value"
+    <!-- ─────────── QR + URL grid ─────────── -->
+
+    <FrameLayout
+        android:id="@+id/importQrCard"
+        android:layout_width="420dp"
+        android:layout_height="420dp"
+        android:layout_marginTop="44dp"
+        android:background="@drawable/vpn_drop_qr_card"
+        android:padding="18dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/importBlurb">
+
+        <com.ambient.tvclock.settings.QrPatternView
+            android:id="@+id/importQrPattern"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/importUrlColumn"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:fontFamily="monospace"
-        android:letterSpacing="0.4"
-        android:textColor="#FFFFD54F"
-        android:textSize="48sp"
-        android:textStyle="bold"
+        android:layout_marginStart="44dp"
+        android:layout_marginTop="44dp"
+        android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/import_pin_label" />
+        app:layout_constraintStart_toEndOf="@id/importQrCard"
+        app:layout_constraintTop_toBottomOf="@id/importBlurb">
 
-    <TextView
-        android:id="@+id/import_curl_hint"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:fontFamily="monospace"
-        android:textColor="#FF999999"
-        android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/import_pin_value" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="0.28"
+            android:text="@string/vpn_drop_url_label"
+            android:textAllCaps="true"
+            android:textColor="#6BFFFFFF"
+            android:textFontWeight="600"
+            android:textSize="12sp" />
 
-    <TextView
-        android:id="@+id/import_status"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:textColor="#FFFFFFFF"
-        android:textSize="20sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/import_curl_hint" />
+        <TextView
+            android:id="@+id/import_url_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/vpn_drop_url_card"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="-0.005"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="20dp"
+            android:textColor="@color/dock_text_pri"
+            android:textFontWeight="500"
+            android:textSize="32sp"
+            tools:text="http://192.168.4.118:8731/drop" />
 
-    <Button
+        <TextView
+            android:id="@+id/import_curl_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/manrope"
+            android:lineSpacingMultiplier="1.5"
+            android:text="@string/vpn_drop_drag_hint"
+            android:textColor="#8CFFFFFF"
+            android:textFontWeight="300"
+            android:textSize="17sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.ambient.tvclock.ui.PulseHaloView
+                android:id="@+id/import_listening_halo"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                app:pulseAutoStart="true"
+                app:pulseColor="@color/c_amber"
+                app:pulseDotRadius="4dp" />
+
+            <TextView
+                android:id="@+id/import_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:letterSpacing="0.18"
+                android:textAllCaps="true"
+                android:textColor="#6BFFFFFF"
+                android:textFontWeight="500"
+                android:textSize="13sp"
+                tools:text="Listening · times out in 4 min 22 s" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/import_pin_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="0.18"
+            android:text="@string/vpn_drop_pin_label"
+            android:textAllCaps="true"
+            android:textColor="#52FFFFFF"
+            android:textFontWeight="500"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/import_pin_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="0.18"
+            android:textColor="@color/c_amber"
+            android:textFontWeight="700"
+            android:textSize="22sp"
+            tools:text="4729" />
+    </LinearLayout>
+
+    <!-- ─────────── Footer ─────────── -->
+
+    <com.ambient.tvclock.ui.PillButton
         android:id="@+id/import_cancel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="0dp"
         android:focusable="true"
         android:focusableInTouchMode="true"
-        android:minWidth="200dp"
-        android:text="@string/vpn_import_cancel"
+        app:pillAccent="#FFFFFFFF"
+        app:pillFilled="false"
+        app:pillText="@string/vpn_drop_cancel"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/import_legend"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/jetbrains_mono"
+        android:letterSpacing="0.2"
+        android:text="@string/vpn_drop_legend"
+        android:textAllCaps="true"
+        android:textColor="#52FFFFFF"
+        android:textFontWeight="500"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toBottomOf="@id/import_cancel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/import_cancel" />
 </androidx.constraintlayout.widget.ConstraintLayout>
