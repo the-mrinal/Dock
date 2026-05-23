@@ -8,7 +8,7 @@ object CalendarPreferences {
     const val KEY_PERSONAL_URL = "personal_calendar_url"
     const val KEY_WORK_URL = "work_calendar_url"
 
-    private const val POLL_MS = 15 * 60 * 1000L
+    private const val POLL_MS = 5 * 60 * 1000L
 
     fun isEnabled(context: Context): Boolean {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)

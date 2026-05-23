@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Custom Settings host (artboard 09). ConstraintLayout grid:
+      [320dp rail][1fr content]
+    Top of content: eyebrow + Manrope-200 56sp title (driven by SettingsActivity
+    from the rail selection). Bottom of content: legend + footer.
+    The ArtWashView sits behind everything at intensity 0.08, matching the HTML.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dock_bg"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <com.ambient.tvclock.ui.ArtWashView
+        android:id="@+id/settingsArtWash"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- ─────────── Rail (320dp) ─────────── -->
+
+    <LinearLayout
+        android:id="@+id/settingsRailContainer"
+        android:layout_width="320dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="48dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/settings_rail_panel_bg"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/settingsRailHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="16dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="0.28"
+            android:text="@string/settings_rail_header"
+            android:textAllCaps="true"
+            android:textColor="#6BFFFFFF"
+            android:textFontWeight="600"
+            android:textSize="12sp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/settingsRail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:nextFocusRight="@+id/settingsContent" />
+    </LinearLayout>
+
+    <!-- ─────────── Content ─────────── -->
+
+    <LinearLayout
+        android:id="@+id/settingsContentHeader"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="48dp"
+        android:layout_marginTop="48dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/settingsRailContainer"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/settingsEyebrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/jetbrains_mono"
+            android:letterSpacing="0.24"
+            android:textAllCaps="true"
+            android:textColor="#80FFFFFF"
+            android:textFontWeight="600"
+            android:textSize="13sp"
+            tools:text="DOCK · SETTINGS — CALENDAR" />
+
+        <TextView
+            android:id="@+id/settingsTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/manrope"
+            android:letterSpacing="-0.025"
+            android:textColor="@color/dock_text_pri"
+            android:textFontWeight="200"
+            android:textSize="56sp"
+            tools:text="Calendar feeds" />
+    </LinearLayout>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/settingsContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="48dp"
+        android:layout_marginBottom="16dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@id/settingsLegend"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/settingsRailContainer"
+        app:layout_constraintTop_toBottomOf="@id/settingsContentHeader" />
+
+    <TextView
+        android:id="@+id/settingsLegend"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="32dp"
+        android:fontFamily="@font/jetbrains_mono"
+        android:letterSpacing="0.2"
+        android:text="@string/settings_legend_keys"
+        android:textAllCaps="true"
+        android:textColor="#52FFFFFF"
+        android:textFontWeight="500"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/settingsRailContainer" />
+
+    <TextView
+        android:id="@+id/settingsFooter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="48dp"
+        android:layout_marginBottom="32dp"
+        android:fontFamily="@font/jetbrains_mono"
+        android:letterSpacing="0.2"
+        android:text="@string/settings_footer_version"
+        android:textAllCaps="true"
+        android:textColor="#52FFFFFF"
+        android:textFontWeight="500"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

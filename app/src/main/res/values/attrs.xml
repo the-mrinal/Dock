@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Phase 0 custom attributes for the shared Dock view layer.
+    Group attrs per-view so adding a new view doesn't merge into someone
+    else's declare-styleable on a future PR.
+-->
+<resources>
+    <declare-styleable name="FocusableContainer">
+        <!-- Border / halo colour drawn on focus. Defaults to dock_accent_chartreuse. -->
+        <attr name="accentColor" format="color" />
+        <!-- Scale factor applied to children on focus. HTML default = 1.04. -->
+        <attr name="focusScale" format="float" />
+        <!-- Corner radius of the painted border, in dp. -->
+        <attr name="focusRadius" format="dimension" />
+        <!-- When true the container itself takes focus and routes clicks to the first child. -->
+        <attr name="proxyFocus" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="BottomNavCapsuleView">
+        <!-- Currently selected destination index (0..3). -->
+        <attr name="activeDestination" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="PulseHaloView">
+        <!-- Ring colour. -->
+        <attr name="pulseColor" format="color" />
+        <!-- Initial dot radius in dp. -->
+        <attr name="pulseDotRadius" format="dimension" />
+        <!-- Auto-start the pulse on attach. -->
+        <attr name="pulseAutoStart" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="VuBarsView">
+        <!-- Bar colour. -->
+        <attr name="barColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="PillButton">
+        <!-- Accent colour: fill when active, border when resting. -->
+        <attr name="pillAccent" format="color" />
+        <!-- Pill label. -->
+        <attr name="pillText" format="string" />
+        <!-- Force the filled "primary" variant. Defaults to outlined. -->
+        <attr name="pillFilled" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="EyebrowView">
+        <!-- Eyebrow text. -->
+        <attr name="eyebrowText" format="string" />
+        <!-- Eyebrow text colour. Defaults to dock_text_ter. -->
+        <attr name="eyebrowColor" format="color" />
+        <!-- Use the wider 0.42em tracking variant. -->
+        <attr name="eyebrowTracking" format="boolean" />
+    </declare-styleable>
+
+    <!-- Stream B (Settings) primitives. -->
+    <declare-styleable name="PrefRow">
+        <attr name="prefLabel" format="string" />
+        <attr name="prefValue" format="string" />
+        <attr name="prefHint" format="string" />
+        <!-- One of: none, chevron, arrow, enter (return key). -->
+        <attr name="prefAffordance" format="enum">
+            <enum name="none" value="0" />
+            <enum name="chevron" value="1" />
+            <enum name="arrow" value="2" />
+            <enum name="enter" value="3" />
+        </attr>
+        <attr name="prefDanger" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="PrefToggle">
+        <attr name="toggleOn" format="boolean" />
+        <attr name="toggleAccent" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="QrPatternView">
+        <!-- Seed string the deterministic 25x25 hash pattern is derived from. -->
+        <attr name="qrSeed" format="string" />
+    </declare-styleable>
+</resources>

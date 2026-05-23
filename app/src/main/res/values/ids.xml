@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pre-declared view IDs for views constructed in Kotlin (no XML layout).
+    Layout files referencing the same IDs share these declarations.
+-->
+<resources>
+    <item name="eyebrowLabel" type="id" />
+    <item name="pillButtonLabel" type="id" />
+    <item name="navDestConnect" type="id" />
+    <item name="navDestHome" type="id" />
+    <item name="navDestCalendar" type="id" />
+    <item name="navDestMusic" type="id" />
+    <item name="artWashView" type="id" />
+    <item name="bottomNavCapsule" type="id" />
+
+    <!-- Connect surface action button IDs. Assigned at runtime by
+         StatusScreenBinder so MainActivity's existing focus-edge checks
+         (LEFT on the AirPlay button page-navs, RIGHT on the VPN button
+         page-navs) keep matching after the ServiceColumnView refactor. -->
+    <item name="buttonAirplayAction" type="id" />
+    <item name="buttonVpnAction" type="id" />
+</resources>

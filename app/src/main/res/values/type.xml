@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Dock redesign — Phase 0 typography scale.
+    Mirrors the HTML prototype's Manrope + JetBrains Mono ramp.
+    Numeric tracking values are converted from CSS `em` to absolute
+    `sp` at the target size to stay readable across all weights.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Hero clock face. Manrope-200 260sp, tabular numerals,
+         tight tracking (-0.04em ≈ -10.4sp at 260sp). -->
+    <style name="TextAppearance.Dock.HeroDisplay" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/manrope</item>
+        <item name="android:textFontWeight" tools:targetApi="28">200</item>
+        <item name="android:textSize">260sp</item>
+        <item name="android:textColor">@color/dock_text_pri</item>
+        <item name="android:letterSpacing">-0.04</item>
+        <item name="android:fontFeatureSettings">"tnum"</item>
+    </style>
+
+    <!-- Top-of-screen page H1 (Music NowPlaying title). 200/96sp/-0.035em. -->
+    <style name="TextAppearance.Dock.HeroTitle" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/manrope</item>
+        <item name="android:textFontWeight" tools:targetApi="28">200</item>
+        <item name="android:textSize">96sp</item>
+        <item name="android:textColor">@color/dock_text_pri</item>
+        <item name="android:letterSpacing">-0.035</item>
+    </style>
+
+    <!-- Page-level title. Manrope-200 68sp. -->
+    <style name="TextAppearance.Dock.Title.Large" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/manrope</item>
+        <item name="android:textFontWeight" tools:targetApi="28">200</item>
+        <item name="android:textSize">68sp</item>
+        <item name="android:textColor">@color/dock_text_pri</item>
+        <item name="android:letterSpacing">-0.025</item>
+    </style>
+
+    <!-- Section / dialog title. Manrope-300 44sp. -->
+    <style name="TextAppearance.Dock.Title.Medium" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/manrope</item>
+        <item name="android:textFontWeight" tools:targetApi="28">300</item>
+        <item name="android:textSize">44sp</item>
+        <item name="android:textColor">@color/dock_text_pri</item>
+        <item name="android:letterSpacing">-0.015</item>
+    </style>
+
+    <!-- Standard body. Manrope-400 22sp. Card titles, list rows. -->
+    <style name="TextAppearance.Dock.Body.Large" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/manrope</item>
+        <item name="android:textFontWeight" tools:targetApi="28">400</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">@color/dock_text_pri</item>
+    </style>
+
+    <!-- Secondary copy. Manrope-400 18sp. -->
+    <style name="TextAppearance.Dock.Body.Medium" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/manrope</item>
+        <item name="android:textFontWeight" tools:targetApi="28">400</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/dock_text_sec</item>
+    </style>
+
+    <!-- Nav / button labels. Manrope-500 17sp. -->
+    <style name="TextAppearance.Dock.Label.Large" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/manrope</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">@color/dock_text_pri</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- Eyebrow label. JetBrains Mono-500 13sp UPPERCASE letterSpacing 0.16em. -->
+    <style name="TextAppearance.Dock.Eyebrow" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/jetbrains_mono</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/dock_text_ter</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.16</item>
+    </style>
+
+    <!-- Aggressive tracking variant used on Connect screen ("AIRPLAY"). -->
+    <style name="TextAppearance.Dock.Eyebrow.Tracking" parent="TextAppearance.Dock.Eyebrow">
+        <item name="android:letterSpacing">0.42</item>
+    </style>
+
+    <!-- Mono numeric data (clock, durations, byte counts). -->
+    <style name="TextAppearance.Dock.MonoData" parent="@android:style/TextAppearance">
+        <item name="android:fontFamily">@font/jetbrains_mono</item>
+        <item name="android:textFontWeight" tools:targetApi="28">500</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/dock_text_pri</item>
+        <item name="android:fontFeatureSettings">"tnum"</item>
+    </style>
+</resources>

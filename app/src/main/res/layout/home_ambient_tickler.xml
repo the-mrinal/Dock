@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Ambient tickler capsule (artboard 03). One horizontal pill stretched below
+    the clock: NowPlaying block | hairline divider | NOW event block. Either
+    column hides if it has no content; the divider auto-hides when only one
+    column is populated so the remaining one centres itself naturally.
+
+    Backdrop blur (RenderEffect, API 31+) is applied by HomeScreenBinder; on
+    older releases the translucent solid below is the fallback.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/homeAmbientTickler"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:background="@drawable/bg_ambient_capsule"
+    android:clipChildren="false"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="36dp"
+    android:paddingVertical="20dp">
+
+    <!-- Music block (left). -->
+    <LinearLayout
+        android:id="@+id/homeAmbientMusic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingEnd="36dp"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:id="@+id/homeAmbientArtFrame"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_album_frame">
+
+            <ImageView
+                android:id="@+id/imageAmbientAlbumArt"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/imageAmbientAlbumPlaceholder"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_music_placeholder" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textAmbientNowPlayingLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.24"
+                android:text="@string/home_ambient_now_playing"
+                android:textAllCaps="true"
+                android:textColor="#D9C8F25C"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textAmbientTrackTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:maxWidth="420dp"
+                android:textColor="#D9FFFFFF"
+                android:textSize="22sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:id="@+id/homeAmbientDivider"
+        android:layout_width="1dp"
+        android:layout_height="60dp"
+        android:background="#1AFFFFFF"
+        android:visibility="gone" />
+
+    <!-- Calendar block (right). -->
+    <LinearLayout
+        android:id="@+id/homeAmbientCalendar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="36dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/textAmbientDayTile"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/bg_ambient_tile"
+            android:fontFamily="@font/jetbrains_mono"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textColor="#A8C5F8"
+            android:textSize="22sp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textAmbientNowLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.24"
+                android:text="@string/home_ambient_now"
+                android:textAllCaps="true"
+                android:textColor="#E88AB4F8"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textAmbientNowTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:maxWidth="420dp"
+                android:textColor="#D9FFFFFF"
+                android:textSize="22sp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

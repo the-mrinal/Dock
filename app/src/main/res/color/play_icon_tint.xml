@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Play/pause icon tint: black on the lime focused pill, white on the
+     unfocused dark pill. Pairs with @drawable/bg_dock_play_primary. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:color="@color/dock_bg" />
+    <item android:color="@color/dock_text_pri" />
+</selector>

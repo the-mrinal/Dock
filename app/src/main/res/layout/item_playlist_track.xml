@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Playlist track row (Stream A, artboard 15).
+    Grid 54 / 80 / 1fr / 1.1fr / 80: index (or VuBars when playing) +
+    cover + title/artist + album + duration.
+-->
+<com.ambient.tvclock.ui.FocusableContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:accentColor="@color/dock_accent_chartreuse"
+    app:focusRadius="10dp"
+    app:proxyFocus="true">
+
+    <FrameLayout
+        android:id="@+id/trackRowRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="6dp">
+
+            <FrameLayout
+                android:layout_width="36dp"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/trackIndex"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:fontFamily="@font/jetbrains_mono"
+                    android:textColor="@color/dock_text_ter"
+                    android:textSize="13sp" />
+
+                <com.ambient.tvclock.ui.VuBarsView
+                    android:id="@+id/trackBars"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_gravity="center_vertical"
+                    android:visibility="gone"
+                    app:barColor="@color/dock_accent_chartreuse" />
+            </FrameLayout>
+
+            <ImageView
+                android:id="@+id/trackCover"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/trackTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/manrope"
+                    android:maxLines="1"
+                    android:textColor="@color/dock_text_pri"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/trackArtist"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/manrope"
+                    android:maxLines="1"
+                    android:textColor="@color/dock_text_sec"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/trackAlbum"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1.1"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope"
+                android:maxLines="1"
+                android:textColor="@color/dock_text_sec"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/trackDuration"
+                android:layout_width="56dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:gravity="end"
+                android:textColor="@color/dock_text_ter"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/trackLoading"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/dock_accent_chartreuse"
+            android:visibility="gone" />
+    </FrameLayout>
+</com.ambient.tvclock.ui.FocusableContainer>

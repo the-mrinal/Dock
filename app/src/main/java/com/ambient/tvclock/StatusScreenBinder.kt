@@ -1,19 +1,26 @@
 package com.ambient.tvclock
 
-import android.content.res.ColorStateList
-import android.graphics.PorterDuff
 import android.view.View
-import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.ambient.tvclock.receiver.ActiveConnection
 import com.ambient.tvclock.receiver.Protocol
-import com.ambient.tvclock.vpn.VpnPreferences
+import com.ambient.tvclock.ui.PillButton
+import com.ambient.tvclock.ui.ServiceColumnView
 import com.ambient.tvclock.vpn.VpnState
 
 /**
- * Combined AirPlay + VPN status page binder. Each side has its own indicator
- * + status copy + action button. Both buttons stay focusable so D-pad
- * LEFT/RIGHT moves between them (nextFocus wired in the layout).
+ * Drives the redesigned Connect surface (artboards 07 / 08).
+ *
+ * Two `ServiceColumnView`s sit side by side (AirPlay | VPN); this binder
+ * owns the small per-side state machine and drives `setState(...)` on each.
+ *
+ * AirPlay states: Off / Ready / Streaming.
+ * VPN states:     Disconnected / Connecting / Connected / Error / NoConfig.
+ *
+ * MainActivity expects the action button IDs `buttonAirplayAction` /
+ * `buttonVpnAction` to participate in D-pad edge detection. We assign those
+ * IDs at runtime so the internal `serviceColumnAction` view found inside
+ * each merge still routes focus the same way the legacy layout did.
  */
 class StatusScreenBinder(
     private val root: View,
@@ -24,112 +31,156 @@ class StatusScreenBinder(
     enum class AirplayAction { TURN_ON, TURN_OFF }
     enum class VpnAction { CONNECT, DISCONNECT, IMPORT }
 
-    // --- AirPlay side
-    private val airplayDot: View = root.findViewById(R.id.airplayStatusDot)
-    private val airplayHalo: View = root.findViewById(R.id.airplayStatusHalo)
-    private val airplayStatus: TextView = root.findViewById(R.id.textAirplayStatus)
-    private val airplayDetail: TextView = root.findViewById(R.id.textAirplayDetail)
-    val airplayButton: TextView = root.findViewById(R.id.buttonAirplayAction)
-    private var currentAirplayAction: AirplayAction = AirplayAction.TURN_ON
+    private val airplayColumn: ServiceColumnView = root.findViewById(R.id.serviceColumnAirplay)
+    private val vpnColumn: ServiceColumnView = root.findViewById(R.id.serviceColumnVpn)
 
-    // --- VPN side
-    private val vpnDot: View = root.findViewById(R.id.vpnStatusDot)
-    private val vpnHalo: View = root.findViewById(R.id.vpnStatusHalo)
-    private val vpnStatus: TextView = root.findViewById(R.id.textVpnStatus)
-    private val vpnDetail: TextView = root.findViewById(R.id.textVpnDetail)
-    val vpnButton: TextView = root.findViewById(R.id.buttonVpnAction)
+    /** Exposed for MainActivity's `vpnButton.post { requestFocus() }` calls. */
+    val airplayButton: PillButton get() = airplayColumn.actionButton
+    val vpnButton: PillButton get() = vpnColumn.actionButton
+
+    private var currentAirplayAction: AirplayAction = AirplayAction.TURN_ON
     private var currentVpnAction: VpnAction = VpnAction.CONNECT
 
     init {
-        airplayButton.setOnClickListener { onAirplayAction(currentAirplayAction) }
-        vpnButton.setOnClickListener { onVpnAction(currentVpnAction) }
+        // Re-id the inner action buttons so MainActivity's
+        // shouldNavigatePages() can still match `R.id.buttonAirplayAction` /
+        // `R.id.buttonVpnAction` on the focused view.
+        airplayColumn.actionButton.id = R.id.buttonAirplayAction
+        vpnColumn.actionButton.id = R.id.buttonVpnAction
+
+        // Wire LEFT/RIGHT explicitly so D-pad bounces between the two
+        // service buttons (parent-level checks block page-paging only on the
+        // outermost edge).
+        airplayColumn.actionButton.nextFocusRightId = R.id.buttonVpnAction
+        vpnColumn.actionButton.nextFocusLeftId = R.id.buttonAirplayAction
+
+        airplayColumn.setOnActionClickListener { onAirplayAction(currentAirplayAction) }
+        vpnColumn.setOnActionClickListener { onVpnAction(currentVpnAction) }
     }
 
     fun bindAirplay(activeConnection: ActiveConnection?) {
         val context = root.context
         val receiverEnabled = ReceiverPreferences.isReceiverEnabled(context)
+        val accent = ContextCompat.getColor(context, R.color.c_airplay)
+        val eyebrowText = context.getString(R.string.connect_airplay_eyebrow)
 
         when {
             !receiverEnabled -> {
-                tint(airplayDot, airplayHalo, R.color.status_idle)
-                airplayStatus.text = context.getString(R.string.airplay_status_off)
-                airplayDetail.text = context.getString(R.string.airplay_detail_off)
-                setAirplayAction(AirplayAction.TURN_ON, R.string.airplay_action_turn_on)
+                airplayColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = context.getString(R.string.airplay_status_off),
+                    detail = context.getString(R.string.airplay_detail_off),
+                    actionLabel = context.getString(R.string.connect_action_turn_on),
+                    accent = accent,
+                    active = false,
+                )
+                currentAirplayAction = AirplayAction.TURN_ON
             }
             activeConnection != null && activeConnection.protocol == Protocol.AIRPLAY -> {
-                tint(airplayDot, airplayHalo, R.color.status_ok)
-                airplayStatus.text = context.getString(R.string.airplay_status_streaming)
-                airplayDetail.text = context.getString(
-                    R.string.airplay_detail_streaming,
-                    activeConnection.senderName
+                airplayColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = context.getString(R.string.airplay_status_streaming),
+                    detail = context.getString(
+                        R.string.connect_airplay_detail_streaming,
+                        activeConnection.senderName
+                    ),
+                    actionLabel = context.getString(R.string.connect_action_stop),
+                    accent = accent,
+                    active = true,
+                    filled = false,
                 )
-                setAirplayAction(AirplayAction.TURN_OFF, R.string.airplay_action_turn_off)
+                currentAirplayAction = AirplayAction.TURN_OFF
             }
             else -> {
-                tint(airplayDot, airplayHalo, R.color.status_ok)
-                airplayStatus.text = context.getString(R.string.airplay_status_ready)
-                airplayDetail.text = context.getString(R.string.airplay_detail_ready)
-                setAirplayAction(AirplayAction.TURN_OFF, R.string.airplay_action_turn_off)
+                // Receiver enabled but nothing connected. The HTML only shows
+                // Off / Streaming, so we collapse "Ready" to look like Off; the
+                // detail line carries the sub-state ("Cast from an iPhone…")
+                // and the button still says "Turn off" because pressing it
+                // disables the receiver.
+                airplayColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = context.getString(R.string.airplay_status_off),
+                    detail = context.getString(R.string.airplay_detail_ready),
+                    actionLabel = context.getString(R.string.airplay_action_turn_off),
+                    accent = accent,
+                    active = false,
+                )
+                currentAirplayAction = AirplayAction.TURN_OFF
             }
         }
     }
 
     fun bindVpn(state: VpnState) {
         val context = root.context
+        val activeColor = ContextCompat.getColor(context, R.color.c_vpn)
+        val idleAccent = ContextCompat.getColor(context, R.color.c_vpn)
+        val errAccent = ContextCompat.getColor(context, R.color.status_error)
+        val pendingAccent = ContextCompat.getColor(context, R.color.c_amber)
+        val eyebrowText = context.getString(R.string.connect_vpn_eyebrow)
+
         when (state) {
             VpnState.NoConfig -> {
-                tint(vpnDot, vpnHalo, R.color.status_idle)
-                vpnStatus.text = context.getString(R.string.vpn_status_no_config)
-                vpnDetail.text = context.getString(R.string.vpn_detail_no_config)
-                setVpnAction(VpnAction.IMPORT, R.string.vpn_action_import_in_settings, enabled = true)
+                vpnColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = context.getString(R.string.vpn_status_no_config),
+                    detail = context.getString(R.string.vpn_detail_no_config),
+                    actionLabel = context.getString(R.string.connect_action_receive_config),
+                    accent = idleAccent,
+                    active = false,
+                )
+                currentVpnAction = VpnAction.IMPORT
             }
             VpnState.Down -> {
-                tint(vpnDot, vpnHalo, R.color.status_idle)
-                vpnStatus.text = context.getString(R.string.vpn_status_disconnected)
-                vpnDetail.text = context.getString(R.string.vpn_detail_disconnected)
-                setVpnAction(VpnAction.CONNECT, R.string.vpn_action_connect, enabled = true)
+                vpnColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = context.getString(R.string.vpn_status_disconnected),
+                    detail = context.getString(R.string.vpn_detail_disconnected),
+                    actionLabel = context.getString(R.string.connect_action_connect),
+                    accent = idleAccent,
+                    active = false,
+                )
+                currentVpnAction = VpnAction.CONNECT
             }
             VpnState.Connecting -> {
-                tint(vpnDot, vpnHalo, R.color.status_pending)
-                vpnStatus.text = context.getString(R.string.vpn_status_connecting)
-                vpnDetail.text = context.getString(R.string.vpn_detail_connecting)
-                setVpnAction(VpnAction.DISCONNECT, R.string.vpn_action_connecting, enabled = false)
+                vpnColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = context.getString(R.string.vpn_status_connecting),
+                    detail = context.getString(R.string.vpn_detail_connecting),
+                    actionLabel = context.getString(R.string.connect_action_disconnect),
+                    accent = pendingAccent,
+                    active = true,
+                    actionEnabled = false,
+                )
+                currentVpnAction = VpnAction.DISCONNECT
             }
             is VpnState.Up -> {
-                tint(vpnDot, vpnHalo, R.color.status_ok)
-                vpnStatus.text = context.getString(R.string.vpn_status_connected)
-                vpnDetail.text = context.getString(R.string.vpn_detail_connected, state.peerEndpoint)
-                setVpnAction(VpnAction.DISCONNECT, R.string.vpn_action_disconnect, enabled = true)
+                vpnColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = state.peerEndpoint.ifBlank {
+                        context.getString(R.string.vpn_status_connected)
+                    },
+                    detail = context.getString(
+                        R.string.connect_vpn_detail_connected,
+                        state.peerEndpoint
+                    ),
+                    actionLabel = context.getString(R.string.connect_action_disconnect),
+                    accent = activeColor,
+                    active = true,
+                    filled = false,
+                )
+                currentVpnAction = VpnAction.DISCONNECT
             }
             is VpnState.Error -> {
-                tint(vpnDot, vpnHalo, R.color.status_error)
-                vpnStatus.text = context.getString(R.string.vpn_status_error)
-                vpnDetail.text = context.getString(R.string.vpn_detail_error, state.message)
-                setVpnAction(VpnAction.CONNECT, R.string.vpn_action_retry, enabled = true)
+                vpnColumn.setState(
+                    eyebrowText = eyebrowText,
+                    title = context.getString(R.string.vpn_status_error),
+                    detail = state.message,
+                    actionLabel = context.getString(R.string.connect_action_retry),
+                    accent = errAccent,
+                    active = false,
+                )
+                currentVpnAction = VpnAction.CONNECT
             }
         }
-    }
-
-    private fun setAirplayAction(action: AirplayAction, labelRes: Int) {
-        currentAirplayAction = action
-        airplayButton.setText(labelRes)
-    }
-
-    private fun setVpnAction(action: VpnAction, labelRes: Int, enabled: Boolean) {
-        currentVpnAction = action
-        vpnButton.setText(labelRes)
-        vpnButton.isEnabled = enabled
-        vpnButton.alpha = if (enabled) 1f else 0.5f
-    }
-
-    private fun tint(dot: View, halo: View, colorRes: Int) {
-        val color = ContextCompat.getColor(root.context, colorRes)
-        dot.background?.mutate()?.setColorFilter(color, PorterDuff.Mode.SRC_IN)
-        halo.backgroundTintList = ColorStateList.valueOf(haloTint(color))
-    }
-
-    private fun haloTint(color: Int): Int {
-        val alpha = 0x24
-        return (color and 0x00FFFFFF) or (alpha shl 24)
     }
 }

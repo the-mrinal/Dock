@@ -13,14 +13,14 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.ambient.tvclock.receiver.ActiveConnection
 import com.ambient.tvclock.receiver.ReceiverController
 import com.ambient.tvclock.receiver.ReceiverStateBus
 import com.ambient.tvclock.receiver.ui.StreamingOverlay
+import com.ambient.tvclock.ui.ArtWashView
+import com.ambient.tvclock.ui.BottomNavCapsuleView
 import com.ambient.tvclock.vpn.VpnPreferences
 import com.ambient.tvclock.vpn.VpnState
 import com.ambient.tvclock.vpn.WireGuardController
@@ -38,11 +38,14 @@ class MainActivity : Activity() {
 
     private lateinit var contentDisplayGroup: FrameLayout
     private lateinit var dashboardPager: ViewPager2
-    private lateinit var pageIndicatorGroup: LinearLayout
-    private lateinit var textPageHome: TextView
-    private lateinit var textPageCalendar: TextView
-    private lateinit var textPageMusic: TextView
-    private lateinit var textPageStatus: TextView
+    /**
+     * Container for the bottom-nav capsule. Kept as a [FrameLayout] (not the
+     * old `LinearLayout` of dots) but the same id so the ambient-mode fade
+     * code below keeps working with no changes.
+     */
+    private lateinit var pageIndicatorGroup: FrameLayout
+    private lateinit var bottomNavCapsule: BottomNavCapsuleView
+    private lateinit var artWashView: ArtWashView
     private lateinit var imageHomeBackground: ImageView
     private lateinit var backgroundBinder: BlurredBackgroundBinder
 
@@ -96,12 +99,19 @@ class MainActivity : Activity() {
         contentDisplayGroup = findViewById(R.id.contentDisplayGroup)
         dashboardPager = findViewById(R.id.dashboardPager)
         pageIndicatorGroup = findViewById(R.id.pageIndicatorGroup)
-        textPageHome = findViewById(R.id.textPageHome)
-        textPageCalendar = findViewById(R.id.textPageCalendar)
-        textPageMusic = findViewById(R.id.textPageMusic)
-        textPageStatus = findViewById(R.id.textPageStatus)
+        bottomNavCapsule = findViewById(R.id.bottomNavCapsule)
+        artWashView = findViewById(R.id.artWashView)
         imageHomeBackground = findViewById(R.id.imageHomeBackground)
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
+
+        // Bottom nav drives the pager. The capsule fires onPageSelected on
+        // both focus changes (commitOnFocus = true) and explicit OK presses,
+        // so D-pad LEFT/RIGHT inside the nav swaps pages without an OK.
+        bottomNavCapsule.onPageSelected = { destination ->
+            if (destination != currentPage) {
+                dashboardPager.setCurrentItem(destination.index, true)
+            }
+        }
         streamingOverlay = findViewById(R.id.streamingOverlay)
         onboardingPill = findViewById(R.id.onboardingPill)
         findViewById<View>(R.id.onboardingDismiss).setOnClickListener {
@@ -274,6 +284,10 @@ class MainActivity : Activity() {
         homeBinder?.bindNowPlaying(info)
         musicBinder?.bindNowPlaying(info)
         backgroundBinder.bind(info)
+        // Refresh the ArtWash seed whenever NowPlaying gives us new context —
+        // when Spotify hands over the next track the wash crossfades to its
+        // palette, exactly like the HTML prototype.
+        applyArtWashForPage(currentPage)
     }
 
     private fun applyCalendar(snapshot: CalendarSnapshot) {
@@ -287,22 +301,35 @@ class MainActivity : Activity() {
     }
 
     private fun updatePageIndicator() {
-        applyIndicatorStyle(textPageStatus, DashboardPage.STATUS)
-        applyIndicatorStyle(textPageHome, DashboardPage.HOME)
-        applyIndicatorStyle(textPageCalendar, DashboardPage.CALENDAR)
-        applyIndicatorStyle(textPageMusic, DashboardPage.MUSIC)
+        bottomNavCapsule.setActive(currentPage)
+        applyArtWashForPage(currentPage)
     }
 
-    private fun applyIndicatorStyle(label: TextView, page: DashboardPage) {
-        val active = ContextCompat.getColor(this, R.color.text_primary)
-        val inactive = ContextCompat.getColor(this, R.color.text_tertiary)
-        val isActive = currentPage == page
-        label.setTextColor(if (isActive) active else inactive)
-        label.typeface = android.graphics.Typeface.create(
-            if (isActive) "sans-serif-medium" else "sans-serif-light",
-            android.graphics.Typeface.NORMAL
-        )
+    /**
+     * Drive ArtWash seed + intensity from the current page. Seed is "page-
+     * <key>" so swapping pages crossfades even when no Spotify art is loaded
+     * yet; intensity values come straight from the Phase 0 spec.
+     */
+    private fun applyArtWashForPage(page: DashboardPage) {
+        val intensity = when (page) {
+            DashboardPage.HOME -> 0.40f
+            DashboardPage.MUSIC -> 0.55f
+            DashboardPage.CALENDAR -> 0.22f
+            DashboardPage.STATUS -> if (currentActiveConnection != null) 0.32f else 0.18f
+        }
+        val seed = NowPlayingCenter.current?.albumKey() ?: "page-${page.name.lowercase()}"
+        artWashView.setSeed(seed)
+        artWashView.setIntensity(intensity)
     }
+
+    /**
+     * Map a NowPlaying info into a stable seed string for the cover palette.
+     * Uses the album fingerprint when present, falling back to the artist/title
+     * so the wash doesn't churn just because we ticked the playback position.
+     */
+    private fun NowPlayingInfo.albumKey(): String =
+        if (album.isNotBlank()) "$artist-$album"
+        else "$artist-$title"
 
     private fun goToPage(page: DashboardPage) {
         if (currentPage == page) return
@@ -323,6 +350,15 @@ class MainActivity : Activity() {
 
     private fun shouldNavigatePages(keyCode: Int): Boolean {
         val focused = currentFocus ?: return true
+
+        // Inside the bottom nav, LEFT/RIGHT walks the chips — the capsule's
+        // own focus listener commits the page change, so the activity must
+        // not also page-nav (would double-jump on each key press).
+        if (bottomNavCapsule.isChipFocused() &&
+            (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)
+        ) {
+            return false
+        }
 
         // Lists own their own vertical scroll; horizontal still falls through
         // to page nav so RIGHT/LEFT remains a 1-click jump between pages.
@@ -554,6 +590,8 @@ class MainActivity : Activity() {
     private fun applyActiveConnection(connection: ActiveConnection?) {
         currentActiveConnection = connection
         statusBinder?.bindAirplay(connection)
+        // Connect page wash gets brighter when AirPlay is live (0.32 vs 0.18).
+        if (currentPage == DashboardPage.STATUS) applyArtWashForPage(currentPage)
         if (connection != null) {
             streamingOverlay.setSenderInfo(connection.senderName, connection.protocol)
             if (!userDismissedOverlay) {
@@ -656,6 +694,12 @@ class MainActivity : Activity() {
                 }
             }
             KeyEvent.KEYCODE_DPAD_UP -> {
+                if (bottomNavCapsule.isChipFocused()) {
+                    // Coming out of the nav, return focus to the page content.
+                    contentDisplayGroup.requestFocus()
+                    resetInactivityWatchdog()
+                    return true
+                }
                 if (currentPage == DashboardPage.CALENDAR) {
                     calendarBinder?.scrollBy(-calendarScrollStep)
                     resetInactivityWatchdog()
@@ -663,6 +707,13 @@ class MainActivity : Activity() {
                 }
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
+                // Drop into the bottom nav from anywhere. The capsule handles
+                // its own LEFT/RIGHT after that; UP exits back to the page.
+                if (!bottomNavCapsule.isChipFocused()) {
+                    bottomNavCapsule.focusActiveChip()
+                    resetInactivityWatchdog()
+                    return true
+                }
                 if (currentPage == DashboardPage.CALENDAR) {
                     calendarBinder?.scrollBy(calendarScrollStep)
                     resetInactivityWatchdog()

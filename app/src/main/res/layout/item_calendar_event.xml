@@ -1,123 +1,172 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/eventRow"
+<!--
+    Single calendar event row (artboard 04 — non-band rows). Grid:
+    160dp time block | 6dp colored rail | flexible title cluster | auto meta.
+    NOW state adds a white pill in the title cluster + a "14m left" + VuBars
+    meta on the right (driven by CalendarEventAdapter).
+-->
+<com.ambient.tvclock.ui.FocusableContainer xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/eventFocus"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingStart="6dp"
-    android:paddingTop="14dp"
-    android:paddingEnd="8dp"
-    android:paddingBottom="14dp">
-
-    <View
-        android:id="@+id/eventSourceRail"
-        android:layout_width="4dp"
-        android:layout_height="44dp"
-        android:layout_marginEnd="14dp" />
+    android:layout_marginVertical="5dp"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    app:accentColor="@color/cal_personal_dot"
+    app:focusRadius="14dp">
 
     <LinearLayout
-        android:layout_width="88dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="18dp"
-        android:gravity="end"
-        android:orientation="vertical">
+        android:id="@+id/eventRow"
+        android:layout_width="match_parent"
+        android:layout_height="96dp"
+        android:background="@drawable/bg_event_row"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="12dp">
 
-        <TextView
-            android:id="@+id/textEventTimeStart"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:singleLine="true"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/textEventTimeEnd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:fontFamily="sans-serif-light"
-            android:singleLine="true"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
-
+        <!-- Time column (160dp). -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="160dp"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/textEventNowBadge"
+                android:id="@+id/textEventTimeStart"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp"
-                android:background="@drawable/bg_now_badge"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.1"
-                android:paddingStart="8dp"
-                android:paddingTop="2dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="2dp"
-                android:text="@string/calendar_happening_now"
+                android:fontFamily="@font/manrope"
+                android:fontFeatureSettings="tnum"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.01"
+                android:textColor="#EBFFFFFF"
+                android:textSize="36sp" />
+
+            <TextView
+                android:id="@+id/textEventDurEnds"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.16"
                 android:textAllCaps="true"
-                android:textColor="#000000"
-                android:textSize="10sp"
-                android:visibility="gone" />
+                android:textColor="#6BFFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- 6dp colored rail. -->
+        <View
+            android:id="@+id/eventSourceRail"
+            android:layout_width="6dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="22dp"
+            android:layout_marginEnd="22dp" />
+
+        <!-- Title cluster (flexible). -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/textEventSource"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/jetbrains_mono"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="0.2"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:textAllCaps="true"
+                    android:textColor="@color/cal_personal_text"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/textEventNowBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_now_pill_white"
+                    android:fontFamily="@font/jetbrains_mono"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="0.22"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="@string/calendar_happening_now"
+                    android:textAllCaps="true"
+                    android:textColor="@color/dock_bg"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/textEventTitle"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginTop="8dp"
                 android:ellipsize="end"
-                android:fontFamily="sans-serif"
-                android:maxLines="2"
-                android:textColor="@color/text_primary"
-                android:textSize="20sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/textEventSource"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.08"
-                android:paddingStart="8dp"
-                android:paddingTop="2dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="2dp"
-                android:textAllCaps="true"
-                android:textColor="@color/text_secondary"
-                android:textSize="10sp" />
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.005"
+                android:maxLines="1"
+                android:textColor="#EBFFFFFF"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/textEventLocation"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
+                android:layout_marginTop="4dp"
                 android:ellipsize="end"
-                android:fontFamily="sans-serif-light"
+                android:fontFamily="@font/manrope"
+                android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp"
+                android:textColor="#73FFFFFF"
+                android:textSize="16sp"
                 android:visibility="gone" />
         </LinearLayout>
+
+        <!-- Right meta cluster — "14m left" + VuBars (NOW only). -->
+        <LinearLayout
+            android:id="@+id/eventNowMeta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <com.ambient.tvclock.ui.VuBarsView
+                android:layout_width="16dp"
+                android:layout_height="16dp" />
+
+            <TextView
+                android:id="@+id/textEventTimeLeft"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.18"
+                android:textAllCaps="true"
+                android:textColor="@color/dock_text_pri"
+                android:textSize="13sp"
+                android:textStyle="normal" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</com.ambient.tvclock.ui.FocusableContainer>

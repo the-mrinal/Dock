@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 76dp circle for Prev/Next transport. Translucent card. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/dock_card" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/dock_border" />
+</shape>

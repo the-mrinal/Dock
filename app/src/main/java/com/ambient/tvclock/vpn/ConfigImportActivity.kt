@@ -3,15 +3,24 @@ package com.ambient.tvclock.vpn
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.ambient.tvclock.R
+import com.ambient.tvclock.settings.QrPatternView
+import com.ambient.tvclock.ui.ArtWashView
+import com.ambient.tvclock.ui.PillButton
+import com.ambient.tvclock.ui.PulseHaloView
 
 /**
- * Hosts the LAN HTTP drop-in server for the duration this Activity is alive.
- * Shows the URL + PIN on the TV so the user knows where to POST their wg0.conf.
- * Finishes on success, cancel, or the session's 5-minute TTL.
+ * Hosts the LAN HTTP drop-in server for the duration this Activity is alive
+ * and renders artboard 10 (Settings · LAN .conf drop).
+ *
+ * The service plumbing (LanIp, ConfigImportSession, ConfigImportServer, the
+ * 5-minute TTL) is untouched — only the UI surface moves to the redesign.
+ *
+ * The QR pattern is decorative today; we seed it with the drop URL so the
+ * pattern is at least deterministic per device. When the project wants a
+ * scannable QR we'll port the same seed to zxing inside the existing card.
  */
 class ConfigImportActivity : AppCompatActivity(), ConfigImportServer.Listener {
 
@@ -27,25 +36,32 @@ class ConfigImportActivity : AppCompatActivity(), ConfigImportServer.Listener {
 
     private lateinit var urlView: TextView
     private lateinit var pinView: TextView
-    private lateinit var curlView: TextView
     private lateinit var statusView: TextView
+    private lateinit var listeningHalo: PulseHaloView
+    private lateinit var qrPattern: QrPatternView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_config_import)
 
+        findViewById<ArtWashView>(R.id.importArtWash).apply {
+            setSeed("settings-lan")
+            setIntensity(0.08f)
+        }
+
         urlView = findViewById(R.id.import_url_value)
         pinView = findViewById(R.id.import_pin_value)
-        curlView = findViewById(R.id.import_curl_hint)
         statusView = findViewById(R.id.import_status)
-        findViewById<Button>(R.id.import_cancel).setOnClickListener { finish() }
+        listeningHalo = findViewById(R.id.import_listening_halo)
+        qrPattern = findViewById(R.id.importQrPattern)
+        findViewById<PillButton>(R.id.import_cancel).setOnClickListener { finish() }
 
         val lanIp = LanIp.firstIPv4()
         if (lanIp == null) {
             urlView.text = getString(R.string.vpn_import_no_lan)
             pinView.text = ""
-            curlView.text = ""
             statusView.text = ""
+            listeningHalo.isPulsing = false
             return
         }
 
@@ -53,12 +69,16 @@ class ConfigImportActivity : AppCompatActivity(), ConfigImportServer.Listener {
         val srv = ConfigImportServer(applicationContext, sess, this).also { server = it }
         if (!srv.start()) {
             statusView.text = getString(R.string.vpn_import_status_error, "could not bind a LAN port")
+            listeningHalo.isPulsing = false
             return
         }
 
-        urlView.text = getString(R.string.vpn_import_url_value, lanIp, srv.port)
-        pinView.text = getString(R.string.vpn_import_pin_value, sess.pin)
-        curlView.text = getString(R.string.vpn_import_curl_hint, sess.pin, lanIp, srv.port)
+        val url = getString(R.string.vpn_import_url_value, lanIp, srv.port)
+        val dropUrl = "${url}drop"
+        urlView.text = dropUrl
+        pinView.text = sess.pin
+        qrPattern.seed = dropUrl
+        listeningHalo.isPulsing = true
         updateCountdown()
         mainHandler.post(ticker)
     }
@@ -71,7 +91,8 @@ class ConfigImportActivity : AppCompatActivity(), ConfigImportServer.Listener {
 
     override fun onConfigAccepted() {
         mainHandler.post {
-            statusView.text = getString(R.string.vpn_import_status_received)
+            statusView.text = getString(R.string.vpn_drop_listening_received)
+            listeningHalo.isPulsing = false
             mainHandler.postDelayed({ finish() }, 1_500)
         }
     }
@@ -86,7 +107,8 @@ class ConfigImportActivity : AppCompatActivity(), ConfigImportServer.Listener {
         val sess = session ?: return
         val remainingMillis = sess.millisRemaining()
         if (remainingMillis <= 0) {
-            statusView.text = getString(R.string.vpn_import_status_expired)
+            statusView.text = getString(R.string.vpn_drop_listening_expired)
+            listeningHalo.isPulsing = false
             mainHandler.removeCallbacks(ticker)
             server?.stop()
             return
@@ -94,6 +116,6 @@ class ConfigImportActivity : AppCompatActivity(), ConfigImportServer.Listener {
         val totalSec = remainingMillis / 1_000
         val mins = (totalSec / 60).toInt()
         val secs = (totalSec % 60).toInt()
-        statusView.text = getString(R.string.vpn_import_status_waiting, mins, secs)
+        statusView.text = getString(R.string.vpn_drop_listening, mins, secs)
     }
 }

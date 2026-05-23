@@ -54,7 +54,6 @@
 
     <!-- AirPlay status screen. -->
     <string name="airplay_status_off">Off</string>
-    <string name="airplay_status_ready">Ready</string>
     <string name="airplay_status_streaming">Streaming</string>
     <string name="airplay_detail_off">Enable Phone Mirroring in Settings to accept casts</string>
     <string name="airplay_detail_protocol_off">AirPlay is disabled in Settings</string>
@@ -85,6 +84,57 @@
     <string name="calendar_happening_now">Now</string>
     <string name="calendar_all_day">All day</string>
 
+    <!-- Dock redesign — Home, Calendar, Connect copy. -->
+    <string name="dock_studio_eyebrow">Dock · Studio</string>
+    <string name="home_widget_today_eyebrow">Today</string>
+    <string name="home_widget_now_personal">Now · Personal</string>
+    <string name="home_widget_now_work">Now · Work</string>
+    <string name="home_widget_ends_in">Ends in %1$dm · %2$s</string>
+    <string name="home_widget_until">Until %1$s</string>
+    <string name="home_widget_also_now">+%1$d also now</string>
+    <string name="home_widget_next_up">Next up</string>
+    <string name="home_widget_more_today">%1$d more today →</string>
+    <string name="home_widget_now_playing">Now playing</string>
+    <string name="home_widget_up_next">Up next</string>
+    <string name="home_widget_playing_on">Living Room TV</string>
+    <string name="home_ambient_idle">Idle · any key wakes</string>
+    <string name="home_ambient_now_playing">Now playing</string>
+    <string name="home_ambient_now">Now · Personal</string>
+
+    <string name="calendar_eyebrow">Calendar</string>
+    <string name="calendar_meta_template">%1$s · %2$s</string>
+    <string name="calendar_events_count_one">%1$d event</string>
+    <string name="calendar_events_count_other">%1$d events</string>
+    <string name="calendar_booked_hours">%1$dh %2$dm booked</string>
+    <string name="calendar_booked_minutes">%1$dm booked</string>
+    <string name="calendar_with_conflicts">%1$d with conflicts</string>
+    <string name="calendar_legend_personal">Personal</string>
+    <string name="calendar_legend_work">Work</string>
+    <string name="calendar_legend_conflict">Conflict</string>
+    <string name="calendar_hint_left">Updated %1$s · ▷ press right to refresh</string>
+    <string name="calendar_hint_left_simple">▷ press right to refresh</string>
+    <string name="calendar_hint_right">↑↓ between rows · ←→ between conflicting events</string>
+    <string name="calendar_now_band">Now · %1$d events</string>
+    <string name="calendar_partial_overlap">Partial overlap</string>
+    <string name="calendar_starts_at">Starts %1$s</string>
+    <string name="calendar_minutes_left">%1$dm left</string>
+    <string name="calendar_dur_ends">%1$s · ends %2$s</string>
+    <string name="calendar_empty_eyebrow">Nothing on the books</string>
+    <string name="calendar_empty_title">A whole day to yourself.</string>
+    <string name="calendar_empty_copy">No events from your personal or work calendars. Pull right on the remote to refresh, or check tomorrow with DPAD-down.</string>
+
+    <string name="connect_title">Connect</string>
+    <string name="connect_action_turn_on">Turn on</string>
+    <string name="connect_action_stop">Stop</string>
+    <string name="connect_action_connect">Connect</string>
+    <string name="connect_action_disconnect">Disconnect</string>
+    <string name="connect_action_retry">Retry</string>
+    <string name="connect_action_receive_config">Receive config</string>
+    <string name="connect_airplay_eyebrow">AirPlay</string>
+    <string name="connect_vpn_eyebrow">VPN</string>
+    <string name="connect_airplay_detail_streaming">From %1$s · 1080p</string>
+    <string name="connect_vpn_detail_connected">%1$s · kill-switch on</string>
+
     <string name="ambient_label_now">Now</string>
     <string name="ambient_label_now_until">Now · Until %1$s</string>
     <string name="ambient_label_next">Next</string>
@@ -96,9 +146,6 @@
     <string name="calendar_last_updated">Updated %1$s</string>
     <string name="calendar_fetch_error">Could not refresh calendar</string>
 
-    <string name="pref_category_sleep">Sleep timer</string>
-    <string name="pref_inactivity_timeout_title">Auto-exit after inactivity</string>
-    <string name="pref_inactivity_timeout_summary">Closes the app and allows the TV to sleep when no remote input is detected</string>
 
     <string name="timeout_30_min">30 minutes</string>
     <string name="timeout_1_hour">1 hour</string>
@@ -107,8 +154,6 @@
     <string name="timeout_6_hours">6 hours</string>
     <string name="timeout_never">Never (stay awake until you exit)</string>
 
-    <string name="pref_ambient_delay_title">Fade widgets when idle</string>
-    <string name="pref_ambient_delay_summary">After this much time without remote input, the calendar and now playing widgets fade out and the clock starts a slow drift to protect the screen</string>
 
     <string name="ambient_off">Off (always show widgets)</string>
     <string name="ambient_30_seconds">30 seconds</string>
@@ -117,42 +162,11 @@
     <string name="ambient_2_minutes">2 minutes</string>
     <string name="ambient_5_minutes">5 minutes</string>
 
-    <string name="pref_category_calendar">Calendar</string>
-    <string name="pref_show_calendar_title">Show calendar</string>
-    <string name="pref_show_calendar_summary">Display today\'s events on Home and Calendar screens</string>
-    <string name="pref_personal_calendar_url_title">Personal calendar URL</string>
-    <string name="pref_personal_calendar_url_summary">Google Calendar secret iCal link</string>
-    <string name="pref_work_calendar_url_title">Work calendar URL (optional)</string>
-    <string name="pref_work_calendar_url_summary">Outlook ICS link when available — leave empty for now</string>
 
-    <string name="pref_category_now_playing">Now playing</string>
-    <string name="pref_show_now_playing_title">Show media on dashboard</string>
-    <string name="pref_show_now_playing_summary">Show a music widget on Home when Spotify or other media is playing</string>
-    <string name="pref_notification_access_title">Media access permission</string>
     <string name="notification_access_required">Required once so the app can read active media sessions. Tap to open settings, or grant via ADB.</string>
     <string name="notification_access_granted">Granted — now playing will appear when Spotify is playing.</string>
 
-    <string name="pref_category_receiver">Phone mirroring (beta)</string>
-    <string name="pref_receiver_enabled_title">Enable mirroring receiver</string>
-    <string name="pref_receiver_enabled_summary">Let nearby phones and laptops cast to this device</string>
-    <string name="pref_receiver_device_name_title">Device name</string>
-    <string name="pref_receiver_device_name_summary">Shown to senders in the AirPlay/Cast picker. Leave blank to use the system name.</string>
-    <string name="pref_receiver_airplay_title">AirPlay receiver</string>
-    <string name="pref_receiver_airplay_summary">Accept connections from macOS and iPhone</string>
-    <string name="pref_receiver_cast_title">Google Cast receiver</string>
-    <string name="pref_receiver_cast_summary">Accept connections from Chrome and Android</string>
-    <string name="pref_receiver_miracast_title">Miracast receiver</string>
-    <string name="pref_receiver_miracast_summary">Accept connections from Windows and Android</string>
-    <string name="pref_receiver_pin_title">Require PIN for AirPlay</string>
-    <string name="pref_receiver_pin_summary">Show a 4-digit confirmation code on screen before allowing the connection</string>
-    <string name="pref_receiver_start_on_boot_title">Start on device boot</string>
-    <string name="pref_receiver_start_on_boot_summary">Keep advertising as soon as the device powers on</string>
 
-    <string name="pref_category_spotify">Spotify API</string>
-    <string name="pref_spotify_connect_title">Connect Spotify</string>
-    <string name="pref_spotify_connect_summary">Link your account for up next and recently played (Premium, Development Mode)</string>
-    <string name="pref_spotify_disconnect_title">Disconnect Spotify</string>
-    <string name="pref_spotify_disconnect_summary">Remove stored tokens from this device</string>
     <string name="spotify_connected">Spotify connected</string>
     <string name="spotify_not_connected">Not connected — tap Connect Spotify</string>
     <string name="spotify_no_client_id">Add spotify.clientId to local.properties and rebuild</string>
@@ -202,22 +216,48 @@
     <string name="cd_skip_next">Next track</string>
     <string name="cd_switch_device">Switch playback device</string>
 
+    <!-- Dock redesign — Music (Stream A). -->
+    <string name="music_eyebrow">Music</string>
+    <string name="music_breadcrumb_browse">Browse Playlists</string>
+    <string name="music_breadcrumb_root">Music</string>
+    <string name="music_lan">LAN</string>
+    <string name="music_now_playing_from_playlist">Playing from playlist</string>
+    <string name="music_now_playing_context">Deep Focus</string>
+    <string name="music_device_on_label">On</string>
+    <string name="music_device_default_name">Living Room TV</string>
+    <string name="music_album_year_format">%1$s · %2$s</string>
+    <string name="music_press_ok_to_jump">Press OK to jump</string>
+    <string name="music_now_playing_key_hint">↑ Playlists · ← → Skip · ↓ Up Next · OK Play</string>
+    <string name="music_recent_hint">← → to browse · OK resumes in original context</string>
+    <string name="music_empty_eyebrow">Nothing playing</string>
+    <string name="music_empty_title">Quiet for now.</string>
+    <string name="music_empty_body">Start something from your playlists below — or press play on any device with Spotify Connect and it\'ll appear here automatically.</string>
+    <string name="music_empty_browse_cta">Browse Playlists</string>
+    <string name="music_empty_change_device_cta">Change device</string>
+    <string name="music_browse_eyebrow">Your Library</string>
+    <string name="music_browse_title">Playlists</string>
+    <string name="music_browse_legend_ok_open">OK   Open</string>
+    <string name="music_browse_legend_back">BACK   Now Playing</string>
+    <string name="music_browse_legend_nav">↑↓ ←→   Navigate</string>
+    <string name="music_tracks_eyebrow_format">Playlist · %1$d tracks</string>
+    <string name="music_tracks_play_all">Play playlist</string>
+    <string name="music_tracks_shuffle">Shuffle</string>
+    <string name="music_tracks_column_title">Title</string>
+    <string name="music_tracks_column_album">Album</string>
+    <string name="music_tracks_column_time">Time</string>
+    <string name="music_device_picker_eyebrow">Spotify Connect</string>
+    <string name="music_device_picker_title">Play on…</string>
+    <string name="music_device_picker_legend_ok">OK   Select</string>
+    <string name="music_device_picker_legend_back">BACK   Close</string>
+    <string name="music_device_active_label">Playing</string>
+    <string name="music_now_playing_queue">Queue</string>
+
     <!-- VPN (WireGuard) settings + import flow. -->
-    <string name="pref_category_vpn">VPN (WireGuard)</string>
-    <string name="pref_vpn_enabled_title">Enable VPN</string>
-    <string name="pref_vpn_enabled_summary">Route all device traffic through the imported WireGuard tunnel</string>
-    <string name="pref_vpn_status_title">Status</string>
     <string name="pref_vpn_status_no_config">No config imported</string>
     <string name="pref_vpn_status_down">Down</string>
     <string name="pref_vpn_status_connecting">Connecting…</string>
     <string name="pref_vpn_status_up">Up · peer %1$s</string>
     <string name="pref_vpn_status_error">Error: %1$s</string>
-    <string name="pref_vpn_receive_config_title">Receive config from laptop (LAN)</string>
-    <string name="pref_vpn_receive_config_summary">Spin up a short-lived LAN endpoint to accept a .conf upload</string>
-    <string name="pref_vpn_clear_config_title">Clear config</string>
-    <string name="pref_vpn_clear_config_summary">Delete the imported WireGuard config from this device</string>
-    <string name="pref_vpn_killswitch_title">Always-on / kill-switch (system)</string>
-    <string name="pref_vpn_killswitch_summary">Open Android\'s VPN settings to enable Always-on VPN and block non-VPN traffic</string>
 
     <string name="vpn_import_title">Receive WireGuard config</string>
     <string name="vpn_import_url_label">Open this in any browser on your laptop or phone:</string>
@@ -237,8 +277,103 @@
     <string name="vpn_connect_failed">Could not start VPN: %1$s</string>
     <string name="vpn_not_authorized">Grant VPN permission to enable the tunnel</string>
 
-    <string name="pref_vpn_overlay_title">Show VPN indicator overlay</string>
-    <string name="pref_vpn_overlay_summary">A small “🔒 country” pill in the corner while VPN is up — visible even over Netflix or the launcher</string>
     <string name="vpn_overlay_default_label">VPN</string>
     <string name="vpn_overlay_needs_permission">Grant “Display over other apps” for this app to enable the overlay</string>
+
+    <!-- ====================================================================
+         Settings redesign (Stream B) — eyebrows, group titles, descriptive copy.
+         Existing pref_* keys above are reused unchanged.
+         ==================================================================== -->
+    <string name="settings_eyebrow_root">Dock · Settings</string>
+    <string name="settings_legend_keys">← Rail · ↵ Open · BACK Home</string>
+    <string name="settings_footer_version">Dock v0.9.3 · Apache 2.0</string>
+
+    <string name="settings_rail_header">Settings</string>
+    <string name="settings_rail_calendar">Calendar</string>
+    <string name="settings_rail_music">Music</string>
+    <string name="settings_rail_mirroring">Phone mirroring</string>
+    <string name="settings_rail_vpn">VPN</string>
+    <string name="settings_rail_display">Display</string>
+    <string name="settings_rail_about">About</string>
+
+    <string name="settings_calendar_eyebrow">Settings · Calendar</string>
+    <string name="settings_calendar_title">Calendar feeds</string>
+    <string name="settings_calendar_blurb">Personal + work iCal URLs merged on one page. Refreshes happen in the background; pulling right on Calendar forces a sync.</string>
+    <string name="settings_calendar_personal_label">Personal calendar (iCal)</string>
+    <string name="settings_calendar_work_label">Work calendar (iCal)</string>
+    <string name="settings_calendar_refresh_label">Refresh interval</string>
+    <string name="settings_calendar_refresh_value">Every 5 minutes</string>
+    <string name="settings_calendar_show_label">Show calendar on dashboard</string>
+    <string name="settings_calendar_tomorrow_label">Tomorrow preview on Home</string>
+    <string name="settings_calendar_reset_label">Remove all calendars…</string>
+    <string name="settings_calendar_reset_hint">Resets feeds and clears local cache</string>
+    <string name="settings_calendar_value_unset">Not set</string>
+    <string name="settings_calendar_reset_done">Calendar feeds cleared</string>
+
+    <string name="settings_music_eyebrow">Settings · Music</string>
+    <string name="settings_music_title">Music sources</string>
+    <string name="settings_music_blurb">Read media sessions from this TV and link Spotify for queue + recently played. Both are needed for the music widget on Home.</string>
+    <string name="settings_music_show_label">Show music widget on Home</string>
+    <string name="settings_music_access_label">Notification access</string>
+    <string name="settings_music_open_access_label">Open notification access</string>
+    <string name="settings_music_open_access_hint">Grants permission to read the active media session</string>
+    <string name="settings_music_spotify_connect">Connect Spotify</string>
+    <string name="settings_music_spotify_disconnect">Disconnect Spotify</string>
+    <string name="settings_music_spotify_status">Spotify status</string>
+
+    <string name="settings_mirror_eyebrow">Settings · Phone mirroring</string>
+    <string name="settings_mirror_title">Phone mirroring</string>
+    <string name="settings_mirror_blurb">Let nearby phones and laptops cast to this TV over AirPlay, Google Cast, or Miracast. The receiver runs only while this toggle is on.</string>
+    <string name="settings_mirror_enable">Mirroring receiver</string>
+    <string name="settings_mirror_device_name">Device name</string>
+    <string name="settings_mirror_device_name_default">Dock</string>
+    <string name="settings_mirror_airplay">AirPlay receiver</string>
+    <string name="settings_mirror_cast">Google Cast receiver</string>
+    <string name="settings_mirror_miracast">Miracast receiver</string>
+    <string name="settings_mirror_pin">Require PIN for AirPlay</string>
+    <string name="settings_mirror_boot">Start on device boot</string>
+
+    <string name="settings_vpn_eyebrow">Settings · VPN</string>
+    <string name="settings_vpn_title">WireGuard VPN</string>
+    <string name="settings_vpn_blurb">Import a wg0.conf from your laptop on the LAN. Once present, you can flip the tunnel up or down and pin a country pill while it routes.</string>
+    <string name="settings_vpn_enable">Enable VPN</string>
+    <string name="settings_vpn_status">Status</string>
+    <string name="settings_vpn_receive">Receive config from laptop</string>
+    <string name="settings_vpn_receive_hint">Spins up a short-lived LAN endpoint</string>
+    <string name="settings_vpn_clear">Clear config</string>
+    <string name="settings_vpn_clear_hint">Deletes the imported WireGuard config</string>
+    <string name="settings_vpn_killswitch">Always-on / kill-switch</string>
+    <string name="settings_vpn_killswitch_hint">Opens Android’s VPN settings</string>
+    <string name="settings_vpn_overlay">Show VPN indicator overlay</string>
+
+    <string name="settings_display_eyebrow">Settings · Display</string>
+    <string name="settings_display_title">Display behavior</string>
+    <string name="settings_display_blurb">Set how quickly widgets fade out and when the dashboard hands the screen back to the TV.</string>
+    <string name="settings_display_ambient">Fade widgets when idle</string>
+    <string name="settings_display_timeout">Auto-exit after inactivity</string>
+
+    <string name="settings_about_eyebrow">Settings · About</string>
+    <string name="settings_about_title">About Dock</string>
+    <string name="settings_about_blurb">Open-source ambient dashboard for Fire TV / Android TV. Sources, licenses, and contact below.</string>
+    <string name="settings_about_version">Version</string>
+    <string name="settings_about_version_value">0.9.3 (Apache 2.0)</string>
+    <string name="settings_about_license">License</string>
+    <string name="settings_about_license_value">Apache 2.0</string>
+    <string name="settings_about_source">Source code</string>
+    <string name="settings_about_source_value">github.com/the-mrinal/fire_tv</string>
+    <string name="settings_about_support">Support</string>
+    <string name="settings_about_support_value">dmrinal626@gmail.com</string>
+
+    <!-- VPN .conf drop screen (artboard 10). -->
+    <string name="vpn_drop_eyebrow">Waiting for config · LAN endpoint live</string>
+    <string name="vpn_drop_title">Drop a .conf on Dock.</string>
+    <string name="vpn_drop_blurb">Open this URL on the laptop holding your WireGuard config — or scan with your phone. The endpoint closes the moment a file arrives.</string>
+    <string name="vpn_drop_url_label">Or visit on the LAN</string>
+    <string name="vpn_drop_drag_hint">Drag the .conf onto the page, or paste its text. Dock will parse it, verify the keys, and connect immediately.</string>
+    <string name="vpn_drop_listening">Listening · times out in %1$d min %2$02d s</string>
+    <string name="vpn_drop_listening_received">Config received. Closing…</string>
+    <string name="vpn_drop_listening_expired">Listener expired — try again</string>
+    <string name="vpn_drop_cancel">Cancel · BACK</string>
+    <string name="vpn_drop_legend">No data leaves your LAN. Endpoint is HTTP, key-pinned, single-use.</string>
+    <string name="vpn_drop_pin_label">PIN (X-Wg-Pin header)</string>
 </resources>

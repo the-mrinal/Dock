@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Spotify device picker dialog (Stream A, artboard 16).
+    760dp card, 92% opaque elev surface, eyebrow + Manrope-300 44sp title +
+    4 DeviceRows + bottom legend. The blurred backdrop is owned by the
+    DialogFragment hosting this layout (RenderEffect on API 31+, pre-blurred
+    Bitmap fallback elsewhere).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/devicePickerRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <!-- 0.5 black overlay on top of the blurred underlay. -->
+    <View
+        android:id="@+id/devicePickerScrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000" />
+
+    <LinearLayout
+        android:id="@+id/devicePickerCard"
+        android:layout_width="@dimen/music_device_picker_width"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/bg_device_picker_card"
+        android:elevation="50dp"
+        android:orientation="vertical"
+        android:padding="36dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:text="@string/music_device_picker_eyebrow"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_accent_chartreuse" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="28dp"
+            android:fontFamily="@font/manrope"
+            android:text="@string/music_device_picker_title"
+            android:textColor="@color/dock_text_pri"
+            android:textSize="44sp"
+            android:letterSpacing="-0.02" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/devicePickerRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:nestedScrollingEnabled="true"
+            android:overScrollMode="never"
+            android:scrollbars="none" />
+
+        <TextView
+            android:id="@+id/devicePickerHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:textAppearance="@style/TextAppearance.Dock.Body.Medium"
+            android:textColor="@color/dock_text_sec"
+            android:visibility="gone" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:background="@color/dock_border" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/music_device_picker_legend_ok"
+                android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                android:textColor="@color/dock_text_ter" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/music_device_picker_legend_back"
+                android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                android:textColor="@color/dock_text_ter" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

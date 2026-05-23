@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Music Playlist Tracks (Stream A, artboard 15). 300dp cover (left) +
+    eyebrow / Manrope-200 88sp title / description / Play+Shuffle pills
+    (right), then a column header row and the tracks RecyclerView below.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/viewMusicPlaylistTracks"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="14dp"
+        android:baselineAligned="false"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="horizontal">
+
+        <!-- Cover. -->
+        <FrameLayout
+            android:id="@+id/tracksCoverFrame"
+            android:layout_width="@dimen/music_tracks_cover"
+            android:layout_height="@dimen/music_tracks_cover"
+            android:background="@color/dock_bg_elev">
+
+            <ImageView
+                android:id="@+id/tracksCover"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop" />
+        </FrameLayout>
+
+        <!-- Right pane: meta + title + body + actions. Aligned to flex-end. -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="@dimen/music_tracks_cover"
+            android:layout_marginStart="20dp"
+            android:layout_weight="1"
+            android:gravity="bottom"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tracksEyebrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+                android:textColor="@color/dock_accent_chartreuse" />
+
+            <TextView
+                android:id="@+id/tracksTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.Dock.HeroTitle"
+                android:textSize="44sp"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="24sp"
+                app:autoSizeMaxTextSize="52sp" />
+
+            <TextView
+                android:id="@+id/tracksSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:fontFamily="@font/manrope"
+                android:maxLines="2"
+                android:maxWidth="480dp"
+                android:textColor="@color/dock_text_sec"
+                android:textSize="13sp"
+                android:lineSpacingMultiplier="1.4" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:orientation="horizontal">
+
+                <com.ambient.tvclock.ui.FocusableContainer
+                    android:id="@+id/tracksPlayAllFocus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:accentColor="@color/dock_accent_chartreuse"
+                    app:focusRadius="999dp"
+                    app:proxyFocus="true">
+
+                    <LinearLayout
+                        android:id="@+id/tracksPlayAll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_dock_card_pill"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingTop="10dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="10dp">
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_marginEnd="8dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_play"
+                            android:tint="@color/dock_text_pri" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/manrope"
+                            android:text="@string/music_tracks_play_all"
+                            android:textColor="@color/dock_text_pri"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </com.ambient.tvclock.ui.FocusableContainer>
+
+                <com.ambient.tvclock.ui.FocusableContainer
+                    android:id="@+id/tracksShuffleFocus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    app:accentColor="@color/dock_accent_chartreuse"
+                    app:focusRadius="999dp"
+                    app:proxyFocus="true">
+
+                    <LinearLayout
+                        android:id="@+id/tracksShuffle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_dock_card_pill"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingTop="10dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/manrope"
+                            android:text="@string/music_tracks_shuffle"
+                            android:textColor="@color/dock_text_sec"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </com.ambient.tvclock.ui.FocusableContainer>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Column header row: # / cover / title / album / time. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="6dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="36dp"
+            android:layout_height="wrap_content"
+            android:text="#"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_text_ter" />
+
+        <Space
+            android:layout_width="48dp"
+            android:layout_height="1dp" />
+
+        <Space
+            android:layout_width="12dp"
+            android:layout_height="1dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/music_tracks_column_title"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_text_ter" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.1"
+            android:text="@string/music_tracks_column_album"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_text_ter" />
+
+        <TextView
+            android:layout_width="56dp"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:text="@string/music_tracks_column_time"
+            android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
+            android:textColor="@color/dock_text_ter" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/dock_border" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/tracksRecycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingBottom="@dimen/music_section_gap"
+        android:scrollbars="none" />
+
+    <TextView
+        android:id="@+id/tracksHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.Dock.Body.Large"
+        android:textColor="@color/dock_text_sec"
+        android:visibility="gone" />
+</LinearLayout>

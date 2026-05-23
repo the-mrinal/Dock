@@ -31,4 +31,50 @@
     <color name="status_pending">#F5A623</color>
     <color name="status_idle">#707070</color>
     <color name="status_error">#FF3B30</color>
+
+    <!-- ====================================================================
+         Dock redesign — Phase 0 foundation tokens.
+         Mirrors the HTML prototype's `T` palette + nav accents + calendar
+         palette. Use these in all redesigned surfaces; legacy `bg_screen`
+         /`text_*` /`accent_*` colors above stay for unmigrated screens until
+         their stream lands.
+         ==================================================================== -->
+
+    <!-- Base surfaces. -->
+    <color name="dock_bg">#0A0A0B</color>
+    <color name="dock_bg_elev">#15151A</color>
+    <!-- Cards are translucent white scrims layered onto dock_bg / ArtWash. -->
+    <color name="dock_card">#0AFFFFFF</color>
+    <color name="dock_card_focus">#14FFFFFF</color>
+    <color name="dock_border">#14FFFFFF</color>
+    <color name="dock_border_strong">#24FFFFFF</color>
+
+    <!-- Foreground text scale. -->
+    <color name="dock_text_pri">#F4F4F2</color>
+    <color name="dock_text_sec">#B6B6B0</color>
+    <color name="dock_text_ter">#6E6E73</color>
+    <color name="dock_text_quat">#48484C</color>
+
+    <!-- Brand accent (chartreuse). -->
+    <color name="dock_accent_chartreuse">#C8F25C</color>
+    <color name="dock_accent_chartreuse_dim">#2EC8F25C</color>
+
+    <!-- Per-page nav accents. -->
+    <color name="nav_accent_connect">#5AC8FA</color>
+    <color name="nav_accent_home">#FFFFFF</color>
+    <color name="nav_accent_calendar">#8AB4F8</color>
+    <color name="nav_accent_music">#C8F25C</color>
+
+    <!-- Connect/service status colors. -->
+    <color name="c_airplay">#5AC8FA</color>
+    <color name="c_vpn">#34D279</color>
+    <color name="c_amber">#E8B85C</color>
+
+    <!-- Calendar tag palette. -->
+    <color name="cal_personal_dot">#8AB4F8</color>
+    <color name="cal_personal_text">#A8C5F8</color>
+    <color name="cal_personal_tag">#298AB4F8</color>
+    <color name="cal_work_dot">#F28B82</color>
+    <color name="cal_work_text">#F2A29A</color>
+    <color name="cal_work_tag">#29F28B82</color>
 </resources>

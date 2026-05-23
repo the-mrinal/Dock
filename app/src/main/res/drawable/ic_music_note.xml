@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Music note glyph for the TopChrome 36dp tile + empty-state dashed tile. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/dock_text_pri">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,3 L12,15.5 A3,3 0 1 1 9,12.5 A3,3 0 0 1 12,15.5 L12,5 L20,3 L20,13.5 A3,3 0 1 1 17,10.5 A3,3 0 0 1 20,13.5 Z" />
+</vector>

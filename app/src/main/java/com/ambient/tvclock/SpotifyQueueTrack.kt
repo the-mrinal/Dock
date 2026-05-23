@@ -20,7 +20,11 @@ data class SpotifyQueueTrack(
      * continues past it. Blank means we only have an isolated track URI and
      * must fall back to single-track play.
      */
-    val contextUri: String = ""
+    val contextUri: String = "",
+    /** Track duration in milliseconds, 0 when unknown. */
+    val durationMs: Long = 0L,
+    /** Album name (from the track's `album.name`), empty when unknown. */
+    val albumName: String = ""
 )
 
 data class SpotifyQueueSnapshot(
@@ -35,5 +39,12 @@ data class SpotifyQueueSnapshot(
      * tracks with their context, so we capture it once from the player state
      * and stamp it onto [upNext] before publishing.
      */
-    val activeContextUri: String? = null
+    val activeContextUri: String? = null,
+    /**
+     * Album art URL for the currently playing track. Sourced from the
+     * `currently_playing` block of the queue endpoint. Used as a network
+     * fallback when MediaSession metadata doesn't carry the bitmap
+     * (Spotify TV often doesn't).
+     */
+    val currentImageUrl: String = ""
 )

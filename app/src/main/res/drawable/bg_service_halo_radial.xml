@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Faint radial scrim drawn behind the 160dp PulseHaloView. The drawable is
+    a 999dp-radius oval gradient with a translucent tinted centre fading to
+    transparent at the edge. ServiceColumnView tints it per state.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:centerColor="#10FFFFFF"
+        android:endColor="#00FFFFFF"
+        android:gradientRadius="80dp"
+        android:startColor="#22FFFFFF"
+        android:type="radial"
+        android:useLevel="false" />
+</shape>

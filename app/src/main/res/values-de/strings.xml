@@ -49,38 +49,14 @@
     <string name="notification_status_stopped">Empfänger gestoppt</string>
 
     <!-- ── Settings section headers ────────────────────────────── -->
-    <string name="settings_section_display">Anzeige</string>
-    <string name="settings_section_protocols">Protokolle</string>
-    <string name="settings_section_service">Dienst</string>
-    <string name="settings_section_developer">Entwickler</string>
-    <string name="settings_section_about">Über</string>
 
     <!-- ── Settings row labels ─────────────────────────────────── -->
-    <string name="setting_display_name">Gerätename</string>
-    <string name="setting_display_name_placeholder">Systemname wird verwendet</string>
-    <string name="setting_airplay_enabled">AirPlay-Empfänger</string>
-    <string name="setting_airplay_subtitle">Verbindungen von macOS akzeptieren</string>
-    <string name="setting_miracast_enabled">Miracast-Empfänger</string>
-    <string name="setting_miracast_subtitle">Verbindungen von Windows und Android akzeptieren</string>
-    <string name="setting_cast_enabled">Google Cast-Empfänger</string>
-    <string name="setting_cast_subtitle">Verbindungen von Chrome und Android akzeptieren</string>
-    <string name="setting_airplay_pin">PIN für AirPlay erforderlich</string>
-    <string name="setting_airplay_pin_subtitle">4-stelligen Bestätigungscode auf dem Bildschirm anzeigen</string>
-    <string name="setting_start_on_boot">Beim Starten automatisch starten</string>
-    <string name="setting_debug_overlay">Debug-Overlay</string>
-    <string name="setting_debug_overlay_subtitle">FPS und Latenz auf dem Streaming-Bildschirm anzeigen</string>
-    <string name="setting_version">Version</string>
-    <string name="setting_reset_defaults">Auf Standardwerte zurücksetzen</string>
 
     <!-- ── Waiting screen ──────────────────────────────────────── -->
-    <string name="waiting_subtitle">Öffne AirPlay auf deinem Mac und wähle dieses Gerät</string>
-    <string name="waiting_device_label">Dieses Gerät:</string>
 
     <!-- ── Notification ────────────────────────────────────────── -->
     <string name="notification_status_streaming">Streaming von %1$s</string>
 
     <!-- ── Settings ────────────────────────────────────────────── -->
-    <string name="setting_display_name_dialog_hint">Leer lassen, um den Systemnamen zu verwenden</string>
-    <string name="setting_display_name_reset">Auf Standard zurücksetzen</string>
 
 </resources>

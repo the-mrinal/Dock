@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Multi-device glyph for the "Change device" empty-state CTA + device picker. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/dock_text_pri">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M4,4 L20,4 L20,14 L13,14 L13,16 L15,16 L15,18 L9,18 L9,16 L11,16 L11,14 L4,14 Z M6,6 L6,12 L18,12 L18,6 Z" />
+</vector>

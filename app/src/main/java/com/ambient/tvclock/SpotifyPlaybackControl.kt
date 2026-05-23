@@ -104,6 +104,22 @@ object SpotifyPlaybackControl {
         return mapPlayResult(putWithCode(context, url, body))
     }
 
+    /**
+     * Toggle Spotify Connect shuffle. The endpoint takes a `state` query
+     * parameter, no body, and applies to the current playback session
+     * (or to [deviceId] if specified). Callers that want to start a
+     * shuffled playlist should call this BEFORE [playContext] so the new
+     * playback inherits the shuffle setting.
+     */
+    fun setShuffle(context: Context, state: Boolean, deviceId: String? = null): Boolean {
+        val device = if (deviceId != null) "&device_id=$deviceId" else ""
+        return put(
+            context,
+            "$PLAYER_URL/shuffle?state=$state$device",
+            ByteArray(0).toRequestBody(null),
+        )
+    }
+
     fun transferToDevice(context: Context, deviceId: String): Boolean {
         val body = JSONObject()
             .put("device_ids", JSONArray().put(deviceId))

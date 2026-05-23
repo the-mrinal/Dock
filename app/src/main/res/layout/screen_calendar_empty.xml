@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Calendar empty state (artboard 06). Same eyebrow+date header as the day
+    view in the upper-left, then a centered dashed calendar tile + supporting
+    title + copy. Activated by the binder via the ViewStub in screen_calendar.xml
+    when the day has no events.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="64dp"
+    android:paddingTop="44dp"
+    android:paddingEnd="64dp">
+
+    <!-- Mini header (no legend chips in this state). -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/jetbrains_mono"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.24"
+            android:text="@string/calendar_eyebrow"
+            android:textAllCaps="true"
+            android:textColor="@color/nav_accent_calendar"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textCalendarEmptyDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:fontFamily="@font/manrope"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.035"
+            android:textColor="@color/dock_text_pri"
+            android:textSize="76sp" />
+    </LinearLayout>
+
+    <!-- Centered hero. weight=1 absorbs the slack between header and bottom edge. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingBottom="160dp">
+
+        <!-- Dashed calendar tile with the day-of-month written at the top. -->
+        <FrameLayout
+            android:layout_width="168dp"
+            android:layout_height="168dp"
+            android:background="@drawable/bg_empty_calendar_tile">
+
+            <TextView
+                android:id="@+id/textCalendarEmptyDay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:fontFamily="@font/jetbrains_mono"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.18"
+                android:textColor="#6BFFFFFF"
+                android:textSize="13sp" />
+
+            <!-- Simple "calendar icon" placeholder, drawn with the existing
+                 vector for now — matches the HTML's NIc.calendar slot. -->
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_nav_calendar"
+                android:tint="@color/nav_accent_calendar" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:includeFontPadding="false"
+            android:letterSpacing="0.24"
+            android:text="@string/calendar_empty_eyebrow"
+            android:textAllCaps="true"
+            android:textColor="@color/nav_accent_calendar"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:fontFamily="@font/manrope"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.035"
+            android:text="@string/calendar_empty_title"
+            android:textColor="@color/dock_text_pri"
+            android:textSize="78sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:fontFamily="@font/manrope"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxWidth="740dp"
+            android:text="@string/calendar_empty_copy"
+            android:textColor="#8CFFFFFF"
+            android:textSize="22sp" />
+    </LinearLayout>
+</LinearLayout>

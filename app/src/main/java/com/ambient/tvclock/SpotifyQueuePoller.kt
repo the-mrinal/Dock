@@ -170,6 +170,13 @@ class SpotifyQueuePoller(context: Context) {
                 }
             }
 
+            // Album art URL for the currently playing track: prefer a fresh
+            // value from the queue tick; otherwise reuse the previous one so
+            // a recent-only / player-only tick doesn't drop the art back to
+            // the procedural fallback.
+            val nextCurrentImageUrl = queue?.currentImageUrl?.takeIf { it.isNotBlank() }
+                ?: previous.currentImageUrl
+
             postSnapshot(
                 SpotifyQueueSnapshot(
                     upNext = stampedUpNext,
@@ -177,7 +184,8 @@ class SpotifyQueuePoller(context: Context) {
                     state = nextQueueState,
                     recentState = nextRecentState,
                     activeDeviceName = nextDeviceName,
-                    activeContextUri = nextContextUri
+                    activeContextUri = nextContextUri,
+                    currentImageUrl = nextCurrentImageUrl
                 )
             )
         }
