@@ -127,6 +127,11 @@ class MusicScreenBinder(
     private val clockFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val clockTick = Runnable { updateClock() }
 
+    /** Latest Spotify-provided URL for the currently playing track's cover.
+     *  Used by `bindNowPlaying` as a network fallback when the MediaSession
+     *  bitmap is null. Updated each queue tick by `bindQueue`. */
+    private var currentImageUrl: String = ""
+
     init {
         // Hero cover container — clip to outline with 18dp radius.
         val cardRadius = root.resources.getDimension(R.dimen.now_playing_card_radius)
@@ -313,11 +318,19 @@ class MusicScreenBinder(
         heroEyebrow.text = context.getString(R.string.music_now_playing_from_playlist)
         heroContext.text = track.album.ifEmpty { track.artist }
 
-        // Album art: real Spotify bitmap when present, CoverDrawable fallback.
+        // Album art priority:
+        //   1. MediaSession bitmap (when Spotify actually exposes it)
+        //   2. Spotify Web API URL captured from /v1/me/player/queue's
+        //      `currently_playing.album.images` — see SpotifyQueuePoller
+        //   3. Procedural CoverDrawable seeded by the track URI
         val art = track.artwork
         if (art != null) {
             NowPlayingArtwork.bind(heroArt, heroArt, track, artworkState)
+        } else if (currentImageUrl.isNotBlank()) {
+            artworkState.lastBitmap = null
+            AlbumArtLoader.load(currentImageUrl, heroArt)
         } else {
+            artworkState.lastBitmap = null
             val seed = track.mediaUri.ifBlank { "${track.title}|${track.artist}" }
             heroArt.setImageDrawable(CoverDrawable(seed))
         }
@@ -338,6 +351,17 @@ class MusicScreenBinder(
         bindUpNext(context, snapshot.state, snapshot.upNext)
         bindRecent(context, snapshot.recentState, snapshot.recentlyPlayed)
         updateDeviceLabel(snapshot.activeDeviceName)
+        // Capture the currently-playing cover URL and apply it eagerly. We do
+        // NOT gate on `NowPlayingCenter.current?.hasActiveSession` here because
+        // the queue poll commonly races ahead of the MediaSession callback on
+        // a fresh app launch — by the time MediaSession is ready, the URL has
+        // already been seen and AlbumArtLoader's URL-tag dedupes a re-fetch.
+        val urlChanged = snapshot.currentImageUrl != currentImageUrl
+        currentImageUrl = snapshot.currentImageUrl
+        if (urlChanged && currentImageUrl.isNotBlank()) {
+            artworkState.lastBitmap = null
+            AlbumArtLoader.load(currentImageUrl, heroArt)
+        }
     }
 
     // ─── Up Next ──────────────────────────────────────────────────────
@@ -772,7 +796,10 @@ class MusicScreenBinder(
          * layout pass).
          */
         fun preferredFocusTarget(): View? = when (screen) {
-            MusicScreen.NOW_PLAYING -> heroPlayFocus
+            // Land on the actual focusable ImageButton (the FocusableContainer
+            // wrapper is non-focusable in the redesigned hero so the button's
+            // own `state_focused` drawable selector can fire).
+            MusicScreen.NOW_PLAYING -> heroPlay
             MusicScreen.EMPTY -> emptyBrowseFocus
             MusicScreen.BROWSE -> {
                 val idx = lastPlaylistRowIndex.coerceAtMost((playlistAdapter.currentList.size - 1).coerceAtLeast(0))

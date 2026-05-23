@@ -227,6 +227,7 @@
     <string name="music_device_default_name">Living Room TV</string>
     <string name="music_album_year_format">%1$s · %2$s</string>
     <string name="music_press_ok_to_jump">Press OK to jump</string>
+    <string name="music_now_playing_key_hint">↑ Playlists · ← → Skip · ↓ Up Next · OK Play</string>
     <string name="music_recent_hint">← → to browse · OK resumes in original context</string>
     <string name="music_empty_eyebrow">Nothing playing</string>
     <string name="music_empty_title">Quiet for now.</string>

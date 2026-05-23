@@ -21,13 +21,13 @@
         android:clickable="true"
         android:focusable="false"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="10dp">
 
         <ImageView
             android:id="@+id/recentCover"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginBottom="14dp"
+            android:layout_marginBottom="8dp"
             android:contentDescription="@null"
             android:scaleType="centerCrop" />
 
@@ -39,35 +39,35 @@
             android:fontFamily="@font/manrope"
             android:maxLines="1"
             android:textColor="@color/dock_text_pri"
-            android:textSize="19sp" />
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/recentArtist"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:ellipsize="end"
             android:fontFamily="@font/manrope"
             android:maxLines="1"
             android:textColor="@color/dock_text_sec"
-            android:textSize="15sp" />
+            android:textSize="11sp" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:background="@color/dock_border" />
 
         <TextView
             android:id="@+id/recentContext"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:ellipsize="end"
             android:fontFamily="@font/jetbrains_mono"
             android:letterSpacing="0.04"
             android:maxLines="1"
             android:textColor="@color/dock_text_ter"
-            android:textSize="12sp" />
+            android:textSize="10sp" />
     </LinearLayout>
 </com.ambient.tvclock.ui.FocusableContainer>

@@ -38,7 +38,7 @@
                     android:id="@+id/browseEyebrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="6dp"
                     android:text="@string/music_browse_eyebrow"
                     android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
                     android:textColor="@color/dock_accent_chartreuse" />
@@ -47,9 +47,13 @@
                     android:id="@+id/browseTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:maxLines="1"
                     android:text="@string/music_browse_title"
                     android:textAppearance="@style/TextAppearance.Dock.Title.Large"
-                    android:textSize="76sp" />
+                    android:textSize="40sp"
+                    app:autoSizeTextType="uniform"
+                    app:autoSizeMinTextSize="24sp"
+                    app:autoSizeMaxTextSize="48sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -61,6 +65,7 @@
             android:clipChildren="false"
             android:clipToPadding="false"
             android:overScrollMode="never"
+            android:paddingBottom="@dimen/music_section_gap"
             android:scrollbars="none" />
 
         <TextView

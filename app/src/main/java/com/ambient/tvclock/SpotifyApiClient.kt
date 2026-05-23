@@ -76,7 +76,16 @@ object SpotifyApiClient {
 
     data class QueueResult(
         val tracks: List<SpotifyQueueTrack>,
-        val httpCode: Int
+        val httpCode: Int,
+        /**
+         * Album art URL for the `currently_playing` track returned by the
+         * queue endpoint. Empty when not reported (Spotify omits the field
+         * when nothing is playing or when this is a `recently_played` poll).
+         * Used by `MusicScreenBinder` as a network fallback when the
+         * MediaSession bitmap is null (Spotify TV doesn't reliably populate
+         * it).
+         */
+        val currentImageUrl: String = ""
     )
 
     data class SpotifyFeed(
@@ -579,8 +588,13 @@ object SpotifyApiClient {
                 }
                 clearRateLimit()
                 val json = JSONObject(response.body?.string().orEmpty())
-                val queue = json.optJSONArray("queue") ?: return QueueResult(emptyList(), code)
-                QueueResult(parseTrackArray(queue, maxItems = 1), code)
+                val currentImageUrl = json.optJSONObject("currently_playing")
+                    ?.optJSONObject("album")
+                    ?.let { pickImageUrl(it.optJSONArray("images")) }
+                    .orEmpty()
+                val queue = json.optJSONArray("queue")
+                    ?: return QueueResult(emptyList(), code, currentImageUrl)
+                QueueResult(parseTrackArray(queue, maxItems = 1), code, currentImageUrl)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Request failed: ${e.message}")

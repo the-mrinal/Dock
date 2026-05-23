@@ -16,7 +16,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="28dp"
+        android:layout_marginBottom="14dp"
         android:baselineAligned="false"
         android:clipChildren="false"
         android:clipToPadding="false"
@@ -41,7 +41,7 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="@dimen/music_tracks_cover"
-            android:layout_marginStart="40dp"
+            android:layout_marginStart="20dp"
             android:layout_weight="1"
             android:gravity="bottom"
             android:orientation="vertical">
@@ -57,27 +57,31 @@
                 android:id="@+id/tracksTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="6dp"
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textAppearance="@style/TextAppearance.Dock.HeroTitle"
-                android:textSize="88sp" />
+                android:textSize="44sp"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="24sp"
+                app:autoSizeMaxTextSize="52sp" />
 
             <TextView
                 android:id="@+id/tracksSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="6dp"
                 android:fontFamily="@font/manrope"
-                android:maxWidth="900dp"
+                android:maxLines="2"
+                android:maxWidth="480dp"
                 android:textColor="@color/dock_text_sec"
-                android:textSize="22sp"
+                android:textSize="13sp"
                 android:lineSpacingMultiplier="1.4" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
+                android:layout_marginTop="10dp"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:orientation="horizontal">
@@ -97,15 +101,15 @@
                         android:background="@drawable/bg_dock_card_pill"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="22dp"
-                        android:paddingTop="16dp"
-                        android:paddingEnd="28dp"
-                        android:paddingBottom="16dp">
+                        android:paddingStart="14dp"
+                        android:paddingTop="10dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="10dp">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_marginEnd="12dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_marginEnd="8dp"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_play"
                             android:tint="@color/dock_text_pri" />
@@ -116,7 +120,7 @@
                             android:fontFamily="@font/manrope"
                             android:text="@string/music_tracks_play_all"
                             android:textColor="@color/dock_text_pri"
-                            android:textSize="18sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
                 </com.ambient.tvclock.ui.FocusableContainer>
 
@@ -124,7 +128,7 @@
                     android:id="@+id/tracksShuffleFocus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:layout_marginStart="8dp"
                     app:accentColor="@color/dock_accent_chartreuse"
                     app:focusRadius="999dp"
                     app:proxyFocus="true">
@@ -136,10 +140,10 @@
                         android:background="@drawable/bg_dock_card_pill"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="24dp"
-                        android:paddingTop="16dp"
-                        android:paddingEnd="24dp"
-                        android:paddingBottom="16dp">
+                        android:paddingStart="14dp"
+                        android:paddingTop="10dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="10dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -147,7 +151,7 @@
                             android:fontFamily="@font/manrope"
                             android:text="@string/music_tracks_shuffle"
                             android:textColor="@color/dock_text_sec"
-                            android:textSize="18sp" />
+                            android:textSize="14sp" />
                     </LinearLayout>
                 </com.ambient.tvclock.ui.FocusableContainer>
             </LinearLayout>
@@ -158,24 +162,24 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="18dp"
-        android:paddingEnd="18dp"
-        android:paddingBottom="12dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="6dp"
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="54dp"
+            android:layout_width="36dp"
             android:layout_height="wrap_content"
             android:text="#"
             android:textAppearance="@style/TextAppearance.Dock.Eyebrow"
             android:textColor="@color/dock_text_ter" />
 
         <Space
-            android:layout_width="80dp"
+            android:layout_width="48dp"
             android:layout_height="1dp" />
 
         <Space
-            android:layout_width="24dp"
+            android:layout_width="12dp"
             android:layout_height="1dp" />
 
         <TextView
@@ -195,7 +199,7 @@
             android:textColor="@color/dock_text_ter" />
 
         <TextView
-            android:layout_width="80dp"
+            android:layout_width="56dp"
             android:layout_height="wrap_content"
             android:gravity="end"
             android:text="@string/music_tracks_column_time"
@@ -216,6 +220,7 @@
         android:clipChildren="false"
         android:clipToPadding="false"
         android:overScrollMode="never"
+        android:paddingBottom="@dimen/music_section_gap"
         android:scrollbars="none" />
 
     <TextView

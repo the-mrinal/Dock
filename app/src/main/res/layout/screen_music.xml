@@ -31,15 +31,15 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <!-- 36dp Music tile + "MUSIC" eyebrow. -->
+        <!-- Music tile + "MUSIC" eyebrow. -->
         <FrameLayout
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:background="@drawable/bg_dock_card_small">
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_music_note"
@@ -49,22 +49,22 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
+            android:layout_marginStart="10dp"
             android:fontFamily="@font/manrope"
             android:letterSpacing="0.22"
             android:text="@string/music_eyebrow"
             android:textAllCaps="true"
             android:textColor="@color/dock_text_pri"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="normal" />
 
         <!-- Breadcrumb separator + path (visible when in Browse / PlaylistTracks). -->
         <View
             android:id="@+id/topChromeBreadcrumbDivider"
             android:layout_width="1dp"
-            android:layout_height="22dp"
-            android:layout_marginStart="22dp"
-            android:layout_marginEnd="22dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
             android:background="@color/dock_border_strong"
             android:visibility="gone" />
 
@@ -83,14 +83,14 @@
                 android:fontFamily="@font/manrope"
                 android:text="@string/music_breadcrumb_root"
                 android:textColor="@color/dock_text_sec"
-                android:textSize="17sp" />
+                android:textSize="13sp" />
 
             <ImageView
                 android:id="@+id/topChromeCrumb2Chevron"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="12dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_chevron_right"
                 android:tint="@color/dock_text_sec" />
@@ -102,14 +102,14 @@
                 android:fontFamily="@font/manrope"
                 android:text="@string/music_breadcrumb_browse"
                 android:textColor="@color/dock_text_sec"
-                android:textSize="17sp" />
+                android:textSize="13sp" />
 
             <ImageView
                 android:id="@+id/topChromeCrumb3Chevron"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="12dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_chevron_right"
                 android:tint="@color/dock_text_sec"
@@ -123,7 +123,7 @@
                 android:fontFamily="@font/manrope"
                 android:maxLines="1"
                 android:textColor="@color/dock_text_pri"
-                android:textSize="17sp"
+                android:textSize="13sp"
                 android:visibility="gone" />
         </LinearLayout>
 
@@ -141,8 +141,8 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_wifi"
                 android:tint="@color/dock_text_ter" />
@@ -150,11 +150,11 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
+                android:layout_marginStart="6dp"
                 android:fontFamily="@font/jetbrains_mono"
                 android:text="@string/music_lan"
                 android:textColor="@color/dock_text_ter"
-                android:textSize="14sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
         <!-- Tabular clock. -->
@@ -162,19 +162,20 @@
             android:id="@+id/topChromeClock"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="22dp"
+            android:layout_marginStart="14dp"
             android:fontFamily="@font/manrope"
             android:fontFeatureSettings="tnum"
             android:letterSpacing="0.04"
             android:textColor="@color/dock_text_pri"
-            android:textSize="28sp" />
+            android:textSize="18sp" />
 
         <!-- "Browse Playlists" pill. -->
         <com.ambient.tvclock.ui.FocusableContainer
             android:id="@+id/topChromeBrowseFocus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="22dp"
+            android:layout_marginStart="14dp"
+            android:nextFocusDown="@id/heroButtonPlay"
             app:accentColor="@color/dock_accent_chartreuse"
             app:focusRadius="999dp"
             app:proxyFocus="true">
@@ -186,21 +187,22 @@
                 android:background="@drawable/bg_dock_card_pill"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="24dp"
-                android:paddingTop="14dp"
-                android:paddingEnd="22dp"
-                android:paddingBottom="14dp">
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="8dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/music_breadcrumb_browse"
-                    android:textAppearance="@style/TextAppearance.Dock.Label.Large" />
+                    android:textAppearance="@style/TextAppearance.Dock.Label.Large"
+                    android:textSize="14sp" />
 
                 <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:layout_marginStart="12dp"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="8dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_chevron_right"
                     android:tint="@color/dock_text_pri" />
