@@ -132,6 +132,55 @@ class AirPlaySetupParserTest {
     }
 
     @Test
+    fun `type 96 with ct=2 selects ALAC codec`() {
+        // Apple Music / Spotify / Safari audio path. iOS sends `ct=2` for
+        // realtime ALAC over `streams=[{type:96}]`. Pre-fix we ignored ct and
+        // ran an AAC-ELD decoder on these bytes → silence (#14).
+        val streamDict = NSDictionary().apply {
+            put("type", NSNumber(96))
+            put("ct", NSNumber(2))
+            put("spf", NSNumber(352))
+            put("audioFormat", NSNumber(0x40000L))
+        }
+        val root = NSDictionary().apply {
+            put("streams", NSArray(1).apply { setValue(0, streamDict) })
+        }
+
+        val result = AirPlaySetupParser.parse(root, session())
+
+        assertEquals(AudioCodec.ALAC, result.audioCodec)
+    }
+
+    @Test
+    fun `type 96 with ct=8 selects AAC-ELD codec`() {
+        val streamDict = NSDictionary().apply {
+            put("type", NSNumber(96))
+            put("ct", NSNumber(8))
+        }
+        val root = NSDictionary().apply {
+            put("streams", NSArray(1).apply { setValue(0, streamDict) })
+        }
+
+        val result = AirPlaySetupParser.parse(root, session())
+
+        assertEquals(AudioCodec.AAC_ELD, result.audioCodec)
+    }
+
+    @Test
+    fun `type 96 with no ct defaults to AAC-ELD codec`() {
+        // Older senders / Mac mirror don't always include ct in the SETUP
+        // plist. Default to AAC-ELD so the mirror-audio path keeps working.
+        val streamDict = NSDictionary().apply { put("type", NSNumber(96)) }
+        val root = NSDictionary().apply {
+            put("streams", NSArray(1).apply { setValue(0, streamDict) })
+        }
+
+        val result = AirPlaySetupParser.parse(root, session())
+
+        assertEquals(AudioCodec.AAC_ELD, result.audioCodec)
+    }
+
+    @Test
     fun `combined stream SETUP returns both mirror and audio entries`() {
         val mirror = NSDictionary().apply {
             put("type", NSNumber(110))

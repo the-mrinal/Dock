@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AirPlay audio Now Playing — full-screen receiver-side render of the
+  artwork + metadata + progress iOS sends over SET_PARAMETER.
+
+  Three layers:
+    1. blurredBackground — full-bleed dim-tinted album art (centerCrop).
+    2. dimOverlay        — extra darkening so the foreground card stays
+       readable when iOS sends a very bright JPEG.
+    3. card              — artwork tile + title/artist/album + progress.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_screen">
+
+    <ImageView
+        android:id="@+id/blurredBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:alpha="0.85" />
+
+    <View
+        android:id="@+id/dimOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000" />
+
+    <LinearLayout
+        android:id="@+id/card"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingHorizontal="48dp">
+
+        <ImageView
+            android:id="@+id/artwork"
+            android:layout_width="320dp"
+            android:layout_height="320dp"
+            android:contentDescription="@string/airplay_now_playing_artwork_cd"
+            android:scaleType="centerCrop"
+            android:background="@color/bg_album_frame" />
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:text="@string/airplay_now_playing_default_title" />
+
+        <TextView
+            android:id="@+id/artist"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="20sp"
+            android:textColor="@color/text_secondary"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:text="@string/airplay_now_playing_default_artist" />
+
+        <TextView
+            android:id="@+id/album"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="16sp"
+            android:textColor="@color/text_tertiary"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:text="" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="32dp"
+            android:max="1000"
+            android:progress="0"
+            android:progressTint="@color/spotify_progress_fill"
+            android:progressBackgroundTint="@color/spotify_progress_bg" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/elapsed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="14sp"
+                android:textColor="@color/text_tertiary"
+                android:text="@string/airplay_now_playing_time_zero" />
+
+            <TextView
+                android:id="@+id/remaining"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:textSize="14sp"
+                android:textColor="@color/text_tertiary"
+                android:text="@string/airplay_now_playing_time_zero" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

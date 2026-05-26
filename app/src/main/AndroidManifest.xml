@@ -133,6 +133,14 @@
             android:label="@string/vpn_import_title"
             android:screenOrientation="landscape" />
 
+        <activity
+            android:name=".receiver.airplay.AirPlayNowPlayingActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="landscape"
+            android:noHistory="true"
+            android:excludeFromRecents="true" />
+
         <service
             android:name=".vpn.VpnOverlayService"
             android:exported="false" />

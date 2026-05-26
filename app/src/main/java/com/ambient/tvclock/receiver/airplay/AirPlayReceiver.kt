@@ -94,6 +94,24 @@ class AirPlayReceiver(
     private var mirrorReceiver: MirrorTcpReceiver? = null
     private var surfaceObserverJob: kotlinx.coroutines.Job? = null
     private val airPlayPairing = AirPlayPairing(context)
+    // Event channel: iOS-side AirPlay 2 senders open a long-lived TCP socket
+    // to whichever port we advertise as `eventPort` in the master SETUP
+    // response. Spec says video URL handoffs (e.g. YouTube → "play this video
+    // ID") arrive over this channel. We advertise 0 by default; the receiver
+    // gets stuck after RECORD waiting for the channel that never opens.
+    private val eventChannel = AirPlayEventChannel()
+    // AirPlay video URL playback (POST /play). Allocated up-front so the
+    // RTSP handler thread can hand requests straight to it without a
+    // round-trip through a coroutine; ExoPlayer itself is not created until
+    // the first /play arrives, so the idle cost is one Handler.
+    private val videoPlayer = AirPlayVideoPlayer(
+        context = context,
+        surfaceProvider = videoSurfaceProvider,
+        onConnected = { onVideoUrlConnected() },
+        onDisconnected = { onVideoUrlDisconnected() },
+        onVideoSize = onVideoSize
+    )
+    @Volatile private var videoUrlSenderName: String = "AirPlay"
 
     // UDP socket for receiving audio RTP packets — opened after RECORD, closed on TEARDOWN
     @Volatile private var audioSocket: DatagramSocket? = null
@@ -113,6 +131,8 @@ class AirPlayReceiver(
         scope.launch {
             try {
                 startTimingHandler()
+                val eventPort = eventChannel.start(scope)
+                AirPlaySetupParser.eventPort = eventPort
                 startMdnsService()
                 startRtspHandler()
             } catch (e: Exception) {
@@ -140,9 +160,17 @@ class AirPlayReceiver(
         surfaceObserverJob = scope.launch {
             com.ambient.tvclock.receiver.ReceiverStateBus.videoSurface.collect { surface ->
                 if (surface == null || surface === configuredSurface) return@collect
-                val decoder = videoDecoder ?: return@collect
-                Logger.i("AirPlayReceiver: surface changed mid-stream — rebinding decoder")
-                decoder.setOutputSurface(surface)
+                // Whichever of the two pipelines is currently live needs its
+                // output surface rebound; both calls are no-ops when the
+                // respective pipeline is idle, so we just send to both.
+                videoDecoder?.let { decoder ->
+                    Logger.i("AirPlayReceiver: surface changed mid-stream — rebinding mirror decoder")
+                    decoder.setOutputSurface(surface)
+                }
+                if (videoPlayer.isActive()) {
+                    Logger.i("AirPlayReceiver: surface changed mid-stream — rebinding ExoPlayer")
+                    videoPlayer.setOutputSurface(surface)
+                }
                 configuredSurface = surface
             }
         }
@@ -162,7 +190,9 @@ class AirPlayReceiver(
             rtspHandler?.stop()
             timingHandler?.stop()
             mdnsService?.stop()
+            eventChannel.stop()
             releaseMediaComponents()
+            videoPlayer.stop()
         } catch (e: Exception) {
             Logger.e("Error during AirPlayReceiver stop", e)
         } finally {
@@ -187,12 +217,24 @@ class AirPlayReceiver(
     }
 
     private fun startRtspHandler() {
+        val playbackHandler = AirPlayPlaybackHandler(
+            videoPlayer = videoPlayer,
+            onPlayRequested = { senderName ->
+                videoUrlSenderName = senderName
+                // iOS expects the mirror pipeline to be free before the
+                // video URL bind takes the Surface — release synchronously
+                // on the request thread so the main-thread ExoPlayer.play
+                // dispatch never races a live MediaCodec on the same output.
+                releaseMediaComponents()
+            }
+        )
         val controlHandler = AirPlayControlHandler(
             context = context,
             pairing = airPlayPairing,
             deviceName = { displayName.ifBlank { NetworkUtils.getDeviceName(context) } },
             onSetupComplete = { setup -> onMirrorSetup(setup) },
-            onTimingPeer = { addr, port, socket -> timingHandler?.beginPeerSync(addr, port, socket) }
+            onTimingPeer = { addr, port, socket -> timingHandler?.beginPeerSync(addr, port, socket) },
+            playbackHandler = playbackHandler
         )
         rtspHandler = RtspHandler(
             videoSurfaceProvider = videoSurfaceProvider,
@@ -213,35 +255,59 @@ class AirPlayReceiver(
             Logger.w("Mirror SETUP without AES IV")
             return
         }
-        val streamId = setup.streamConnectionId ?: run {
-            Logger.w("Mirror SETUP without streamConnectionID (check SETUP URI path)")
-            return
-        }
-        mirrorReceiver?.stop()
-        mirrorReceiver = MirrorTcpReceiver(
-            onSpsPps = { data ->
-                val surface = videoSurfaceProvider() ?: return@MirrorTcpReceiver
-                initVideoDecoderFromSpsPps(data, surface)
-            },
-            onNalUnit = { nal, ptsUs ->
-                videoDecoder?.decodeNalUnit(stripStartCode(nal), ptsUs)
+        // Audio-only sessions (YouTube on iOS, Spotify, etc.) advertise only a
+        // type 96 audio stream — no type 110 mirror, so no streamConnectionID.
+        // Start the audio receiver whenever the SETUP negotiated an audio port,
+        // independent of whether mirror video was also requested. Pre-fix this
+        // method returned early on missing streamConnectionID, leaving port
+        // 6000 unbound: iOS sent audio packets into the void and gave up
+        // after a few seconds.
+        val hasAudio = setup.audioDataPort != null
+        val streamId = setup.streamConnectionId
+
+        if (streamId != null) {
+            mirrorReceiver?.stop()
+            mirrorReceiver = MirrorTcpReceiver(
+                onSpsPps = { data ->
+                    val surface = videoSurfaceProvider() ?: return@MirrorTcpReceiver
+                    initVideoDecoderFromSpsPps(data, surface)
+                },
+                onNalUnit = { nal, ptsUs ->
+                    videoDecoder?.decodeNalUnit(stripStartCode(nal), ptsUs)
+                }
+            ).also {
+                it.start(scope, aesKey, streamId)
             }
-        ).also {
-            it.start(scope, aesKey, streamId)
+            Logger.i("Mirror TCP receiver started (streamId=$streamId)")
         }
-        startMirrorAudioReceiver(aesKey, aesIv)
-        Logger.i("Mirror TCP receiver started (streamId=$streamId)")
+
+        if (hasAudio) {
+            // Codec comes from SETUP plist `ct`. Older senders / audio-only
+            // mirror sessions without an explicit ct get AAC_ELD by default
+            // (matches the old hardcoded path so we don't regress mirror audio).
+            val codec = setup.audioCodec ?: AudioCodec.AAC_ELD
+            startMirrorAudioReceiver(aesKey, aesIv, codec)
+            Logger.i("Mirror audio receiver started (audio-only=${streamId == null}, codec=$codec)")
+        }
+
+        if (streamId == null && !hasAudio) {
+            Logger.d("Mirror SETUP master phase — keys cached, awaiting stream SETUP")
+        }
     }
 
     /** Mirror audio RTP (type 96) — same AES key/IV as SETUP ekey; UxPlay data port 6000. */
-    private fun startMirrorAudioReceiver(aesKey: ByteArray, aesIv: ByteArray) {
+    private fun startMirrorAudioReceiver(
+        aesKey: ByteArray,
+        aesIv: ByteArray,
+        audioCodec: AudioCodec
+    ) {
         try {
             audioSocket?.close()
         } catch (_: Exception) {
         }
         audioPlayer?.release()
         audioPlayer = AudioPlayer().also {
-            it.initialize(aesKey, aesIv, MIRROR_AUDIO_SAMPLE_RATE, MIRROR_AUDIO_CHANNELS)
+            it.initialize(aesKey, aesIv, MIRROR_AUDIO_SAMPLE_RATE, MIRROR_AUDIO_CHANNELS, audioCodec)
         }
         scope.launch(Dispatchers.IO) {
             try {
@@ -264,6 +330,40 @@ class AirPlayReceiver(
         scope.launch {
             onSenderNameChanged("Mac")
             emitState(ProtocolState.CONNECTED)
+        }
+    }
+
+    /**
+     * Fired by [AirPlayVideoPlayer] from the main thread when an ExoPlayer
+     * playback session has been kicked off in response to `POST /play`.
+     *
+     * We pipe the sender name (captured on the IO thread when /play arrived
+     * via [AirPlayPlaybackHandler.onPlayRequested]) into the existing
+     * [onSenderNameChanged] callback so [ReceiverService] decorates the
+     * active-connection notification consistently with mirror/audio sessions.
+     */
+    private fun onVideoUrlConnected() {
+        scope.launch {
+            onSenderNameChanged(videoUrlSenderName)
+            emitState(ProtocolState.CONNECTED)
+        }
+    }
+
+    /**
+     * Fired when the video URL player releases (POST /stop, end of stream,
+     * or AirPlayReceiver.stop). Restarts mDNS so the receiver reappears in
+     * sender pickers without having to wait for the next periodic refresh,
+     * matching the mirror/audio teardown path.
+     */
+    private fun onVideoUrlDisconnected() {
+        Logger.i("Video URL playback ended — re-advertising")
+        emitState(ProtocolState.ADVERTISING)
+        scope.launch {
+            try {
+                mdnsService?.restart(displayName.ifBlank { null })
+            } catch (e: Exception) {
+                Logger.e("Failed to restart mDNS after video URL playback", e)
+            }
         }
     }
 
@@ -366,6 +466,13 @@ class AirPlayReceiver(
         Logger.i("Streaming stopped — releasing media components")
         timingHandler?.clearPeer()
         releaseMediaComponents()
+        // iOS often closes the AirPlay video URL TCP connection without sending
+        // POST /stop, so the disconnect path is our only chance to release the
+        // ExoPlayer. Without this the last frame stays pinned to the Surface
+        // and the user sees "stuck on the last AirPlayed video".
+        if (videoPlayer.isActive()) {
+            videoPlayer.stop()
+        }
         emitState(ProtocolState.ADVERTISING)
 
         scope.launch {
@@ -426,7 +533,11 @@ class AirPlayReceiver(
                 aesKey     = session.aesKey.takeIf { session.isAudioEncrypted },
                 aesIv      = session.aesIv.takeIf  { session.isAudioEncrypted },
                 sampleRate = session.sampleRate,
-                channels   = session.channels
+                channels   = session.channels,
+                // SDP-path codec — `AppleLossless` → ALAC, `mpeg4-generic` → AAC_ELD.
+                // UNKNOWN falls through to AAC-ELD as the historical default.
+                audioCodec = if (session.audioCodec == AudioCodec.UNKNOWN) AudioCodec.AAC_ELD
+                             else session.audioCodec
             )
         }
         Logger.i("AudioPlayer started (${session.sampleRate}Hz × ${session.channels}ch, " +
