@@ -53,6 +53,41 @@ class AudioPlayerHelpersTest {
         assertArrayEquals(byteArrayOf(0xF8.toByte(), 0xE8.toByte(), 0x50, 0x00), asc)
     }
 
+    // ─── ALAC magic cookie ──────────────────────────────────────────────────
+
+    @Test
+    fun `ALAC magic cookie for 44_1 kHz stereo matches UxPlay reference bytes`() {
+        // Byte-for-byte match with UxPlay renderers/audio_renderer.c:61-62 and
+        // every canonical AirPlay receiver. iOS sends ALAC frames assuming the
+        // receiver decoded this exact cookie — any deviation produces silence.
+        val expected = byteArrayOf(
+            0x00, 0x00, 0x00, 0x24,
+            0x61, 0x6c, 0x61, 0x63,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x01, 0x60,
+            0x00, 0x10, 0x28, 0x0a,
+            0x0e, 0x02, 0x00, 0xff.toByte(),
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0xac.toByte(), 0x44
+        )
+        val cookie = AudioPlayer.buildAlacMagicCookie(sampleRate = 44100, channels = 2)
+        assertEquals(36, cookie.size)
+        assertArrayEquals(expected, cookie)
+    }
+
+    @Test
+    fun `ALAC magic cookie encodes 48 kHz sample rate in last 4 bytes`() {
+        // Lossless AirPlay can negotiate 48 kHz (separately tracked in #14 step 4).
+        // The frame-format fields are hard-wired to Apple's ALAC parameters; only
+        // the sample-rate suffix should change here.
+        val cookie = AudioPlayer.buildAlacMagicCookie(sampleRate = 48000, channels = 2)
+        assertEquals(0x00.toByte(), cookie[32])
+        assertEquals(0x00.toByte(), cookie[33])
+        assertEquals(0xbb.toByte(), cookie[34])
+        assertEquals(0x80.toByte(), cookie[35])
+    }
+
     // ─── No-data marker filter ───────────────────────────────────────────────
 
     @Test

@@ -324,7 +324,12 @@ class AirPlayControlHandler(
         val aesIv: ByteArray?,
         val audioDataPort: Int? = null,
         val audioControlPort: Int? = null,
-        val clientTimingPort: Int? = null
+        val clientTimingPort: Int? = null,
+        // For a type=96 stream entry, the codec iOS will actually transmit.
+        // Mapped from the SETUP plist's `ct` field (ct=2 ALAC, ct=8 AAC-ELD).
+        // null when SETUP carries no streams[] (master phase) or no audio stream;
+        // AAC_ELD when the stream is present but `ct` is missing (older senders).
+        val audioCodec: AudioCodec? = null
     )
 
     companion object {
@@ -394,6 +399,7 @@ object AirPlaySetupParser {
         var streamConnectionId: String? = null
         var audioDataPort: Int? = null
         var audioControlPort: Int? = null
+        var audioCodec: AudioCodec? = null
 
         val streams = root.objectForKey("streams") as? NSArray
         if (streams == null) {
@@ -412,7 +418,20 @@ object AirPlaySetupParser {
                     96L -> {
                         audioDataPort = MirrorAudioPorts.DATA_PORT
                         audioControlPort = MirrorAudioPorts.CONTROL_PORT
-                        Logger.i("SETUP: audio stream requested (type 96)")
+                        // Read codec hints. iOS advertises:
+                        //   ct=2 → ALAC 44100/16/2 (Apple Music, Spotify, Safari audio)
+                        //   ct=8 → AAC-ELD       (legacy AirPlay 2 mirror audio)
+                        // Older senders sometimes omit `ct` — assume AAC-ELD so we
+                        // don't regress the pre-PR mirror-audio behavior. spf and
+                        // audioFormat are logged for diagnostic visibility but not
+                        // routed into the player yet (decoder configures from ct).
+                        val ct = (stream.objectForKey("ct") as? NSNumber)?.intValue()
+                        val spf = (stream.objectForKey("spf") as? NSNumber)?.intValue()
+                        val audioFormat = (stream.objectForKey("audioFormat") as? NSNumber)?.longValue()
+                        audioCodec = audioCodecFromCt(ct)
+                        Logger.i("SETUP: audio stream (type 96) ct=$ct spf=$spf " +
+                                 "audioFormat=${audioFormat?.let { "0x%x".format(it) }} " +
+                                 "→ codec=$audioCodec")
                     }
                     else -> Logger.d("SETUP: ignoring stream type=$type")
                 }
@@ -420,14 +439,43 @@ object AirPlaySetupParser {
         }
 
         return AirPlayControlHandler.SetupResult(
-            mirrorPort,
-            streamConnectionId,
-            aesKey,
-            aesIv,
-            audioDataPort,
-            audioControlPort,
-            clientTimingPort
+            mirrorPort = mirrorPort,
+            streamConnectionId = streamConnectionId,
+            aesKey = aesKey,
+            aesIv = aesIv,
+            audioDataPort = audioDataPort,
+            audioControlPort = audioControlPort,
+            clientTimingPort = clientTimingPort,
+            audioCodec = audioCodec
         )
+    }
+
+    /**
+     * Maps the SETUP plist `ct` field to our [AudioCodec] enum.
+     *
+     * Per UxPlay `lib/raop_rtp.c:121`:
+     *   ct=1 raw PCM, ct=2 ALAC, ct=4 AAC-LC, ct=8 AAC-ELD.
+     *
+     * PCM/AAC-LC are accepted by the protocol but not implemented in the player
+     * yet — they fall through to AAC_ELD (the only consistently-tested codec)
+     * with a warning rather than dropping the stream entirely, on the theory
+     * that the receiver is still useful for mirror-only sessions while
+     * additional codecs are landing. ALAC (ct=2) is the path used by Apple
+     * Music / Spotify / Safari audio and is the focus of #14.
+     */
+    private fun audioCodecFromCt(ct: Int?): AudioCodec {
+        return when (ct) {
+            null -> {
+                Logger.w("SETUP audio: no ct field — defaulting to AAC-ELD")
+                AudioCodec.AAC_ELD
+            }
+            2 -> AudioCodec.ALAC
+            8 -> AudioCodec.AAC_ELD
+            else -> {
+                Logger.w("SETUP audio: unsupported ct=$ct — falling back to AAC-ELD (silence likely)")
+                AudioCodec.AAC_ELD
+            }
+        }
     }
 
     fun logRequest(root: NSDictionary) {

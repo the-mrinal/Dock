@@ -29,15 +29,21 @@ import javax.crypto.spec.SecretKeySpec
  *    are encrypted; any trailing `len % 16` bytes are plaintext. UxPlay
  *    resets the CBC cipher between packets — we mirror that by reinitialising
  *    the [Cipher] for each packet with the original SETUP `ekey`/`eiv`.
- * 5. **Decode (AAC-ELD via MediaCodec)**: the decrypted bytes are one
- *    AAC-ELD frame. We feed them to a hardware decoder configured with the
- *    AudioSpecificConfig derived from sample rate + channels (44.1 kHz stereo
- *    → `F8 E8 50 00`, matching Apple's SDP `config=`).
+ * 5. **Decode (MediaCodec)**: the decrypted bytes are one codec frame. We
+ *    dispatch by the codec advertised in SETUP (or inferred from SDP for the
+ *    legacy AirPlay 1 path):
+ *      - AAC-ELD (`ct=8`): hardware AAC decoder configured with the
+ *        AudioSpecificConfig derived from sample rate + channels (44.1 kHz
+ *        stereo → `F8 E8 50 00`, matching Apple's SDP `config=`). Mac mirror.
+ *      - ALAC    (`ct=2`): hardware `audio/alac` decoder configured with the
+ *        36-byte ALAC magic cookie. iPhone Apple Music / Spotify / Safari
+ *        audio (#14).
  * 6. **Output (AudioTrack)**: drained PCM goes straight to the system audio
  *    output.
  *
- * Anything other than AAC-ELD is currently dropped silently — ALAC support is
- * deferred (no on-device decoder for Mac AirPlay 2 mirror in the current scope).
+ * PCM (`ct=1`) and AAC-LC (`ct=4`) are not yet implemented — they fall
+ * through to AAC-ELD with a warning. PCM is rare on AirPlay; AAC-LC has not
+ * been observed from any tested sender.
  */
 class AudioPlayer {
 
@@ -56,14 +62,34 @@ class AudioPlayer {
     // outputs PCM at this rate; both are needed for ts→µs conversion.
     private var sampleRate: Int = 44100
 
-    // AAC-ELD hardware decoder. Null when not yet initialised or when MediaCodec
-    // failed to start (the receiver then silently drops audio rather than
-    // pumping garbage bytes into AudioTrack).
+    // Hardware audio decoder for the AAC-ELD path. Null when not initialised
+    // or when MediaCodec failed to start (the receiver then silently drops
+    // audio rather than pumping garbage bytes into AudioTrack).
     private var aacDecoder: MediaCodec? = null
     private val codecBufferInfo = MediaCodec.BufferInfo()
 
+    // Software ALAC decoder (Apple reference codec via JNI). Used on devices
+    // whose firmware lacks `audio/alac` in MediaCodec — most notably Fire TV
+    // AFTKA, which has no ALAC entry in /vendor/etc/media_codecs*.xml.
+    // Per-frame PCM is small (1408 bytes for 352-sample stereo 16-bit) and
+    // gets written straight to AudioTrack without queuing.
+    private var alacDecoder: AlacSoftwareDecoder? = null
+    // Decode scratch buffer — sized to match the JNI side's internal limit
+    // so we never short-write. Reused across packets to avoid per-frame GC.
+    private val alacPcmScratch = ByteArray(4096)
+    // Frame parameters from the magic cookie (352 spf stereo for AirPlay
+    // realtime ALAC). Cached at init so the hot path doesn't re-decode them.
+    private var alacFrameSamples: Int = 352
+    private var alacChannels: Int = 2
+
     private val seqnumWindow = SeqnumDedup(DEDUP_WINDOW_SIZE)
     private var firstPcmLogged = false
+    private var firstDecryptedFrameLogged = false
+
+    // Codec the decoder was configured for. Drives the "what does the first
+    // byte of a decrypted frame mean?" diagnostic log so we can spot mismatches
+    // between the SETUP-advertised codec and what iOS actually sends.
+    private var audioCodec: AudioCodec = AudioCodec.AAC_ELD
 
     // Diagnostics: count packets in / PCM frames out / total bytes written
     // to AudioTrack, with periodic logs so we can see whether the pipeline
@@ -85,8 +111,19 @@ class AudioPlayer {
      * @param aesIv      16-byte IV from the SETUP `eiv`, or null if unencrypted.
      * @param sampleRate Audio sample rate in Hz (44100 for Mac AirPlay 2 mirror).
      * @param channels   Channel count (2 = stereo for Mac AirPlay 2 mirror).
+     * @param audioCodec Decoder selection. AAC_ELD is the legacy Mac mirror codec
+     *                   and the default for older senders. ALAC (ct=2) is what
+     *                   Apple Music / Spotify / Safari audio send via the
+     *                   `streams=[{type:96}]` path — without this branch we
+     *                   silently emit zero-amplitude PCM (see issue #14).
      */
-    fun initialize(aesKey: ByteArray?, aesIv: ByteArray?, sampleRate: Int, channels: Int) {
+    fun initialize(
+        aesKey: ByteArray?,
+        aesIv: ByteArray?,
+        sampleRate: Int,
+        channels: Int,
+        audioCodec: AudioCodec = AudioCodec.AAC_ELD
+    ) {
         if (isInitialized) {
             Logger.w("AudioPlayer.initialize() called twice — ignoring")
             return
@@ -105,10 +142,11 @@ class AudioPlayer {
         }
 
         this.sampleRate = sampleRate
-        initializeAacDecoder(sampleRate, channels)
+        this.audioCodec = audioCodec
+        initializeDecoder(audioCodec, sampleRate, channels)
         initializeAudioTrack(sampleRate, channels)
         isInitialized = true
-        Logger.i("AudioPlayer initialized (${sampleRate}Hz, $channels ch, AAC-ELD via AES-CBC)")
+        Logger.i("AudioPlayer initialized (${sampleRate}Hz, $channels ch, $audioCodec via AES-CBC)")
     }
 
     /**
@@ -150,26 +188,44 @@ class AudioPlayer {
             val encrypted = rtpPacket.copyOfRange(RTP_HEADER_BYTES, rtpPacket.size)
             val decrypted = decryptCbc(encrypted)
 
-            // Real presentation timestamp from the RTP header. RTP audio
-            // timestamps tick at the sample rate (44.1 kHz for Mac mirror), so
-            // converting to microseconds gives MediaCodec the rate reference it
-            // needs to schedule PCM output. Passing 0L here caused noticeable
-            // hiccups because the decoder had no timing baseline.
-            val rtpTs = rtpTimestamp(rtpPacket)
-            val ptsUs = rtpTs * 1_000_000L / sampleRate
+            // Diagnostic: log the first decrypted frame's leading bytes so we can
+            // tell which codec iOS is *actually* sending vs. what SETUP advertised.
+            // Per UxPlay renderers/audio_renderer.c:325-371:
+            //   ALAC    (ct=2) → byte0 = 0x20
+            //   AAC-LC  (ct=4) → byte0 = 0xff (ADTS sync)
+            //   AAC-ELD (ct=8) → byte0 ∈ {0x80,0x81,0x82,0x8c,0x8d,0x8e}
+            // If `codec=$audioCodec` and `byte0` disagree, audio is silent because
+            // the decoder treats foreign bytes as a syntactically-valid but
+            // semantically-empty frame.
+            if (!firstDecryptedFrameLogged && decrypted.isNotEmpty()) {
+                val head = decrypted.take(8).joinToString("") { "%02x".format(it) }
+                val byte0 = decrypted[0].toInt() and 0xFF
+                Logger.i("First decrypted audio frame: codec=$audioCodec " +
+                         "byte0=0x%02x len=%d head=%s".format(byte0, decrypted.size, head))
+                firstDecryptedFrameLogged = true
+            }
 
-            // Step 5/6 — feed to AAC-ELD decoder; drain PCM into AudioTrack.
-            val codec = aacDecoder ?: return
-            try {
-                feedDecoder(codec, decrypted, ptsUs)
-                drainDecoder(codec)
-            } catch (e: IllegalStateException) {
-                // mediaserver crashed (often when the video decoder dies first);
-                // tear down so we go silent instead of looping the same error
-                // per packet for the rest of the session.
-                Logger.e("AAC-ELD decoder entered error state — disabling for this session", e)
-                try { codec.release() } catch (_: Exception) { /* non-fatal */ }
-                aacDecoder = null
+            // Step 5/6 — decode + write PCM to AudioTrack. ALAC takes the
+            // synchronous software-decoder path (no PTS needed since the
+            // decoder isn't queue-backed); AAC-ELD keeps its MediaCodec
+            // feed/drain pair with RTP-derived presentation timestamps.
+            if (audioCodec == AudioCodec.ALAC) {
+                decodeAndPlayAlac(decrypted)
+            } else {
+                val codec = aacDecoder ?: return
+                val rtpTs = rtpTimestamp(rtpPacket)
+                val ptsUs = rtpTs * 1_000_000L / sampleRate
+                try {
+                    feedDecoder(codec, decrypted, ptsUs)
+                    drainDecoder(codec)
+                } catch (e: IllegalStateException) {
+                    // mediaserver crashed (often when the video decoder dies first);
+                    // tear down so we go silent instead of looping the same error
+                    // per packet for the rest of the session.
+                    Logger.e("Audio decoder ($audioCodec) entered error state — disabling for this session", e)
+                    try { codec.release() } catch (_: Exception) { /* non-fatal */ }
+                    aacDecoder = null
+                }
             }
         } catch (e: Exception) {
             Logger.e("Error playing audio packet", e)
@@ -191,12 +247,19 @@ class AudioPlayer {
         } catch (e: Exception) {
             Logger.e("Error releasing AAC decoder (non-fatal)", e)
         }
+        try {
+            alacDecoder?.release()
+        } catch (e: Exception) {
+            Logger.e("Error releasing ALAC decoder (non-fatal)", e)
+        }
         audioTrack = null
         aacDecoder = null
+        alacDecoder = null
         aesKeySpec = null
         aesIvSpec = null
         cbcCipher = null
         firstPcmLogged = false
+        firstDecryptedFrameLogged = false
         seqnumWindow.clear()
         isInitialized = false
     }
@@ -225,12 +288,22 @@ class AudioPlayer {
     }
 
     /**
-     * Creates and starts an AAC-ELD MediaCodec for the given stream parameters.
+     * Routes decoder setup by codec. On failure we log and leave [aacDecoder]
+     * null, which causes [playAudioPacket] to silently drop frames instead of
+     * crashing the session.
      *
-     * MediaCodec failure here is non-fatal: we log and leave [aacDecoder] null,
-     * which causes [playAudioPacket] to silently drop frames instead of crashing.
+     * UNKNOWN is treated as AAC-ELD — that's the historical default the
+     * receiver shipped with, and senders that don't advertise a codec almost
+     * always mean Mac mirror AAC-ELD.
      */
-    private fun initializeAacDecoder(sampleRate: Int, channels: Int) {
+    private fun initializeDecoder(audioCodec: AudioCodec, sampleRate: Int, channels: Int) {
+        when (audioCodec) {
+            AudioCodec.ALAC -> initializeAlacDecoder(sampleRate, channels)
+            AudioCodec.AAC_ELD, AudioCodec.UNKNOWN -> initializeAacEldDecoder(sampleRate, channels)
+        }
+    }
+
+    private fun initializeAacEldDecoder(sampleRate: Int, channels: Int) {
         try {
             val asc = buildAacEldAsc(sampleRate, channels)
             val format = MediaFormat.createAudioFormat(
@@ -258,6 +331,97 @@ class AudioPlayer {
         } catch (e: Exception) {
             Logger.e("Failed to start AAC-ELD decoder — audio will be silent for this session", e)
             aacDecoder = null
+        }
+    }
+
+    /**
+     * Starts the software ALAC decoder for AirPlay 2 type-96 ALAC streams
+     * (Apple Music, Spotify, Safari audio — see issue #14).
+     *
+     * Fire TV AFTKA's firmware does not ship `audio/alac` in MediaCodec
+     * (verified: no entry in /vendor/etc/media_codecs*.xml). We use Apple's
+     * reference ALAC decoder (vendored under cpp/alac/, Apache 2.0) via the
+     * thin JNI wrapper in [AlacSoftwareDecoder].
+     *
+     * Frame layout uses the magic cookie's defaults for AirPlay realtime:
+     * frameLength=352 spf, bitDepth=16, channels=2, sampleRate=44100. Every
+     * canonical AirPlay receiver (UxPlay, shairport-sync, openairplay) uses
+     * the same values — they're driven by iOS, not negotiated.
+     *
+     * On any failure (JNI library missing, cookie malformed, decoder Init
+     * returning non-zero) we log and leave [alacDecoder] null. Audio then
+     * degrades to silent rather than crashing the session.
+     */
+    private fun initializeAlacDecoder(sampleRate: Int, channels: Int) {
+        try {
+            val cookie = buildAlacMagicCookie(sampleRate, channels)
+            val decoder = AlacSoftwareDecoder()
+            if (!decoder.init(cookie)) {
+                Logger.e("ALAC software decoder Init returned failure — audio will be silent")
+                alacDecoder = null
+                return
+            }
+            alacDecoder = decoder
+            // AirPlay realtime ALAC is always 352 spf stereo; cache locally
+            // so the per-packet decode doesn't re-derive them.
+            alacFrameSamples = 352
+            alacChannels = channels
+            Logger.i("ALAC software decoder started (Apple reference, cookie=${cookie.toHex()})")
+        } catch (e: Throwable) {
+            // UnsatisfiedLinkError or anything else from the JNI layer falls
+            // here so we never crash the AirPlay session on a decoder fault.
+            Logger.e("Failed to start ALAC software decoder — Apple Music/Spotify audio will be silent.", e)
+            alacDecoder = null
+        }
+    }
+
+    /**
+     * Decodes one ALAC packet via the Apple reference decoder and writes
+     * the resulting 16-bit interleaved PCM straight to AudioTrack.
+     *
+     * The native side is synchronous — one call in, one PCM frame out — so
+     * there's no buffer-queue plumbing to mirror. The decoder reads frame
+     * length, channel count and bit depth from the magic cookie given at
+     * [initializeAlacDecoder] time; we just hand it the bytes.
+     *
+     * On any decode error we drop the frame (audio briefly stalls) rather
+     * than disabling the decoder, because AirPlay senders happily recover
+     * from missing frames via re-send and the alternative — silence-for-
+     * the-rest-of-the-session — is worse.
+     */
+    private fun decodeAndPlayAlac(payload: ByteArray) {
+        val decoder = alacDecoder ?: return
+        val track = audioTrack ?: return
+        val pcmBytes = decoder.decode(payload, alacFrameSamples, alacChannels, alacPcmScratch)
+        if (pcmBytes <= 0) return
+
+        if (!firstPcmLogged) {
+            // Same peak-amplitude probe used for the AAC path so the "is the
+            // decoder actually producing audio?" question can be answered the
+            // same way regardless of codec.
+            var peak = 0
+            var i = 0
+            while (i + 1 < pcmBytes) {
+                val sample = ((alacPcmScratch[i + 1].toInt() shl 8) or
+                              (alacPcmScratch[i].toInt() and 0xFF)).toShort().toInt()
+                val abs = if (sample < 0) -sample else sample
+                if (abs > peak) peak = abs
+                i += 2
+            }
+            Logger.i("ALAC decoder produced first PCM frame " +
+                     "($pcmBytes bytes, peak=$peak / 32767)")
+            firstPcmLogged = true
+        }
+
+        pcmFramesDrained++
+        val wrote = track.write(alacPcmScratch, 0, pcmBytes, AudioTrack.WRITE_NON_BLOCKING)
+        if (wrote > 0) {
+            bytesWrittenOk += wrote
+        } else {
+            writeFailures++
+            if (writeFailures <= 5 || writeFailures % 100 == 0L) {
+                Logger.w("AudioTrack.write returned $wrote (ALAC, failure #$writeFailures)")
+            }
         }
     }
 
@@ -423,6 +587,55 @@ class AudioPlayer {
                 if (packet[RTP_HEADER_BYTES + i] != NO_DATA_MARKER[i]) return false
             }
             return true
+        }
+
+        /**
+         * Builds the 36-byte ALAC magic cookie (csd-0) for AirPlay realtime ALAC.
+         *
+         * Layout (Apple ALAC bitstream spec / ISO BMFF 'alac' atom):
+         *   bytes 0–3   atom size (00 00 00 24 = 36)
+         *   bytes 4–7   atom type ('alac')
+         *   bytes 8–11  atom version+flags (00 00 00 00)
+         *   bytes 12–15 frameLength (uint32 BE) — samples per frame = 352
+         *   byte 16     compatibleVersion = 0
+         *   byte 17     bitDepth = 16
+         *   byte 18     pb (rice history multiplier) = 40 / 0x28
+         *   byte 19     mb (initial history) = 10 / 0x0a
+         *   byte 20     kb (kmodifier) = 14 / 0x0e
+         *   byte 21     numChannels = 2
+         *   bytes 22–23 maxRun = 255 (0x00ff)
+         *   bytes 24–27 maxFrameBytes = 0 (decoder ignores)
+         *   bytes 28–31 avgBitRate = 0 (decoder ignores)
+         *   bytes 32–35 sampleRate (uint32 BE) = 44100 (0x0000ac44)
+         *
+         * For 44100 Hz / 16-bit / stereo this matches the UxPlay byte sequence
+         * `00 00 00 24 61 6c 61 63 00 00 00 00 00 00 01 60 00 10 28 0a 0e 02
+         *  00 ff 00 00 00 00 00 00 00 00 00 00 ac 44`.
+         */
+        internal fun buildAlacMagicCookie(sampleRate: Int, channels: Int): ByteArray {
+            val cookie = ByteArray(36)
+            // atom size = 36
+            cookie[0] = 0x00; cookie[1] = 0x00; cookie[2] = 0x00; cookie[3] = 0x24
+            // 'alac'
+            cookie[4] = 'a'.code.toByte(); cookie[5] = 'l'.code.toByte()
+            cookie[6] = 'a'.code.toByte(); cookie[7] = 'c'.code.toByte()
+            // version+flags = 0
+            // frameLength = 352 = 0x00000160
+            cookie[12] = 0x00; cookie[13] = 0x00; cookie[14] = 0x01; cookie[15] = 0x60
+            cookie[16] = 0x00                   // compatibleVersion
+            cookie[17] = 0x10                   // bitDepth = 16
+            cookie[18] = 0x28                   // pb
+            cookie[19] = 0x0a                   // mb
+            cookie[20] = 0x0e                   // kb
+            cookie[21] = (channels and 0xFF).toByte()
+            cookie[22] = 0x00; cookie[23] = 0xFF.toByte()  // maxRun
+            // maxFrameBytes (24-27) and avgBitRate (28-31) left zero
+            // sampleRate big-endian
+            cookie[32] = ((sampleRate ushr 24) and 0xFF).toByte()
+            cookie[33] = ((sampleRate ushr 16) and 0xFF).toByte()
+            cookie[34] = ((sampleRate ushr 8) and 0xFF).toByte()
+            cookie[35] = (sampleRate and 0xFF).toByte()
+            return cookie
         }
 
         /**

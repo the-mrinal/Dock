@@ -282,8 +282,12 @@ class AirPlayReceiver(
         }
 
         if (hasAudio) {
-            startMirrorAudioReceiver(aesKey, aesIv)
-            Logger.i("Mirror audio receiver started (audio-only=${streamId == null})")
+            // Codec comes from SETUP plist `ct`. Older senders / audio-only
+            // mirror sessions without an explicit ct get AAC_ELD by default
+            // (matches the old hardcoded path so we don't regress mirror audio).
+            val codec = setup.audioCodec ?: AudioCodec.AAC_ELD
+            startMirrorAudioReceiver(aesKey, aesIv, codec)
+            Logger.i("Mirror audio receiver started (audio-only=${streamId == null}, codec=$codec)")
         }
 
         if (streamId == null && !hasAudio) {
@@ -292,14 +296,18 @@ class AirPlayReceiver(
     }
 
     /** Mirror audio RTP (type 96) — same AES key/IV as SETUP ekey; UxPlay data port 6000. */
-    private fun startMirrorAudioReceiver(aesKey: ByteArray, aesIv: ByteArray) {
+    private fun startMirrorAudioReceiver(
+        aesKey: ByteArray,
+        aesIv: ByteArray,
+        audioCodec: AudioCodec
+    ) {
         try {
             audioSocket?.close()
         } catch (_: Exception) {
         }
         audioPlayer?.release()
         audioPlayer = AudioPlayer().also {
-            it.initialize(aesKey, aesIv, MIRROR_AUDIO_SAMPLE_RATE, MIRROR_AUDIO_CHANNELS)
+            it.initialize(aesKey, aesIv, MIRROR_AUDIO_SAMPLE_RATE, MIRROR_AUDIO_CHANNELS, audioCodec)
         }
         scope.launch(Dispatchers.IO) {
             try {
@@ -525,7 +533,11 @@ class AirPlayReceiver(
                 aesKey     = session.aesKey.takeIf { session.isAudioEncrypted },
                 aesIv      = session.aesIv.takeIf  { session.isAudioEncrypted },
                 sampleRate = session.sampleRate,
-                channels   = session.channels
+                channels   = session.channels,
+                // SDP-path codec — `AppleLossless` → ALAC, `mpeg4-generic` → AAC_ELD.
+                // UNKNOWN falls through to AAC-ELD as the historical default.
+                audioCodec = if (session.audioCodec == AudioCodec.UNKNOWN) AudioCodec.AAC_ELD
+                             else session.audioCodec
             )
         }
         Logger.i("AudioPlayer started (${session.sampleRate}Hz × ${session.channels}ch, " +
