@@ -30,6 +30,10 @@ class HomeScreenBinder(private val root: View) {
     private val imagePlaceholder: ImageView = root.findViewById(R.id.imageHomeAlbumPlaceholder)
     private val albumArtContainer: View = root.findViewById(R.id.homeAlbumArtContainer)
     private val widgetsRow: View = root.findViewById(R.id.homeWidgetsRow)
+    private val homeCalendarWidget: View = root.findViewById(R.id.homeCalendarWidget)
+    private val homeMusicWidget: View = root.findViewById(R.id.homeMusicWidget)
+    private val textCalendarSectionLabel: TextView = root.findViewById(R.id.textHomeCalendarSectionLabel)
+    private val textMusicSectionLabel: TextView = root.findViewById(R.id.textHomeMusicSectionLabel)
     private val ambientRow: View = root.findViewById(R.id.homeAmbientRow)
     private val ambientCluster: View = root.findViewById(R.id.homeAmbientCluster)
     private val ambientDivider: View = root.findViewById(R.id.homeAmbientDivider)
@@ -60,6 +64,11 @@ class HomeScreenBinder(private val root: View) {
     private var lastTrackKey: String? = null
     private var ambientCalendarSnapshot: CalendarSnapshot = CalendarSnapshot(emptyList(), 0L)
     private var ambientNowPlaying: NowPlayingInfo? = null
+    private var minimalWallpaperMode: Boolean = false
+    // Snapshot the original sizes in raw pixels so we can restore them without
+    // having to know the scaledDensity (which is deprecated on newer SDKs).
+    private val defaultClockTimePx: Float = textClockTime.textSize
+    private val defaultClockDatePx: Float = textClockDate.textSize
 
     init {
         albumArtContainer.outlineProvider = object : ViewOutlineProvider() {
@@ -128,12 +137,145 @@ class HomeScreenBinder(private val root: View) {
      * simultaneously slides the AM/PM to its new position.
      */
     fun setSecondsVisible(visible: Boolean) {
+        // Minimal wallpaper mode owns clock chrome; ignore the inactivity
+        // watchdog's setSecondsVisible(true) so the seconds stay hidden.
+        if (minimalWallpaperMode) {
+            if (textClockSeconds.visibility != View.GONE) {
+                textClockSeconds.visibility = View.GONE
+            }
+            return
+        }
         val target = if (visible) View.VISIBLE else View.GONE
         if (textClockSeconds.visibility == target) return
         textClockSeconds.visibility = target
     }
 
+    /**
+     * Engage / disengage the "minimal wallpaper" home layout. Triggered
+     * automatically when an Unsplash photo becomes the active background so
+     * the photo reads as the focal element with only the essentials painted
+     * over it: clock, date, event title, track title.
+     *
+     * When enabled:
+     *  - Widget card backgrounds vanish (no boxes)
+     *  - Section labels, badges, meta chips, album art, artist, "up next"
+     *    are all hidden — calendar widget shows just the event title, music
+     *    widget shows just the track title.
+     *  - The clock shrinks to [MINIMAL_CLOCK_SP], seconds + AM/PM are hidden,
+     *    everything dims to [MINIMAL_FOREGROUND_ALPHA].
+     *  - A dark drop-shadow is added to every text view that remains, so it
+     *    stays legible over any photo.
+     *
+     * When disabled the clock/dates/backgrounds are restored. View-level
+     * visibility of data-driven rows (badge, time, meta, teaser) is left to
+     * the next bind* call — the pollers in MainActivity republish on resume,
+     * so a stale hidden state self-corrects almost immediately.
+     */
+    fun setMinimalWallpaperMode(enabled: Boolean) {
+        if (minimalWallpaperMode == enabled) return
+        minimalWallpaperMode = enabled
+
+        applyWallpaperBackground(enabled)
+        applyWallpaperClock(enabled)
+        applyWallpaperWidgets(enabled)
+        applyWallpaperTextShadows(enabled)
+    }
+
+    private fun applyWallpaperBackground(enabled: Boolean) {
+        val ctx = root.context
+        val bg = if (enabled) null else ctx.getDrawable(R.drawable.bg_widget_card)
+        homeCalendarWidget.background = bg
+        homeMusicWidget.background = bg
+    }
+
+    private fun applyWallpaperClock(enabled: Boolean) {
+        if (enabled) {
+            textClockTime.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, MINIMAL_CLOCK_SP)
+            textClockDate.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, MINIMAL_DATE_SP)
+            textClockTime.alpha = MINIMAL_FOREGROUND_ALPHA
+            textClockDate.alpha = MINIMAL_FOREGROUND_ALPHA * 0.75f
+            textClockSeconds.visibility = View.GONE
+            textClockAmPm.visibility = View.GONE
+        } else {
+            textClockTime.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, defaultClockTimePx)
+            textClockDate.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, defaultClockDatePx)
+            textClockTime.alpha = 1f
+            textClockDate.alpha = 1f
+            // Defer to the inactivity watchdog's decision on seconds visibility;
+            // a forced VISIBLE here would override a recently-faded state.
+            textClockAmPm.visibility = View.VISIBLE
+        }
+    }
+
+    private fun applyWallpaperWidgets(enabled: Boolean) {
+        if (enabled) {
+            hideMinimalSubviews()
+        } else {
+            // Coming out of minimal mode: show the album-art slot + section
+            // labels back. The data-driven rows (badge / time / meta / teaser
+            // / artist / upNext) are visibility-flipped by the next bind*()
+            // call based on current data, so we leave them alone here.
+            textCalendarSectionLabel.visibility = View.VISIBLE
+            textMusicSectionLabel.visibility = View.VISIBLE
+            albumArtContainer.visibility = View.VISIBLE
+            textTrackArtist.visibility = View.VISIBLE
+        }
+
+        // Fade the kept titles too so they read as "subtitled wallpaper"
+        // rather than fighting the photo for attention.
+        val titleAlpha = if (enabled) MINIMAL_FOREGROUND_ALPHA else 1f
+        textCalendarPrimary.alpha = titleAlpha
+        textTrackTitle.alpha = titleAlpha
+    }
+
+    /**
+     * Hard-hide every view that minimal wallpaper mode wants out of the way.
+     * Called from [setMinimalWallpaperMode] and re-applied at the end of each
+     * data-binding pass so a calendar refresh / now-playing update can't
+     * silently restore something to VISIBLE behind our back.
+     */
+    private fun hideMinimalSubviews() {
+        textCalendarSectionLabel.visibility = View.GONE
+        textMusicSectionLabel.visibility = View.GONE
+        textCalendarBadge.visibility = View.GONE
+        textCalendarTime.visibility = View.GONE
+        textCalendarMeta.visibility = View.GONE
+        textCalendarMeta.setBackgroundResource(0)
+        textCalendarTeaser.visibility = View.GONE
+        albumArtContainer.visibility = View.GONE
+        textTrackArtist.visibility = View.GONE
+        textUpNext.visibility = View.GONE
+        textClockSeconds.visibility = View.GONE
+        textClockAmPm.visibility = View.GONE
+    }
+
+    private fun enforceMinimalIfActive() {
+        if (minimalWallpaperMode) hideMinimalSubviews()
+    }
+
+    private fun applyWallpaperTextShadows(enabled: Boolean) {
+        val shadowColor = if (enabled) MINIMAL_TEXT_SHADOW_COLOR else 0
+        val radius = if (enabled) MINIMAL_TEXT_SHADOW_RADIUS else 0f
+        val dy = if (enabled) MINIMAL_TEXT_SHADOW_DY else 0f
+        for (tv in arrayOf(
+            textClockTime,
+            textClockDate,
+            textCalendarPrimary,
+            textTrackTitle,
+        )) {
+            tv.setShadowLayer(radius, 0f, dy, shadowColor)
+        }
+    }
+
     fun bindCalendar(snapshot: CalendarSnapshot) {
+        try {
+            bindCalendarInternal(snapshot)
+        } finally {
+            enforceMinimalIfActive()
+        }
+    }
+
+    private fun bindCalendarInternal(snapshot: CalendarSnapshot) {
         ambientCalendarSnapshot = snapshot
         renderAmbientCalendar()
         val context = root.context
@@ -205,6 +347,14 @@ class HomeScreenBinder(private val root: View) {
     }
 
     fun bindNowPlaying(info: NowPlayingInfo?) {
+        try {
+            bindNowPlayingInternal(info)
+        } finally {
+            enforceMinimalIfActive()
+        }
+    }
+
+    private fun bindNowPlayingInternal(info: NowPlayingInfo?) {
         ambientNowPlaying = info
         renderAmbientMusic()
         val context = root.context
@@ -250,6 +400,7 @@ class HomeScreenBinder(private val root: View) {
         } else {
             textUpNext.visibility = View.GONE
         }
+        enforceMinimalIfActive()
     }
 
     /**
@@ -401,5 +552,18 @@ class HomeScreenBinder(private val root: View) {
         private const val AMBIENT_FADE_IN_MS = 320L
         private const val SECONDS_FADE_OUT_MS = 900L
         private const val SECONDS_FADE_IN_MS = 220L
+
+        // Minimal wallpaper mode: shrunk clock + dim everything so the photo
+        // dominates. Sized so the time still reads at 10 ft viewing distance
+        // on a 1080p / 4K panel but stops being the focal element.
+        private const val MINIMAL_CLOCK_SP = 56f
+        private const val MINIMAL_DATE_SP = 16f
+        private const val MINIMAL_FOREGROUND_ALPHA = 0.7f
+
+        // Dark halo behind every remaining text element so titles + the clock
+        // stay legible even over a bright photo.
+        private const val MINIMAL_TEXT_SHADOW_COLOR = 0xCC000000.toInt()
+        private const val MINIMAL_TEXT_SHADOW_RADIUS = 4f
+        private const val MINIMAL_TEXT_SHADOW_DY = 2f
     }
 }

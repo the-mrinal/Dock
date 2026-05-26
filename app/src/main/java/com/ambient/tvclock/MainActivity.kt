@@ -44,7 +44,9 @@ class MainActivity : Activity() {
     private lateinit var textPageMusic: TextView
     private lateinit var textPageStatus: TextView
     private lateinit var imageHomeBackground: ImageView
+    private lateinit var textHomeBackgroundCredit: TextView
     private lateinit var backgroundBinder: BlurredBackgroundBinder
+    private lateinit var backgroundController: BackgroundController
 
     private var homeBinder: HomeScreenBinder? = null
     private var calendarBinder: CalendarScreenBinder? = null
@@ -101,7 +103,13 @@ class MainActivity : Activity() {
         textPageMusic = findViewById(R.id.textPageMusic)
         textPageStatus = findViewById(R.id.textPageStatus)
         imageHomeBackground = findViewById(R.id.imageHomeBackground)
+        textHomeBackgroundCredit = findViewById(R.id.textHomeBackgroundCredit)
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
+        backgroundController = BackgroundController(
+            context = this,
+            binder = backgroundBinder,
+            onUnsplashPhotoChanged = ::onUnsplashPhotoChanged,
+        )
         streamingOverlay = findViewById(R.id.streamingOverlay)
         onboardingPill = findViewById(R.id.onboardingPill)
         findViewById<View>(R.id.onboardingDismiss).setOnClickListener {
@@ -123,6 +131,7 @@ class MainActivity : Activity() {
                         bindCalendar(CalendarCenter.current)
                         bindNowPlaying(NowPlayingCenter.current)
                         bindQueue(SpotifyQueueCenter.current)
+                        setMinimalWallpaperMode(backgroundController.activePhoto() != null)
                     }
                 }
                 DashboardPage.CALENDAR -> {
@@ -208,6 +217,7 @@ class MainActivity : Activity() {
 
     override fun onStart() {
         super.onStart()
+        backgroundController.onStart()
         NowPlayingCenter.addListener(nowPlayingListener)
         CalendarCenter.addListener(calendarListener)
         SpotifyQueueCenter.addListener(queueListener)
@@ -249,6 +259,7 @@ class MainActivity : Activity() {
         NowPlayingCenter.removeListener(nowPlayingListener)
         CalendarCenter.removeListener(calendarListener)
         SpotifyQueueCenter.removeListener(queueListener)
+        backgroundController.onStop()
         super.onStop()
     }
 
@@ -273,7 +284,44 @@ class MainActivity : Activity() {
     private fun applyNowPlaying(info: NowPlayingInfo?) {
         homeBinder?.bindNowPlaying(info)
         musicBinder?.bindNowPlaying(info)
-        backgroundBinder.bind(info)
+        // BackgroundController is its own NowPlayingCenter listener and picks
+        // up the change directly — no need to forward it here.
+    }
+
+    private fun onUnsplashPhotoChanged(photo: UnsplashClient.Photo?) {
+        // Home layout swap: with a photo, drop the widget cards & shrink the
+        // clock so the photo becomes the focal element.
+        homeBinder?.setMinimalWallpaperMode(photo != null)
+
+        if (photo == null) {
+            if (textHomeBackgroundCredit.visibility != View.GONE) {
+                textHomeBackgroundCredit.animate().cancel()
+                textHomeBackgroundCredit.animate()
+                    .alpha(0f)
+                    .setDuration(BG_CREDIT_FADE_MS)
+                    .withEndAction { textHomeBackgroundCredit.visibility = View.GONE }
+                    .start()
+            }
+            return
+        }
+        val text = formatCredit(photo)
+        textHomeBackgroundCredit.text = text
+        textHomeBackgroundCredit.visibility = View.VISIBLE
+        textHomeBackgroundCredit.animate().cancel()
+        textHomeBackgroundCredit.animate()
+            .alpha(BG_CREDIT_ALPHA)
+            .setDuration(BG_CREDIT_FADE_MS)
+            .start()
+    }
+
+    private fun formatCredit(photo: UnsplashClient.Photo): String {
+        val photographer = photo.photographerName.ifBlank { "Unsplash" }
+        val description = photo.description
+        return if (description.isNotBlank()) {
+            getString(R.string.background_credit_with_description, description, photographer)
+        } else {
+            getString(R.string.background_credit_no_description, photographer)
+        }
     }
 
     private fun applyCalendar(snapshot: CalendarSnapshot) {
@@ -427,7 +475,7 @@ class MainActivity : Activity() {
         // leave the second indicator stranded at full brightness.
         homeBinder?.setSecondsVisible(false)
         homeBinder?.setWidgetsAmbient(true)
-        backgroundBinder.setAmbient(true)
+        backgroundController.setAmbient(true)
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
             .alpha(0f)
@@ -444,7 +492,7 @@ class MainActivity : Activity() {
         ambientMode = false
 
         homeBinder?.setWidgetsAmbient(false)
-        backgroundBinder.setAmbient(false)
+        backgroundController.setAmbient(false)
         updateOnboardingVisibility()
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
@@ -661,6 +709,13 @@ class MainActivity : Activity() {
                     resetInactivityWatchdog()
                     return true
                 }
+                if (currentPage == DashboardPage.HOME &&
+                    backgroundController.activePhoto() != null
+                ) {
+                    backgroundController.shuffleNow()
+                    resetInactivityWatchdog()
+                    return true
+                }
             }
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (currentPage == DashboardPage.CALENDAR) {
@@ -756,6 +811,17 @@ class MainActivity : Activity() {
         streamingScope.cancel()
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // Forward the OS's memory-pressure hint so the background controller
+        // can drop the wallpaper bitmap (~14 MB at 2400 px) when the activity
+        // is offscreen. SharedPreferences-cached URLs survive, so we re-decode
+        // from network on the next bind without an Unsplash API call.
+        if (::backgroundController.isInitialized) {
+            backgroundController.onTrimMemory(level)
+        }
+    }
+
     companion object {
         private const val KEY_PAGE = "dashboard_page"
         private const val REQUEST_VPN_CONSENT = 0x5A11
@@ -794,5 +860,9 @@ class MainActivity : Activity() {
         private const val PILL_DRIFT_DURATION_MS = 1_400L
         private const val PILL_DRIFT_X_DP = 8
         private const val PILL_DRIFT_Y_DP = 4
+
+        // Unsplash attribution caption: stay subtle but legible.
+        private const val BG_CREDIT_ALPHA = 0.6f
+        private const val BG_CREDIT_FADE_MS = 320L
     }
 }

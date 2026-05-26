@@ -12,7 +12,7 @@ Thanks for thinking about contributing. This document covers the conventions you
 
 ```bash
 source scripts/dev-env.sh
-cp local.properties.example local.properties   # set sdk.dir and spotify.clientId
+cp local.properties.example local.properties   # set sdk.dir, spotify.clientId, unsplash.accessKey
 ./gradlew assembleFiretvDebug
 adb install -r app/build/outputs/apk/firetv/debug/app-firetv-debug.apk
 ```
