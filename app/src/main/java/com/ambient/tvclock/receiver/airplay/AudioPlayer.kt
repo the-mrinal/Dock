@@ -65,6 +65,16 @@ class AudioPlayer {
     private val seqnumWindow = SeqnumDedup(DEDUP_WINDOW_SIZE)
     private var firstPcmLogged = false
 
+    // Diagnostics: count packets in / PCM frames out / total bytes written
+    // to AudioTrack, with periodic logs so we can see whether the pipeline
+    // actually flows or stalls. "Decoder produced first PCM frame" alone
+    // doesn't tell us if frame 2+ ever followed.
+    @Volatile private var packetsReceived: Long = 0
+    @Volatile private var pcmFramesDrained: Long = 0
+    @Volatile private var bytesWrittenOk: Long = 0
+    @Volatile private var writeFailures: Long = 0
+    @Volatile private var lastDiagLogPacketCount: Long = 0
+
     @Volatile
     private var isInitialized = false
 
@@ -110,6 +120,20 @@ class AudioPlayer {
      */
     fun playAudioPacket(rtpPacket: ByteArray) {
         if (!isInitialized) return
+
+        packetsReceived++
+        if (packetsReceived - lastDiagLogPacketCount >= DIAG_LOG_EVERY) {
+            lastDiagLogPacketCount = packetsReceived
+            val state = when (audioTrack?.playState) {
+                AudioTrack.PLAYSTATE_PLAYING -> "PLAYING"
+                AudioTrack.PLAYSTATE_PAUSED  -> "PAUSED"
+                AudioTrack.PLAYSTATE_STOPPED -> "STOPPED"
+                null -> "null"
+                else -> "?"
+            }
+            Logger.i("Audio diag: pkts=$packetsReceived pcm=$pcmFramesDrained " +
+                     "wroteOK=${bytesWrittenOk}B writeFails=$writeFailures track=$state")
+        }
 
         try {
             // Step 2 — drop "no-data" markers.
@@ -215,12 +239,22 @@ class AudioPlayer {
                 channels
             ).apply {
                 setByteBuffer("csd-0", ByteBuffer.wrap(asc))
+                // Explicitly declare AAC-ELD (object type 39). The default
+                // `createDecoderByType(AAC)` picks a decoder that supports
+                // generic AAC; on some Fire TV firmware that decoder reads
+                // the input as AAC-LC frames (1024 samples) and emits clean
+                // silence when the bitstream doesn't make sense — exactly
+                // the peak=0 PCM we observed in logcat.
+                setInteger(MediaFormat.KEY_AAC_PROFILE, 39)  // AACObjectELD
             }
+            // Resolve the actual codec the system would pick for this format so
+            // we can see which one is running (vendor / google / c2.android.*).
             val codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_AAC)
+            val codecName = try { codec.name } catch (e: Exception) { "?" }
             codec.configure(format, null, null, 0)
             codec.start()
             aacDecoder = codec
-            Logger.i("AAC-ELD decoder started (ASC=${asc.toHex()})")
+            Logger.i("AAC-ELD decoder started: codec='$codecName' ASC=${asc.toHex()}")
         } catch (e: Exception) {
             Logger.e("Failed to start AAC-ELD decoder — audio will be silent for this session", e)
             aacDecoder = null
@@ -251,10 +285,41 @@ class AudioPlayer {
                     outputBuffer.limit(codecBufferInfo.offset + codecBufferInfo.size)
                     outputBuffer.get(pcm, 0, codecBufferInfo.size)
                     if (!firstPcmLogged) {
-                        Logger.i("AAC-ELD decoder produced first PCM frame (${pcm.size} bytes)")
+                        // Compute peak |sample| over this frame so we can tell
+                        // whether the decoder is actually producing audio or
+                        // silence. PCM here is 16-bit little-endian; a peak
+                        // of 0 means the bytes are zeroed (decoder bug or
+                        // wrong codec config). A non-trivial peak means our
+                        // pipeline is fine and the muted-speakers question
+                        // sits with Fire TV's audio routing instead.
+                        var peak = 0
+                        var i = 0
+                        while (i + 1 < pcm.size) {
+                            val sample = ((pcm[i + 1].toInt() shl 8) or
+                                          (pcm[i].toInt() and 0xFF)).toShort().toInt()
+                            val abs = if (sample < 0) -sample else sample
+                            if (abs > peak) peak = abs
+                            i += 2
+                        }
+                        Logger.i("AAC-ELD decoder produced first PCM frame " +
+                                 "(${pcm.size} bytes, peak=$peak / 32767)")
                         firstPcmLogged = true
                     }
-                    track.write(pcm, 0, pcm.size, AudioTrack.WRITE_NON_BLOCKING)
+                    pcmFramesDrained++
+                    val wrote = track.write(pcm, 0, pcm.size, AudioTrack.WRITE_NON_BLOCKING)
+                    if (wrote > 0) {
+                        bytesWrittenOk += wrote
+                    } else {
+                        writeFailures++
+                        if (writeFailures <= 5 || writeFailures % 100 == 0L) {
+                            // WRITE_NON_BLOCKING returns 0 when the AudioTrack
+                            // buffer is full (back-pressure) or a negative
+                            // AudioTrack error code (e.g. -3 STATE_UNINITIALIZED).
+                            // First few + every 100 keeps the log short while
+                            // still surfacing patterns.
+                            Logger.w("AudioTrack.write returned $wrote (failure #$writeFailures)")
+                        }
+                    }
                 }
             }
             codec.releaseOutputBuffer(outIndex, false)
@@ -315,6 +380,8 @@ class AudioPlayer {
         private const val RTP_HEADER_BYTES = 12
         private const val INPUT_BUFFER_TIMEOUT_US = 10_000L
         private const val DEDUP_WINDOW_SIZE = 32
+        /** How often to emit the audio diagnostics line — every 50 packets ≈ once per ~550ms at 90 pkt/s. */
+        private const val DIAG_LOG_EVERY = 50L
 
         // ISO/IEC 14496-3 §1.6.3.4 sample rate index table.
         private val MPEG4_SAMPLE_RATES = intArrayOf(

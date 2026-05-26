@@ -196,6 +196,16 @@ open class RtspHandler(
                         streamingStarted = true
                         onMirrorRecord()
                     }
+                    // POST /play (AirPlay video URL) — iOS frequently never sends
+                    // POST /stop; the session ends when the TCP connection closes.
+                    // Flag this connection as a streaming session so the finally
+                    // block runs onStreamingStopped() and releases ExoPlayer,
+                    // otherwise the previous video stays pinned to the Surface
+                    // and any subsequent session looks "stuck on the last frame".
+                    if (request.method == "POST" && pathOf(request.uri) == "/play" &&
+                        r.statusCode == 200) {
+                        streamingStarted = true
+                    }
                     r
                 } else {
                     val r = routeRequest(request, outputStream)
@@ -263,6 +273,11 @@ open class RtspHandler(
      *
      * @return Parsed [RtspRequest], or null on clean EOF / oversized message.
      */
+    private fun pathOf(uri: String): String {
+        val q = uri.indexOf('?')
+        return if (q >= 0) uri.substring(0, q) else uri
+    }
+
     private fun isAirPlayControlRequest(request: RtspRequest): Boolean {
         if (request.uri.startsWith("/")) return true
         if (request.method == "SETUP" && isBinaryPlist(request.bodyBytes)) return true
@@ -594,9 +609,16 @@ open class RtspHandler(
 
         /**
          * Maximum allowed RTSP message size (security: prevents DoS via huge messages).
-         * 64 KB is well above any legitimate RTSP/SDP message size.
+         *
+         * 2 MB cap: SET_PARAMETER carries cover-art / video-thumbnail JPEGs in
+         * the AirPlay metadata stream, and YouTube on iOS routinely sends
+         * 96–300 KB thumbnails. The original 64 KB ceiling killed those mid-
+         * stream — the parser then tried to read the JPEG payload as the next
+         * RTSP request line, broke, and torpedoed the whole session before
+         * audio could start flowing. 2 MB is comfortably above what any
+         * legitimate sender sends while still bounding pathological inputs.
          */
-        private const val MAX_MESSAGE_BYTES = 65536
+        private const val MAX_MESSAGE_BYTES = 2 * 1024 * 1024
 
         /** Fixed session ID — one session at a time. */
         private const val SESSION_ID = "PhairPlaySession"

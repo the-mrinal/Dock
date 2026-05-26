@@ -130,6 +130,12 @@ dependencies {
     implementation("com.googlecode.plist:dd-plist:1.28")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
 
+    // ExoPlayer + HLS — drives AirPlay direct-video playback (POST /play HLS URLs
+    // sent by YouTube, Photos, Safari, Netflix when the user taps the AirPlay icon
+    // on a specific video instead of mirroring the whole screen).
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.4.1")
+
     implementation("com.wireguard.android:tunnel:1.0.20260102")
 
     testImplementation("junit:junit:4.13.2")

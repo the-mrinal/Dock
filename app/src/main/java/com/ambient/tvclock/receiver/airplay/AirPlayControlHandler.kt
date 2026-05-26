@@ -23,7 +23,13 @@ class AirPlayControlHandler(
     private val pairing: AirPlayPairing,
     private val deviceName: () -> String,
     private val onSetupComplete: (SetupResult) -> Unit,
-    private val onTimingPeer: (InetAddress, Int, Socket?) -> Unit = { _, _, _ -> }
+    private val onTimingPeer: (InetAddress, Int, Socket?) -> Unit = { _, _, _ -> },
+    /**
+     * Handles the AirPlay video URL HTTP endpoints (/play, /stop, /scrub,
+     * /rate, /playback-info). When null, those routes return 501 — used in
+     * unit tests that don't need playback wiring.
+     */
+    private val playbackHandler: AirPlayPlaybackHandler? = null
 ) {
 
     private val pairingSession = pairing.newSession()
@@ -35,14 +41,26 @@ class AirPlayControlHandler(
 
     fun handle(request: RtspRequest, clientAddress: InetAddress? = null, clientSocket: Socket? = null): RtspResponse {
         Logger.i("AirPlay control: ${request.method} ${request.uri} (${request.protocol})")
+        // Video URL protocol routes are delegated first — they share port 7000
+        // with the mirroring control surface, and we want their dedicated
+        // handler to win for /play, /stop, /scrub, /rate, /playback-info.
+        playbackHandler?.let { if (it.claims(request)) return it.handle(request) }
         return when {
+            request.method == "GET" && request.uri.startsWith("/server-info") ->
+                handleServerInfo()
             request.method == "GET" && request.uri.contains("/info") ->
                 handleInfo(request)
             request.method == "POST" && request.uri == "/pair-setup" ->
                 handlePairSetup(request)
             request.method == "POST" && request.uri == "/pair-verify" ->
                 handlePairVerify(request)
-            request.method == "POST" && request.uri == "/fp-setup" ->
+            // `/fp-setup` is the legacy FairPlay endpoint; `/fp-setup2` is the
+            // AirPlay 2 variant iOS reconnects with after the receiver drops
+            // mid-session (e.g. when an oversized SET_PARAMETER body breaks
+            // the connection). Both use the same handshake payload shapes;
+            // routing them through one handler keeps iOS happy so the
+            // session can re-establish without falling back to "no video".
+            request.method == "POST" && (request.uri == "/fp-setup" || request.uri == "/fp-setup2") ->
                 handleFpSetup(request)
             request.method == "SETUP" ->
                 handleSetup(request, clientAddress, clientSocket)
@@ -62,15 +80,62 @@ class AirPlayControlHandler(
                     "Public" to "SETUP, RECORD, FLUSH, TEARDOWN, OPTIONS, GET_PARAMETER, SET_PARAMETER, " +
                         "POST, GET"
                 ))
-            request.method == "SET_PARAMETER" ->
+            request.method == "SET_PARAMETER" -> {
+                // Body logging helps diagnose iOS-specific quirks: YouTube and
+                // Music send `volume`, `progress`, `dmap` artwork metadata,
+                // `text/parameters` lines, or binary plists here.
+                val ct = request.headers["Content-Type"] ?: request.headers["content-type"]
+                val bodyPreview = if (request.bodyBytes.isEmpty()) "(empty)"
+                else if (request.body.length <= 200) request.body
+                else request.body.substring(0, 200) + "..."
+                Logger.d("SET_PARAMETER (ct=$ct) body=$bodyPreview")
                 RtspResponse(200, "OK")
+            }
             request.method == "POST" && request.uri == "/feedback" ->
+                RtspResponse(200, "OK", bodyBytes = byteArrayOf())
+            // FLUSH arrives on the macOS-style binary-plist control channel
+            // (seek/pause). Pre-fix this fell through to 501 and broke YouTube's
+            // iOS AirPlay handshake — YouTube treats 501 here as "incompatible
+            // receiver" and abandons the session before sending /play.
+            request.method == "FLUSH" ->
+                RtspResponse(200, "OK")
+            // POST /audioMode is YouTube-iOS-specific: it sets the requested
+            // audio output mode on the receiver. Returning 501 makes YouTube's
+            // client conclude the receiver doesn't meet its capability bar and
+            // tear the session down. Acknowledging with 200 lets the handshake
+            // continue so /play can actually arrive.
+            request.method == "POST" && request.uri == "/audioMode" ->
                 RtspResponse(200, "OK", bodyBytes = byteArrayOf())
             else -> {
                 Logger.w("Unhandled AirPlay control: ${request.method} ${request.uri}")
                 RtspResponse(501, "Not Implemented")
             }
         }
+    }
+
+    /**
+     * `GET /server-info` is the AirPlay 1 capability-discovery probe iOS makes
+     * before sending `POST /play`. If we 501 here the sender concludes the
+     * receiver doesn't support video URL playback and aborts the flow before
+     * `/play` is ever issued — observed in the YouTube AirPlay trace.
+     *
+     * The response is an XML plist (NOT binary plist) per the openairplay
+     * spec §6.1, with deviceid / features / model / protovers / srcvers.
+     */
+    private fun handleServerInfo(): RtspResponse {
+        val dict = NSDictionary()
+        dict.put("deviceid", NSString(NetworkUtils.getMacAddress().uppercase()))
+        dict.put("features", NSNumber(FEATURES))
+        dict.put("model", NSString(MODEL))
+        dict.put("protovers", NSString("1.0"))
+        dict.put("srcvers", NSString(SOURCE_VERSION))
+        val xml = dict.toXMLPropertyList()
+        return RtspResponse(
+            statusCode = 200,
+            statusMessage = "OK",
+            headers = mapOf("Content-Type" to "text/x-apple-plist+xml"),
+            bodyBytes = xml.toByteArray(Charsets.UTF_8)
+        )
     }
 
     private fun handleInfo(request: RtspRequest): RtspResponse {
@@ -286,6 +351,15 @@ class AirPlayControlHandler(
  */
 object AirPlaySetupParser {
 
+    /**
+     * Port [AirPlayEventChannel] is currently listening on. Set by
+     * [AirPlayReceiver.start] before any SETUP arrives so [buildResponse]
+     * reports it as `eventPort` in the master SETUP plist. 0 means the
+     * receiver hasn't bound an event channel yet — i.e. fall back to the
+     * old "no event channel" behavior.
+     */
+    @Volatile var eventPort: Int = 0
+
     fun parse(
         root: NSDictionary,
         session: AirPlayPairing.Session
@@ -394,8 +468,8 @@ object AirPlaySetupParser {
         if (!hasStreams) {
             // Master SETUP — sender expects only timingPort/eventPort here.
             dict.put("timingPort", NSNumber(TimingHandler.TIMING_PORT))
-            dict.put("eventPort", NSNumber(0))
-            Logger.i("SETUP response (master): timingPort=${TimingHandler.TIMING_PORT}, eventPort=0")
+            dict.put("eventPort", NSNumber(eventPort))
+            Logger.i("SETUP response (master): timingPort=${TimingHandler.TIMING_PORT}, eventPort=$eventPort")
             return dict
         }
 
