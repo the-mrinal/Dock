@@ -1,12 +1,14 @@
 package com.ambient.tvclock.receiver.airplay
 
 import android.content.Context
+import android.os.SystemClock
 import com.dd.plist.NSArray
 import com.dd.plist.NSData
 import com.dd.plist.NSDictionary
 import com.dd.plist.NSNumber
 import com.dd.plist.NSString
 import com.dd.plist.BinaryPropertyListWriter
+import com.ambient.tvclock.receiver.ReceiverStateBus
 import com.ambient.tvclock.util.Logger
 import com.ambient.tvclock.util.NetworkUtils
 import java.net.InetAddress
@@ -81,14 +83,7 @@ class AirPlayControlHandler(
                         "POST, GET"
                 ))
             request.method == "SET_PARAMETER" -> {
-                // Body logging helps diagnose iOS-specific quirks: YouTube and
-                // Music send `volume`, `progress`, `dmap` artwork metadata,
-                // `text/parameters` lines, or binary plists here.
-                val ct = request.headers["Content-Type"] ?: request.headers["content-type"]
-                val bodyPreview = if (request.bodyBytes.isEmpty()) "(empty)"
-                else if (request.body.length <= 200) request.body
-                else request.body.substring(0, 200) + "..."
-                Logger.d("SET_PARAMETER (ct=$ct) body=$bodyPreview")
+                handleSetParameter(request)
                 RtspResponse(200, "OK")
             }
             request.method == "POST" && request.uri == "/feedback" ->
@@ -208,6 +203,66 @@ class AirPlayControlHandler(
             }
         }
         return binaryResponse(data, "application/octet-stream")
+    }
+
+    /**
+     * Dispatches a `SET_PARAMETER` body to the Now Playing bus by Content-Type.
+     *
+     * iOS uses this single RTSP verb for three unrelated payloads on the
+     * AirPlay 2 audio path:
+     *  - `application/x-dmap-tagged` → track metadata ([AirPlayDaapParser])
+     *  - `image/jpeg`                → album artwork (raw bytes)
+     *  - `text/parameters`           → `progress:`/`volume:` lines
+     *
+     * The 200 OK is returned by the caller — this method just routes the body
+     * to the UI state holder. Errors are logged and swallowed because a
+     * malformed metadata blob must not break the audio session.
+     *
+     * Sample rate is hardcoded to 44100 because AirPlay realtime audio
+     * (`streams=[{type:96}]`) is locked to 44.1 kHz across every sender we
+     * have evidence for. If buffered audio (type 103) lands one day with a
+     * different rate, this will need to plumb the SETUP-time value through.
+     */
+    private fun handleSetParameter(request: RtspRequest) {
+        val ct = (request.headers["Content-Type"] ?: request.headers["content-type"] ?: "")
+            .lowercase()
+        try {
+            when {
+                ct.startsWith("application/x-dmap-tagged") -> {
+                    val meta = AirPlayDaapParser.parse(request.bodyBytes)
+                    Logger.d("SET_PARAMETER metadata: title='${meta.title}' artist='${meta.artist}' album='${meta.album}'")
+                    if (meta.title != null || meta.artist != null || meta.album != null) {
+                        ReceiverStateBus.publishAirPlayMetadata(meta)
+                    }
+                }
+                ct.startsWith("image/") -> {
+                    val bytes = request.bodyBytes
+                    if (bytes.isNotEmpty()) {
+                        Logger.d("SET_PARAMETER artwork: ${bytes.size} bytes ($ct)")
+                        ReceiverStateBus.publishAirPlayArtwork(bytes)
+                    }
+                }
+                ct.startsWith("text/parameters") -> {
+                    val progress = parseAirPlayProgress(
+                        body = request.body,
+                        sampleRate = AIRPLAY_REALTIME_SAMPLE_RATE,
+                        nowMs = SystemClock.elapsedRealtime()
+                    )
+                    if (progress != null) {
+                        Logger.d("SET_PARAMETER progress: ${progress.rtpStart}/${progress.rtpCurrent}/${progress.rtpEnd}")
+                        ReceiverStateBus.publishAirPlayProgress(progress)
+                    }
+                }
+                else -> {
+                    val preview = if (request.body.length <= 80) request.body
+                                  else request.body.substring(0, 80) + "..."
+                    Logger.d("SET_PARAMETER unhandled ct=$ct body=$preview")
+                }
+            }
+        } catch (e: Throwable) {
+            // Never let a bad SET_PARAMETER body kill the audio session.
+            Logger.e("SET_PARAMETER parse error (ct=$ct, ${request.bodyBytes.size} bytes)", e)
+        }
     }
 
     private fun handleSetup(request: RtspRequest, clientAddress: InetAddress?, clientSocket: Socket?): RtspResponse {
@@ -336,6 +391,10 @@ class AirPlayControlHandler(
         private const val FEATURES = 0x5A7FFFF7L
         private const val MODEL = "AppleTV5,3"
         private const val SOURCE_VERSION = "220.68"
+        // AirPlay 2 realtime audio (`streams=[{type:96}]`) is locked to 44.1 kHz
+        // across every observed sender (Apple Music, Spotify, Safari audio,
+        // YouTube). Used by `progress:` parsing to convert RTP ticks to time.
+        private const val AIRPLAY_REALTIME_SAMPLE_RATE = 44100
     }
 }
 

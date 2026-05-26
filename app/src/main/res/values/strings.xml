@@ -295,4 +295,10 @@
     <string name="background_shuffle_10_min">Every 10 minutes (default)</string>
     <string name="background_shuffle_20_min">Every 20 minutes</string>
     <string name="background_shuffle_50_min">Every 50 minutes</string>
+
+    <!-- AirPlay audio Now Playing screen -->
+    <string name="airplay_now_playing_artwork_cd">Album artwork</string>
+    <string name="airplay_now_playing_default_title">Connected to AirPlay</string>
+    <string name="airplay_now_playing_default_artist">Waiting for track info…</string>
+    <string name="airplay_now_playing_time_zero">0:00</string>
 </resources>

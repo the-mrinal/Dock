@@ -76,11 +76,14 @@ class ReceiverService : Service() {
     private fun setActiveConnection(connection: ActiveConnection?) {
         _activeConnection.value = connection
         ReceiverStateBus.publishActiveConnection(connection)
-        // The video-size state is meaningful only while a connection is live.
-        // Reset on disconnect so a returning sender doesn't briefly inherit the
-        // previous sender's aspect ratio before its first SPS lands.
+        // The video-size state and the AirPlay Now Playing snapshot are both
+        // meaningful only while a connection is live. Reset on disconnect so
+        // a returning sender doesn't briefly inherit the previous session's
+        // aspect ratio or track metadata before its first SPS / SET_PARAMETER
+        // lands.
         if (connection == null) {
             ReceiverStateBus.publishVideoSize(null)
+            ReceiverStateBus.clearAirPlayNowPlaying()
         }
     }
 

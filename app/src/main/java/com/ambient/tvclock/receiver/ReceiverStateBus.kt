@@ -1,6 +1,9 @@
 package com.ambient.tvclock.receiver
 
 import android.view.Surface
+import com.ambient.tvclock.receiver.airplay.AirPlayNowPlayingMetadata
+import com.ambient.tvclock.receiver.airplay.AirPlayNowPlayingState
+import com.ambient.tvclock.receiver.airplay.AirPlayProgress
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +34,17 @@ object ReceiverStateBus {
     private val _videoSurface = MutableStateFlow<Surface?>(null)
     val videoSurface: StateFlow<Surface?> = _videoSurface.asStateFlow()
 
+    /**
+     * Current AirPlay audio "Now Playing" snapshot — metadata, artwork, and
+     * progress merged into one immutable record. `null` whenever no AirPlay
+     * audio session is active. Updates arrive piecemeal via the
+     * `publishAirPlay*` methods below; the bus merges each partial into the
+     * existing snapshot so an artwork-only `SET_PARAMETER` does not wipe a
+     * previously-received title.
+     */
+    private val _airPlayNowPlaying = MutableStateFlow<AirPlayNowPlayingState?>(null)
+    val airPlayNowPlaying: StateFlow<AirPlayNowPlayingState?> = _airPlayNowPlaying.asStateFlow()
+
     @Volatile
     private var surfaceProvider: (() -> Surface?)? = null
 
@@ -51,4 +65,26 @@ object ReceiverStateBus {
     }
 
     fun currentSurface(): Surface? = surfaceProvider?.invoke()
+
+    // ─── AirPlay Now Playing ─────────────────────────────────────────────
+
+    fun publishAirPlayMetadata(meta: AirPlayNowPlayingMetadata) {
+        _airPlayNowPlaying.value = (_airPlayNowPlaying.value ?: AirPlayNowPlayingState())
+            .withMetadata(meta)
+    }
+
+    fun publishAirPlayArtwork(jpegBytes: ByteArray) {
+        _airPlayNowPlaying.value = (_airPlayNowPlaying.value ?: AirPlayNowPlayingState())
+            .copy(artworkJpeg = jpegBytes)
+    }
+
+    fun publishAirPlayProgress(progress: AirPlayProgress) {
+        _airPlayNowPlaying.value = (_airPlayNowPlaying.value ?: AirPlayNowPlayingState())
+            .copy(progress = progress)
+    }
+
+    /** Clears the snapshot when an AirPlay audio session ends. */
+    fun clearAirPlayNowPlaying() {
+        _airPlayNowPlaying.value = null
+    }
 }

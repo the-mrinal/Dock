@@ -20,6 +20,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.ambient.tvclock.receiver.ActiveConnection
 import com.ambient.tvclock.receiver.ReceiverController
 import com.ambient.tvclock.receiver.ReceiverStateBus
+import com.ambient.tvclock.receiver.airplay.AirPlayNowPlayingActivity
 import com.ambient.tvclock.receiver.ui.StreamingOverlay
 import com.ambient.tvclock.vpn.VpnPreferences
 import com.ambient.tvclock.vpn.VpnState
@@ -73,6 +74,12 @@ class MainActivity : Activity() {
     private var streamingObserverJob: Job? = null
     private var videoSizeObserverJob: Job? = null
     private var vpnObserverJob: Job? = null
+    private var airPlayNowPlayingJob: Job? = null
+    // True between the moment we start AirPlayNowPlayingActivity and the
+    // moment ReceiverStateBus clears the snapshot. Guards against a double
+    // startActivity when artwork + metadata arrive in two separate
+    // SET_PARAMETER messages within ~50 ms.
+    private var nowPlayingActivityLaunched: Boolean = false
     private var currentActiveConnection: ActiveConnection? = null
     private var currentVpnState: VpnState = VpnState.NoConfig
     private lateinit var nowPlayingPoller: NowPlayingPoller
@@ -242,6 +249,21 @@ class MainActivity : Activity() {
                 statusBinder?.bindVpn(state)
             }
         }
+        // AirPlay audio sessions (Apple Music, Spotify, Safari audio) get a
+        // dedicated full-screen "Now Playing" surface. We launch the activity
+        // the first time iOS publishes metadata/artwork/progress and let it
+        // finish itself when ReceiverStateBus clears the snapshot on session
+        // end — `noHistory` + `singleTop` keep relaunches free of stacking.
+        airPlayNowPlayingJob = streamingScope.launch {
+            ReceiverStateBus.airPlayNowPlaying.collect { state ->
+                if (state != null && !nowPlayingActivityLaunched) {
+                    nowPlayingActivityLaunched = true
+                    startActivity(Intent(this@MainActivity, AirPlayNowPlayingActivity::class.java))
+                } else if (state == null) {
+                    nowPlayingActivityLaunched = false
+                }
+            }
+        }
     }
 
     override fun onStop() {
@@ -251,6 +273,8 @@ class MainActivity : Activity() {
         videoSizeObserverJob = null
         vpnObserverJob?.cancel()
         vpnObserverJob = null
+        airPlayNowPlayingJob?.cancel()
+        airPlayNowPlayingJob = null
         ReceiverStateBus.setSurfaceProvider(null)
 
         nowPlayingPoller.stop()
