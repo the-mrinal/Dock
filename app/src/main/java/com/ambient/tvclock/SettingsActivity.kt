@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.EditTextPreference
+import androidx.preference.MultiSelectListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
@@ -72,6 +73,7 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.preferences, rootKey)
             updateNotificationAccessSummary()
             updateSpotifyStatus()
+            updateUnsplashKeyStatus()
 
             findPreference<SwitchPreferenceCompat>(NowPlayingPreferences.KEY_SHOW_NOW_PLAYING)
                 ?.setOnPreferenceChangeListener { _, _ ->
@@ -132,6 +134,82 @@ class SettingsActivity : AppCompatActivity() {
 
             wireReceiverPreferences()
             wireVpnPreferences()
+            wireBackgroundKeywordLock()
+            wireShuffleNow()
+        }
+
+        private fun wireShuffleNow() {
+            findPreference<Preference>("background_shuffle_now")?.setOnPreferenceClickListener {
+                val ctx = requireContext()
+                if (!BackgroundPreferences.isUnsplashConfigured(ctx)) {
+                    Toast.makeText(
+                        ctx,
+                        R.string.background_shuffle_toast_no_unsplash,
+                        Toast.LENGTH_LONG,
+                    ).show()
+                } else {
+                    BackgroundPreferences.pulseShuffleSignal(ctx)
+                }
+                true
+            }
+        }
+
+        private fun wireBackgroundKeywordLock() {
+            val presets = findPreference<MultiSelectListPreference>(BackgroundPreferences.KEY_KEYWORD_PRESETS)
+            val custom = findPreference<EditTextPreference>(BackgroundPreferences.KEY_CUSTOM_KEYWORDS)
+
+            val gate = Preference.OnPreferenceChangeListener { _, _ ->
+                val ctx = requireContext()
+                val remaining = BackgroundPreferences.keywordsLockRemainingMs(ctx)
+                if (remaining > 0L) {
+                    Toast.makeText(
+                        ctx,
+                        getString(R.string.background_keywords_locked_toast, formatRemaining(remaining)),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    false // reject the change; preference value is rolled back
+                } else {
+                    BackgroundPreferences.markKeywordsChanged(ctx)
+                    // Refresh both summaries so the sibling preference also locks.
+                    refreshKeywordLockSummaries()
+                    true
+                }
+            }
+            presets?.onPreferenceChangeListener = gate
+            custom?.onPreferenceChangeListener = gate
+            refreshKeywordLockSummaries()
+        }
+
+        private fun refreshKeywordLockSummaries() {
+            val ctx = requireContext()
+            val remaining = BackgroundPreferences.keywordsLockRemainingMs(ctx)
+            val presets = findPreference<MultiSelectListPreference>(BackgroundPreferences.KEY_KEYWORD_PRESETS)
+            val custom = findPreference<EditTextPreference>(BackgroundPreferences.KEY_CUSTOM_KEYWORDS)
+            if (remaining > 0L) {
+                val text = getString(R.string.background_keywords_locked_summary, formatRemaining(remaining))
+                presets?.isEnabled = false
+                custom?.isEnabled = false
+                presets?.summary = text
+                custom?.summary = text
+            } else {
+                presets?.isEnabled = true
+                custom?.isEnabled = true
+                // Restore the default summary providers' output.
+                presets?.summary = getString(R.string.pref_background_keyword_presets_summary)
+                custom?.summary = custom?.text?.takeIf { it.isNotBlank() }
+                    ?: getString(R.string.pref_background_custom_keywords_summary)
+            }
+        }
+
+        private fun formatRemaining(ms: Long): String {
+            val totalMinutes = (ms + 59_999L) / 60_000L
+            val hours = totalMinutes / 60
+            val minutes = totalMinutes % 60
+            return when {
+                hours > 0 -> getString(R.string.background_keywords_unit_hours, hours.toInt(), minutes.toInt())
+                minutes > 0 -> getString(R.string.background_keywords_unit_minutes, minutes.toInt())
+                else -> getString(R.string.background_keywords_unit_seconds)
+            }
         }
 
         private fun wireVpnPreferences() {
@@ -254,6 +332,8 @@ class SettingsActivity : AppCompatActivity() {
             super.onResume()
             updateNotificationAccessSummary()
             updateSpotifyStatus()
+            updateUnsplashKeyStatus()
+            refreshKeywordLockSummaries()
             updateVpnStatus()
             NotificationAccess.requestListenerReconnect(requireContext())
             NowPlayingSessionReader.publish(requireContext())
@@ -284,6 +364,15 @@ class SettingsActivity : AppCompatActivity() {
                 !SpotifyApiClient.hasClientId() -> getString(R.string.spotify_no_client_id)
                 SpotifyTokenStore.isConnected(requireContext()) -> getString(R.string.spotify_connected)
                 else -> getString(R.string.spotify_not_connected)
+            }
+        }
+
+        private fun updateUnsplashKeyStatus() {
+            val pref = findPreference<Preference>("background_unsplash_key_status") ?: return
+            pref.summary = if (UnsplashClient.hasAccessKey()) {
+                getString(R.string.pref_background_unsplash_key_ready)
+            } else {
+                getString(R.string.pref_background_unsplash_no_key)
             }
         }
     }

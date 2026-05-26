@@ -132,7 +132,7 @@ Every screen carries a softly blurred wash of the current track's album art — 
 
 ```bash
 source scripts/dev-env.sh
-cp local.properties.example local.properties   # set sdk.dir and spotify.clientId
+cp local.properties.example local.properties   # set sdk.dir, spotify.clientId, unsplash.accessKey
 ./gradlew assembleFiretvDebug
 adb install -r app/build/outputs/apk/firetv/debug/app-firetv-debug.apk
 ```
@@ -140,6 +140,8 @@ adb install -r app/build/outputs/apk/firetv/debug/app-firetv-debug.apk
 The `firetv` build flavor is the default and targets `minSdk 25` (older Amazon Fire OS hardware still ships there). For newer Google TV / Android TV / Chromecast devices, use `./gradlew assembleGoogletvDebug` — same code, `minSdk 29`, separate `applicationId` so both can coexist on one device.
 
 `spotify.clientId` comes from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Redirect URI: `com.ambient.tvclock://spotify-callback`. Add your Spotify account under **User Management** (Development Mode).
+
+`unsplash.accessKey` comes from [Unsplash Developers](https://unsplash.com/developers) — create an app, copy the **Access Key** (not Secret Key). Drives the configurable background image feature. Free Demo tier is 50 req/hr, which the dock stays well under because one search returns a page of 30 URLs that get cycled locally.
 
 ---
 

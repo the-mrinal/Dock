@@ -91,6 +91,7 @@
             android:padding="24dp">
 
             <TextView
+                android:id="@+id/textHomeCalendarSectionLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
@@ -198,6 +199,7 @@
             android:padding="24dp">
 
             <TextView
+                android:id="@+id/textHomeMusicSectionLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"

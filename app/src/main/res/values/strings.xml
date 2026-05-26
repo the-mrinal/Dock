@@ -241,4 +241,58 @@
     <string name="pref_vpn_overlay_summary">A small “🔒 country” pill in the corner while VPN is up — visible even over Netflix or the launcher</string>
     <string name="vpn_overlay_default_label">VPN</string>
     <string name="vpn_overlay_needs_permission">Grant “Display over other apps” for this app to enable the overlay</string>
+
+    <!-- Background image (Unsplash) settings. -->
+    <string name="pref_category_background">Background image</string>
+    <string name="pref_background_when_idle_title">Background when nothing is playing</string>
+    <string name="pref_background_when_idle_summary">Show a black screen or rotate through Unsplash landscape photos</string>
+    <string name="pref_background_when_playing_title">Background while music plays</string>
+    <string name="pref_background_when_playing_summary">Use the blurred album art (default) or keep showing Unsplash photos</string>
+    <string name="pref_background_blur_title">Blur background image</string>
+    <string name="pref_background_blur_summary">Soften the background so foreground widgets stay easy to read</string>
+    <string name="pref_background_keyword_presets_title">Keyword categories</string>
+    <string name="pref_background_keyword_presets_summary">Pick a few subjects to mix into the Unsplash search</string>
+    <string name="pref_background_custom_keywords_title">Custom keywords</string>
+    <string name="pref_background_custom_keywords_summary">Comma-separated, merged with the picked categories. e.g. “sunset, neon, retrofuturism”</string>
+    <string name="pref_background_shuffle_interval_title">Shuffle interval</string>
+    <string name="pref_background_shuffle_interval_summary">How often to pick a new Unsplash photo</string>
+    <string name="pref_background_unsplash_key_status_title">Unsplash API key</string>
+    <string name="pref_background_unsplash_no_key">Add unsplash.accessKey to local.properties and rebuild</string>
+    <string name="pref_background_unsplash_key_ready">Key is configured</string>
+    <string name="background_keywords_locked_summary">Locked — editable again in %1$s (protects the 50 req/hr Unsplash limit)</string>
+    <string name="background_keywords_locked_toast">Wait %1$s before changing keywords again</string>
+    <string name="background_keywords_unit_hours">%1$dh %2$dm</string>
+    <string name="background_keywords_unit_minutes">%1$dm</string>
+    <string name="background_keywords_unit_seconds">less than a minute</string>
+
+    <!-- Unsplash attribution caption shown bottom-left on the home screen when
+         an Unsplash photo is the active background. ToS requires photographer +
+         Unsplash credit. -->
+    <string name="background_credit_with_description">Photo by %2$s on Unsplash · %1$s</string>
+    <string name="background_credit_no_description">Photo by %1$s on Unsplash</string>
+
+    <!-- Shuffle button — manual cycle through the already-cached page. -->
+    <string name="pref_background_shuffle_now_title">Shuffle photo now</string>
+    <string name="pref_background_shuffle_now_summary">Skip to the next cached photo. Unlimited — no API request. (Shortcut: D-pad Up on Home)</string>
+    <string name="background_shuffle_toast_no_unsplash">Switch the background to Unsplash to shuffle photos</string>
+
+    <string name="background_source_black">Black</string>
+    <string name="background_source_unsplash">Unsplash photo</string>
+    <string name="background_source_album_art">Blurred album art</string>
+
+    <string name="background_keyword_nature">Nature</string>
+    <string name="background_keyword_cityscape">Cityscape</string>
+    <string name="background_keyword_space">Space</string>
+    <string name="background_keyword_architecture">Architecture</string>
+    <string name="background_keyword_abstract">Abstract</string>
+    <string name="background_keyword_mountains">Mountains</string>
+    <string name="background_keyword_ocean">Ocean</string>
+    <string name="background_keyword_forest">Forest</string>
+    <string name="background_keyword_minimal">Minimal</string>
+    <string name="background_keyword_night_sky">Night sky</string>
+
+    <string name="background_shuffle_5_min">Every 5 minutes</string>
+    <string name="background_shuffle_10_min">Every 10 minutes (default)</string>
+    <string name="background_shuffle_20_min">Every 20 minutes</string>
+    <string name="background_shuffle_50_min">Every 50 minutes</string>
 </resources>

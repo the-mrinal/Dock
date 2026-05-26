@@ -39,4 +39,64 @@
         <item>120000</item>
         <item>300000</item>
     </string-array>
+
+    <string-array name="background_idle_source_labels">
+        <item>@string/background_source_black</item>
+        <item>@string/background_source_unsplash</item>
+    </string-array>
+
+    <string-array name="background_idle_source_values">
+        <item>black</item>
+        <item>unsplash</item>
+    </string-array>
+
+    <string-array name="background_playing_source_labels">
+        <item>@string/background_source_album_art</item>
+        <item>@string/background_source_unsplash</item>
+    </string-array>
+
+    <string-array name="background_playing_source_values">
+        <item>album_art</item>
+        <item>unsplash</item>
+    </string-array>
+
+    <string-array name="background_keyword_preset_labels">
+        <item>@string/background_keyword_nature</item>
+        <item>@string/background_keyword_cityscape</item>
+        <item>@string/background_keyword_space</item>
+        <item>@string/background_keyword_architecture</item>
+        <item>@string/background_keyword_abstract</item>
+        <item>@string/background_keyword_mountains</item>
+        <item>@string/background_keyword_ocean</item>
+        <item>@string/background_keyword_forest</item>
+        <item>@string/background_keyword_minimal</item>
+        <item>@string/background_keyword_night_sky</item>
+    </string-array>
+
+    <string-array name="background_keyword_preset_values">
+        <item>nature</item>
+        <item>cityscape</item>
+        <item>space</item>
+        <item>architecture</item>
+        <item>abstract</item>
+        <item>mountains</item>
+        <item>ocean</item>
+        <item>forest</item>
+        <item>minimal</item>
+        <item>night sky</item>
+    </string-array>
+
+    <string-array name="background_shuffle_labels">
+        <item>@string/background_shuffle_5_min</item>
+        <item>@string/background_shuffle_10_min</item>
+        <item>@string/background_shuffle_20_min</item>
+        <item>@string/background_shuffle_50_min</item>
+    </string-array>
+
+    <string-array name="background_shuffle_values">
+        <item>300000</item>
+        <item>600000</item>
+        <item>1200000</item>
+        <item>3000000</item>
+    </string-array>
 </resources>

@@ -12,6 +12,7 @@ val localProperties = Properties().apply {
     }
 }
 val spotifyClientId = localProperties.getProperty("spotify.clientId", "")
+val unsplashAccessKey = localProperties.getProperty("unsplash.accessKey", "")
 
 val signingKeystoreFile = localProperties.getProperty("signing.keystoreFile", "")
 val signingKeystorePassword = localProperties.getProperty("signing.keystorePassword", "")
@@ -29,6 +30,7 @@ android {
         versionCode = 10000
         versionName = "1.0.0"
         buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$spotifyClientId\"")
+        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"$unsplashAccessKey\"")
     }
 
     flavorDimensions += "platform"
