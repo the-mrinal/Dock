@@ -10,6 +10,7 @@ local.properties
 # Claude Code local config (per-user, not for source control)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+.claude/worktrees/
 
 # Release tooling: pulled by `npm install`, not for source control.
 node_modules/

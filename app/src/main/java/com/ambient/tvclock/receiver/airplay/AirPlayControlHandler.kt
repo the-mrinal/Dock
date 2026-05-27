@@ -31,7 +31,14 @@ class AirPlayControlHandler(
      * /rate, /playback-info). When null, those routes return 501 — used in
      * unit tests that don't need playback wiring.
      */
-    private val playbackHandler: AirPlayPlaybackHandler? = null
+    private val playbackHandler: AirPlayPlaybackHandler? = null,
+    /**
+     * Invoked the first time a pair-verify exchange produces the X25519 ECDH
+     * shared secret. Used by [AirPlayReceiver] to plumb the secret into the
+     * event channel so it can derive the AirPlay 2 ChaCha20-Poly1305 keys
+     * before iOS opens the encrypted control socket.
+     */
+    private val onEcdhSecretReady: (ByteArray) -> Unit = {}
 ) {
 
     private val pairingSession = pairing.newSession()
@@ -66,7 +73,8 @@ class AirPlayControlHandler(
                 handleFpSetup(request)
             request.method == "SETUP" ->
                 handleSetup(request, clientAddress, clientSocket)
-            request.method == "RECORD" ->
+            request.method == "RECORD" -> {
+                logRequestDiag("RECORD", request)
                 RtspResponse(
                     statusCode = 200,
                     statusMessage = "OK",
@@ -75,8 +83,11 @@ class AirPlayControlHandler(
                         "Audio-Jack-Status" to "connected; type=analog"
                     )
                 )
-            request.method == "TEARDOWN" ->
+            }
+            request.method == "TEARDOWN" -> {
+                logRequestDiag("TEARDOWN", request)
                 RtspResponse(200, "OK")
+            }
             request.method == "OPTIONS" && request.isAirPlayControl ->
                 RtspResponse(200, "OK", mapOf(
                     "Public" to "SETUP, RECORD, FLUSH, TEARDOWN, OPTIONS, GET_PARAMETER, SET_PARAMETER, " +
@@ -92,15 +103,22 @@ class AirPlayControlHandler(
             // (seek/pause). Pre-fix this fell through to 501 and broke YouTube's
             // iOS AirPlay handshake — YouTube treats 501 here as "incompatible
             // receiver" and abandons the session before sending /play.
-            request.method == "FLUSH" ->
+            request.method == "FLUSH" -> {
+                logRequestDiag("FLUSH", request)
                 RtspResponse(200, "OK")
+            }
             // POST /audioMode is YouTube-iOS-specific: it sets the requested
             // audio output mode on the receiver. Returning 501 makes YouTube's
             // client conclude the receiver doesn't meet its capability bar and
-            // tear the session down. Acknowledging with 200 lets the handshake
-            // continue so /play can actually arrive.
-            request.method == "POST" && request.uri == "/audioMode" ->
-                RtspResponse(200, "OK", bodyBytes = byteArrayOf())
+            // tear the session down. Acknowledging with 200 + an empty body
+            // was the prior fix; iOS YouTube still tears down at +3 s in that
+            // case (issue #17 trace), so we now echo the requested audioMode
+            // back as a binary plist — the shape a real Apple TV returns —
+            // hoping iOS treats it as "mode accepted, ready to stream".
+            request.method == "POST" && request.uri == "/audioMode" -> {
+                logRequestDiag("POST /audioMode", request)
+                handleAudioMode(request)
+            }
             else -> {
                 Logger.w("Unhandled AirPlay control: ${request.method} ${request.uri}")
                 RtspResponse(501, "Not Implemented")
@@ -185,6 +203,7 @@ class AirPlayControlHandler(
     private fun handlePairVerify(request: RtspRequest): RtspResponse {
         return try {
             val response = pairingSession.handlePairVerify(request.bodyBytes)
+            pairingSession.ecdhSecret()?.let { onEcdhSecretReady(it) }
             binaryResponse(response ?: byteArrayOf(), "application/octet-stream")
         } catch (e: Exception) {
             Logger.e("pair-verify failed", e)
@@ -223,9 +242,59 @@ class AirPlayControlHandler(
      * have evidence for. If buffered audio (type 103) lands one day with a
      * different rate, this will need to plumb the SETUP-time value through.
      */
+    /**
+     * Responds to `POST /audioMode` by echoing the requested `audioMode`
+     * back in a binary plist. Issue #17: iOS YouTube sends a 64-byte plist
+     * `{audioMode: "default"}` and (per the trace) tears down ~2.5 s later
+     * if we return an empty body. Real Apple TVs reply with the same key
+     * to acknowledge the mode is accepted; without a corroborating reply,
+     * iOS appears to conclude the receiver isn't honouring its mode
+     * request and abandons the session.
+     */
+    private fun handleAudioMode(request: RtspRequest): RtspResponse {
+        val mode = try {
+            val parsed = com.dd.plist.PropertyListParser.parse(request.bodyBytes) as? NSDictionary
+            (parsed?.objectForKey("audioMode") as? NSString)?.toString()
+        } catch (e: Exception) {
+            Logger.w("audioMode parse failed: ${e.message}")
+            null
+        } ?: DEFAULT_AUDIO_MODE
+        Logger.i("audioMode: echoing back mode='$mode'")
+        val dict = NSDictionary().apply { put("audioMode", NSString(mode)) }
+        return plistResponse(dict, contentType = "application/x-apple-binary-plist")
+    }
+
+    /**
+     * Logs an RTSP request's headers + body preview for diagnostic comparison
+     * between iOS senders that work (Apple Music) and ones that tear down
+     * (YouTube, issue #17). Called on RECORD / FLUSH / TEARDOWN / audioMode.
+     *
+     * Body is shown both ASCII (with non-printables as `.`) and hex (first
+     * 64 bytes) so we can recognise plist, dmap, text/parameters, or pure-
+     * binary shapes without flooding the log.
+     */
+    private fun logRequestDiag(label: String, request: RtspRequest) {
+        val headers = request.headers.entries.joinToString { "${it.key}=${it.value}" }
+        Logger.i("$label headers: $headers")
+        val body = request.bodyBytes
+        if (body.isEmpty()) {
+            Logger.i("$label body: <empty>")
+            return
+        }
+        val previewLen = minOf(body.size, 512)
+        val hex = body.copyOf(previewLen).joinToString(" ") { "%02x".format(it) }
+        val ascii = body.copyOf(previewLen).joinToString("") {
+            val c = it.toInt() and 0xFF
+            if (c in 0x20..0x7E) c.toChar().toString() else "."
+        }
+        Logger.i("$label body (${body.size}B): ascii=$ascii")
+        Logger.i("$label body hex: $hex")
+    }
+
     private fun handleSetParameter(request: RtspRequest) {
         val ct = (request.headers["Content-Type"] ?: request.headers["content-type"] ?: "")
             .lowercase()
+        Logger.i("SET_PARAMETER ct=$ct bodyLen=${request.bodyBytes.size}")
         try {
             when {
                 ct.startsWith("application/x-dmap-tagged") -> {
@@ -391,6 +460,7 @@ class AirPlayControlHandler(
         private const val FEATURES = 0x5A7FFFF7L
         private const val MODEL = "AppleTV5,3"
         private const val SOURCE_VERSION = "220.68"
+        private const val DEFAULT_AUDIO_MODE = "default"
         // AirPlay 2 realtime audio (`streams=[{type:96}]`) is locked to 44.1 kHz
         // across every observed sender (Apple Music, Spotify, Safari audio,
         // YouTube). Used by `progress:` parsing to convert RTP ticks to time.
@@ -545,6 +615,28 @@ object AirPlaySetupParser {
         }
         (root.objectForKey("timingProtocol") as? NSString)?.let {
             Logger.i("SETUP timingProtocol=${it.toString()}")
+        }
+        // Issue #17 audio path: log the `et` (encryption type), ekey size,
+        // and eiv size so we can tell whether YouTube is requesting a
+        // different cipher than Apple Music (which decrypts cleanly).
+        // Apple's `et` values map roughly to:
+        //   0 unencrypted
+        //   1 RSA (legacy AirPlay 1)
+        //   2 FairPlay
+        //   3 MFi-SAP (FairPlay v2)
+        //   4 FairPlay v2.5
+        //   8 AirPlay 2 audio (ChaCha20-Poly1305, different key derivation)
+        (root.objectForKey("et") as? NSNumber)?.let {
+            Logger.i("SETUP encryption type et=${it.intValue()}")
+        }
+        (root.objectForKey("ekey") as? NSData)?.bytes()?.let {
+            Logger.i("SETUP ekey size=${it.size}B")
+        }
+        (root.objectForKey("eiv") as? NSData)?.bytes()?.let {
+            Logger.i("SETUP eiv size=${it.size}B")
+        }
+        (root.objectForKey("isScreenMirroringSession") as? NSNumber)?.let {
+            Logger.i("SETUP isScreenMirroringSession=${it.intValue() != 0}")
         }
     }
 
