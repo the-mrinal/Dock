@@ -31,4 +31,19 @@
     <color name="status_pending">#F5A623</color>
     <color name="status_idle">#707070</color>
     <color name="status_error">#FF3B30</color>
+
+    <!-- Meal Plan screen — cream-paper palette, mirrors meal-plan.html CSS vars. -->
+    <color name="meal_bg">#F1ECDF</color>
+    <color name="meal_paper">#F7F2E5</color>
+    <color name="meal_card">#E8E1D0</color>
+    <color name="meal_ink">#15110C</color>
+    <color name="meal_ink_2">#463D31</color>
+    <color name="meal_ink_3">#756954</color>
+    <color name="meal_rule">#24151110</color>
+    <color name="meal_red">#B43B25</color>
+    <color name="meal_red_soft">#11B43B25</color>
+    <color name="meal_olive">#56692F</color>
+    <color name="meal_olive_soft">#1156692F</color>
+    <color name="meal_yellow">#E8C547</color>
+    <color name="meal_yellow_soft">#24E8C547</color>
 </resources>

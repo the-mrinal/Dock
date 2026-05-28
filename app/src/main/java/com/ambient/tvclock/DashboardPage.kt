@@ -4,7 +4,8 @@ enum class DashboardPage(val index: Int) {
     STATUS(0),
     HOME(1),
     CALENDAR(2),
-    MUSIC(3);
+    MUSIC(3),
+    MEAL(4);
 
     companion object {
         fun fromIndex(index: Int): DashboardPage =

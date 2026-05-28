@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:background="@drawable/bg_meal_card"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:paddingStart="22dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="22dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        android:id="@+id/textMealRowTime"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.08"
+        android:textAllCaps="true"
+        android:textColor="@color/meal_ink_3"
+        android:textSize="13sp"
+        tools:text="9:15 AM" />
+
+    <TextView
+        android:id="@+id/textMealRowLabel"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/fraunces_italic"
+        android:textColor="@color/meal_red"
+        android:textSize="20sp"
+        tools:text="Breakfast" />
+
+    <TextView
+        android:id="@+id/textMealRowBody"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:fontFamily="@font/fraunces_regular"
+        android:lineSpacingMultiplier="1.3"
+        android:textColor="@color/meal_ink"
+        android:textSize="18sp"
+        tools:text="4-egg omelette + 2 brown bread + black coffee" />
+
+    <TextView
+        android:id="@+id/textMealRowProtein"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="12dp"
+        android:fontFamily="monospace"
+        android:textColor="@color/meal_red"
+        android:textSize="12sp"
+        tools:text="~28 g" />
+</LinearLayout>

@@ -44,6 +44,7 @@ class MainActivity : Activity() {
     private lateinit var textPageCalendar: TextView
     private lateinit var textPageMusic: TextView
     private lateinit var textPageStatus: TextView
+    private lateinit var textPageMeal: TextView
     private lateinit var imageHomeBackground: ImageView
     private lateinit var textHomeBackgroundCredit: TextView
     private lateinit var backgroundBinder: BlurredBackgroundBinder
@@ -53,6 +54,11 @@ class MainActivity : Activity() {
     private var calendarBinder: CalendarScreenBinder? = null
     private var musicBinder: MusicScreenBinder? = null
     private var statusBinder: StatusScreenBinder? = null
+    private var mealBinder: MealScreenBinder? = null
+
+    private val mealPlanListener: (MealPlanSnapshot) -> Unit = { snapshot ->
+        mainHandler.post { mealBinder?.bind(snapshot) }
+    }
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val oneMinuteMs = 60 * 1000L
@@ -85,6 +91,7 @@ class MainActivity : Activity() {
     private lateinit var nowPlayingPoller: NowPlayingPoller
     private lateinit var calendarPoller: CalendarPoller
     private lateinit var spotifyQueuePoller: SpotifyQueuePoller
+    private lateinit var mealPlanPoller: MealPlanPoller
 
     private val nowPlayingListener: (NowPlayingInfo?) -> Unit = { info ->
         mainHandler.post { applyNowPlaying(info) }
@@ -109,6 +116,7 @@ class MainActivity : Activity() {
         textPageCalendar = findViewById(R.id.textPageCalendar)
         textPageMusic = findViewById(R.id.textPageMusic)
         textPageStatus = findViewById(R.id.textPageStatus)
+        textPageMeal = findViewById(R.id.textPageMeal)
         imageHomeBackground = findViewById(R.id.imageHomeBackground)
         textHomeBackgroundCredit = findViewById(R.id.textHomeBackgroundCredit)
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
@@ -178,6 +186,12 @@ class MainActivity : Activity() {
                         statusBinder?.vpnButton?.post { statusBinder?.vpnButton?.requestFocus() }
                     }
                 }
+                DashboardPage.MEAL -> {
+                    if (isNew || mealBinder == null) {
+                        mealBinder = MealScreenBinder(view)
+                    }
+                    mealBinder?.bind(MealPlanCenter.current)
+                }
             }
         }
 
@@ -196,8 +210,13 @@ class MainActivity : Activity() {
                         }
                         statusBinder?.vpnButton?.post { statusBinder?.vpnButton?.requestFocus() }
                     }
+                    DashboardPage.MEAL -> {
+                        mealPlanPoller.publishNow()
+                        mealBinder?.bind(MealPlanCenter.current)
+                    }
                     DashboardPage.HOME -> { /* nothing extra */ }
                 }
+                applyMealPageChrome(currentPage == DashboardPage.MEAL)
             }
         })
 
@@ -206,6 +225,7 @@ class MainActivity : Activity() {
         nowPlayingPoller = NowPlayingPoller(this)
         calendarPoller = CalendarPoller(this)
         spotifyQueuePoller = SpotifyQueuePoller(this)
+        mealPlanPoller = MealPlanPoller(this)
 
         val initialIndex = savedInstanceState?.getInt(KEY_PAGE, DashboardPage.HOME.index)
             ?: DashboardPage.HOME.index
@@ -215,6 +235,26 @@ class MainActivity : Activity() {
 
         startClockTicker()
         resetInactivityWatchdog()
+        applyMealPageChrome(currentPage == DashboardPage.MEAL)
+    }
+
+    /**
+     * On the Meal page the global Unsplash wallpaper + its credit caption must
+     * not be visible — the page is intentionally its own cream-paper world.
+     * Hide both when MEAL is active and restore when leaving. We toggle
+     * visibility (not alpha) so we don't race the BackgroundController's
+     * own alpha animations on the wallpaper image.
+     */
+    private fun applyMealPageChrome(onMealPage: Boolean) {
+        imageHomeBackground.visibility = if (onMealPage) View.INVISIBLE else View.VISIBLE
+        if (onMealPage) {
+            textHomeBackgroundCredit.animate().cancel()
+            textHomeBackgroundCredit.visibility = View.GONE
+            textHomeBackgroundCredit.alpha = 0f
+        } else if (backgroundController.activePhoto() != null) {
+            textHomeBackgroundCredit.visibility = View.VISIBLE
+            textHomeBackgroundCredit.alpha = BG_CREDIT_ALPHA
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -228,9 +268,11 @@ class MainActivity : Activity() {
         NowPlayingCenter.addListener(nowPlayingListener)
         CalendarCenter.addListener(calendarListener)
         SpotifyQueueCenter.addListener(queueListener)
+        MealPlanCenter.addListener(mealPlanListener)
         nowPlayingPoller.start()
         calendarPoller.start()
         spotifyQueuePoller.start()
+        mealPlanPoller.start()
 
         ReceiverStateBus.setSurfaceProvider { streamingOverlay.currentSurface() }
         streamingObserverJob = streamingScope.launch {
@@ -280,9 +322,12 @@ class MainActivity : Activity() {
         nowPlayingPoller.stop()
         calendarPoller.stop()
         spotifyQueuePoller.stop()
+        mealPlanPoller.stop()
         NowPlayingCenter.removeListener(nowPlayingListener)
         CalendarCenter.removeListener(calendarListener)
         SpotifyQueueCenter.removeListener(queueListener)
+        MealPlanCenter.removeListener(mealPlanListener)
+        mealBinder?.detach()
         backgroundController.onStop()
         super.onStop()
     }
@@ -330,6 +375,13 @@ class MainActivity : Activity() {
         }
         val text = formatCredit(photo)
         textHomeBackgroundCredit.text = text
+        // The Meals page is intentionally cut off from the global background
+        // system — keep the Unsplash credit hidden while it's the visible page.
+        if (currentPage == DashboardPage.MEAL) {
+            textHomeBackgroundCredit.visibility = View.GONE
+            textHomeBackgroundCredit.alpha = 0f
+            return
+        }
         textHomeBackgroundCredit.visibility = View.VISIBLE
         textHomeBackgroundCredit.animate().cancel()
         textHomeBackgroundCredit.animate()
@@ -363,6 +415,7 @@ class MainActivity : Activity() {
         applyIndicatorStyle(textPageHome, DashboardPage.HOME)
         applyIndicatorStyle(textPageCalendar, DashboardPage.CALENDAR)
         applyIndicatorStyle(textPageMusic, DashboardPage.MUSIC)
+        applyIndicatorStyle(textPageMeal, DashboardPage.MEAL)
     }
 
     private fun applyIndicatorStyle(label: TextView, page: DashboardPage) {
@@ -648,6 +701,7 @@ class MainActivity : Activity() {
             nowPlayingPoller.stop()
             calendarPoller.stop()
             spotifyQueuePoller.stop()
+            mealPlanPoller.stop()
 
             streamingOverlay.visibility = View.VISIBLE
             streamingOverlay.bringToFront()
@@ -680,6 +734,7 @@ class MainActivity : Activity() {
             nowPlayingPoller.start()
             calendarPoller.start()
             spotifyQueuePoller.start()
+            mealPlanPoller.start()
             resetInactivityWatchdog()
         }
         updateOnboardingVisibility()
@@ -733,6 +788,11 @@ class MainActivity : Activity() {
                     resetInactivityWatchdog()
                     return true
                 }
+                if (currentPage == DashboardPage.MEAL) {
+                    mealBinder?.scrollBy(-calendarScrollStep)
+                    resetInactivityWatchdog()
+                    return true
+                }
                 if (currentPage == DashboardPage.HOME &&
                     backgroundController.activePhoto() != null
                 ) {
@@ -744,6 +804,11 @@ class MainActivity : Activity() {
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (currentPage == DashboardPage.CALENDAR) {
                     calendarBinder?.scrollBy(calendarScrollStep)
+                    resetInactivityWatchdog()
+                    return true
+                }
+                if (currentPage == DashboardPage.MEAL) {
+                    mealBinder?.scrollBy(calendarScrollStep)
                     resetInactivityWatchdog()
                     return true
                 }
