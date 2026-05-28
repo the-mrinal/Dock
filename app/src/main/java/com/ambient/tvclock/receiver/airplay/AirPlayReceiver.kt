@@ -115,6 +115,14 @@ class AirPlayReceiver(
 
     // UDP socket for receiving audio RTP packets — opened after RECORD, closed on TEARDOWN
     @Volatile private var audioSocket: DatagramSocket? = null
+    // UDP socket on the advertised audio control port (RTCP feedback). iOS
+    // YouTube tears down sessions at ~3 s when this port is not bound
+    // (issue #17): RTCP heartbeats hit a closed UDP port and Linux returns
+    // ICMP port-unreachable, which iOS interprets as "receiver dead." We
+    // bind a drain-only listener so the OS no longer rejects packets and
+    // we get visibility into what iOS is sending. Apple Music tolerates the
+    // closed port, but YouTube doesn't — same code path either way.
+    @Volatile private var audioControlSocket: DatagramSocket? = null
 
     /**
      * Starts the AirPlay receiver.
@@ -234,7 +242,13 @@ class AirPlayReceiver(
             deviceName = { displayName.ifBlank { NetworkUtils.getDeviceName(context) } },
             onSetupComplete = { setup -> onMirrorSetup(setup) },
             onTimingPeer = { addr, port, socket -> timingHandler?.beginPeerSync(addr, port, socket) },
-            playbackHandler = playbackHandler
+            playbackHandler = playbackHandler,
+            // Issue #17: feed the pair-verify ECDH secret into the event
+            // channel so it can derive ChaCha20-Poly1305 keys before iOS
+            // opens the encrypted control socket. Without this we can only
+            // see encrypted bytes and never the plist payloads that YouTube
+            // may be using to coordinate mirror codec readiness.
+            onEcdhSecretReady = { secret -> eventChannel.setSecret(secret) }
         )
         rtspHandler = RtspHandler(
             videoSurfaceProvider = videoSurfaceProvider,
@@ -305,6 +319,10 @@ class AirPlayReceiver(
             audioSocket?.close()
         } catch (_: Exception) {
         }
+        try {
+            audioControlSocket?.close()
+        } catch (_: Exception) {
+        }
         audioPlayer?.release()
         audioPlayer = AudioPlayer().also {
             it.initialize(aesKey, aesIv, MIRROR_AUDIO_SAMPLE_RATE, MIRROR_AUDIO_CHANNELS, audioCodec)
@@ -322,6 +340,46 @@ class AirPlayReceiver(
                 }
             } catch (e: Exception) {
                 if (isActive) Logger.e("Mirror audio UDP receiver error", e)
+            }
+        }
+        startMirrorAudioControlReceiver()
+    }
+
+    /**
+     * Drain-only listener on the advertised audio control port
+     * ([MirrorAudioPorts.CONTROL_PORT]). The first ~10 packets are hex-dumped
+     * so we can identify the protocol iOS uses there (almost certainly
+     * RTCP receiver / sender reports); subsequent packets are silently
+     * drained to keep the OS from sending ICMP port-unreachable replies,
+     * which iOS appears to read as "receiver dead" for the YouTube path.
+     *
+     * No reply is generated for now — confirming the bind is enough to
+     * fix YouTube would tell us the next step is responding with proper
+     * RTCP RRs / receiver feedback.
+     */
+    private fun startMirrorAudioControlReceiver() {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val socket = DatagramSocket(MirrorAudioPorts.CONTROL_PORT)
+                audioControlSocket = socket
+                Logger.i("Mirror audio CONTROL UDP listening on port ${MirrorAudioPorts.CONTROL_PORT}")
+                val buf = ByteArray(MAX_AUDIO_PACKET_BYTES)
+                var logged = 0
+                while (isActive && audioControlSocket === socket) {
+                    val packet = DatagramPacket(buf, buf.size)
+                    socket.receive(packet)
+                    if (logged < 10) {
+                        val previewLen = minOf(packet.length, 32)
+                        val hex = packet.data.copyOf(previewLen).joinToString(" ") { "%02x".format(it) }
+                        Logger.i(
+                            "Mirror audio CONTROL rx ${packet.length}B from " +
+                                "${packet.address?.hostAddress}:${packet.port} first${previewLen}B=$hex"
+                        )
+                        logged++
+                    }
+                }
+            } catch (e: Exception) {
+                if (isActive) Logger.e("Mirror audio CONTROL UDP receiver error", e)
             }
         }
     }
@@ -589,6 +647,8 @@ class AirPlayReceiver(
         mirrorReceiver = null
         try { audioSocket?.close() } catch (e: Exception) { /* non-fatal */ }
         audioSocket = null
+        try { audioControlSocket?.close() } catch (e: Exception) { /* non-fatal */ }
+        audioControlSocket = null
         videoDecoder?.release()
         videoDecoder = null
         configuredSurface = null

@@ -97,6 +97,12 @@ class AudioPlayer {
     // doesn't tell us if frame 2+ ever followed.
     @Volatile private var packetsReceived: Long = 0
     @Volatile private var pcmFramesDrained: Long = 0
+    // Peak |sample| of the most recently decoded PCM frame. Surfaced in the
+    // periodic diag log so we can tell whether subsequent frames remain
+    // silent (peak=0 throughout = decoded silence) or carry actual audio.
+    // Without this we only know the first frame's peak — useless for
+    // diagnosing senders that go silent mid-session.
+    @Volatile private var lastFramePeak: Int = 0
     @Volatile private var bytesWrittenOk: Long = 0
     @Volatile private var writeFailures: Long = 0
     @Volatile private var lastDiagLogPacketCount: Long = 0
@@ -170,7 +176,8 @@ class AudioPlayer {
                 else -> "?"
             }
             Logger.i("Audio diag: pkts=$packetsReceived pcm=$pcmFramesDrained " +
-                     "wroteOK=${bytesWrittenOk}B writeFails=$writeFailures track=$state")
+                     "wroteOK=${bytesWrittenOk}B writeFails=$writeFailures track=$state " +
+                     "lastPeak=$lastFramePeak/32767")
         }
 
         try {
@@ -395,21 +402,14 @@ class AudioPlayer {
         val pcmBytes = decoder.decode(payload, alacFrameSamples, alacChannels, alacPcmScratch)
         if (pcmBytes <= 0) return
 
+        // Sample peak |amplitude| over this frame on every call. Cheap (~700
+        // samples for 352-spf stereo) and lets the periodic diag log report
+        // whether recent frames are silent or carry audio — critical for
+        // diagnosing iOS senders that go silent mid-session (issue #17).
+        lastFramePeak = computePeak16BitLe(alacPcmScratch, pcmBytes)
         if (!firstPcmLogged) {
-            // Same peak-amplitude probe used for the AAC path so the "is the
-            // decoder actually producing audio?" question can be answered the
-            // same way regardless of codec.
-            var peak = 0
-            var i = 0
-            while (i + 1 < pcmBytes) {
-                val sample = ((alacPcmScratch[i + 1].toInt() shl 8) or
-                              (alacPcmScratch[i].toInt() and 0xFF)).toShort().toInt()
-                val abs = if (sample < 0) -sample else sample
-                if (abs > peak) peak = abs
-                i += 2
-            }
             Logger.i("ALAC decoder produced first PCM frame " +
-                     "($pcmBytes bytes, peak=$peak / 32767)")
+                     "($pcmBytes bytes, peak=$lastFramePeak / 32767)")
             firstPcmLogged = true
         }
 
@@ -448,25 +448,13 @@ class AudioPlayer {
                     outputBuffer.position(codecBufferInfo.offset)
                     outputBuffer.limit(codecBufferInfo.offset + codecBufferInfo.size)
                     outputBuffer.get(pcm, 0, codecBufferInfo.size)
+                    // Track peak on every frame; surfaced via the periodic
+                    // diag log so we can tell whether subsequent frames stay
+                    // silent — the same probe used on the ALAC path.
+                    lastFramePeak = computePeak16BitLe(pcm, pcm.size)
                     if (!firstPcmLogged) {
-                        // Compute peak |sample| over this frame so we can tell
-                        // whether the decoder is actually producing audio or
-                        // silence. PCM here is 16-bit little-endian; a peak
-                        // of 0 means the bytes are zeroed (decoder bug or
-                        // wrong codec config). A non-trivial peak means our
-                        // pipeline is fine and the muted-speakers question
-                        // sits with Fire TV's audio routing instead.
-                        var peak = 0
-                        var i = 0
-                        while (i + 1 < pcm.size) {
-                            val sample = ((pcm[i + 1].toInt() shl 8) or
-                                          (pcm[i].toInt() and 0xFF)).toShort().toInt()
-                            val abs = if (sample < 0) -sample else sample
-                            if (abs > peak) peak = abs
-                            i += 2
-                        }
                         Logger.i("AAC-ELD decoder produced first PCM frame " +
-                                 "(${pcm.size} bytes, peak=$peak / 32767)")
+                                 "(${pcm.size} bytes, peak=$lastFramePeak / 32767)")
                         firstPcmLogged = true
                     }
                     pcmFramesDrained++
@@ -555,6 +543,24 @@ class AudioPlayer {
 
         // Apple's empty-frame keep-alive payload (UxPlay raop_buffer.c).
         private val NO_DATA_MARKER = byteArrayOf(0x00, 0x68, 0x34, 0x00)
+
+        /**
+         * Returns the peak absolute 16-bit sample value in a little-endian
+         * PCM buffer up to [validBytes]. Used by both ALAC and AAC-ELD paths
+         * to surface whether decoded frames carry audio or silence.
+         */
+        private fun computePeak16BitLe(buffer: ByteArray, validBytes: Int): Int {
+            var peak = 0
+            var i = 0
+            while (i + 1 < validBytes) {
+                val sample = ((buffer[i + 1].toInt() shl 8) or
+                              (buffer[i].toInt() and 0xFF)).toShort().toInt()
+                val abs = if (sample < 0) -sample else sample
+                if (abs > peak) peak = abs
+                i += 2
+            }
+            return peak
+        }
 
         /**
          * Returns the 16-bit RTP sequence number from bytes [2..3] of an RTP packet.

@@ -75,6 +75,7 @@ class MirrorTcpReceiver(
         var pendingSps: ByteArray? = null
         var packetIndex = 0L
         var totalBytes = 0L
+        var spsPpsBootstrapped = false
         Logger.i("Mirror: entering read loop, soTimeout=${socket.soTimeout}ms")
 
         try {
@@ -104,6 +105,22 @@ class MirrorTcpReceiver(
                     0x00 -> {
                         val decrypted = ByteArray(payloadSize)
                         mirrorBuffer?.decrypt(payload, decrypted, payloadSize)
+                        // Per issue #17: YouTube mirror sessions send the 0x01
+                        // codec-config packet only at the very end of the
+                        // session, so MediaCodec is never bootstrapped from a
+                        // leading 0x01. As a safety net, scan inline NAL units
+                        // for SPS (nal_type=7) + PPS (nal_type=8) and use them
+                        // as the codec config the first time both are seen.
+                        // The SPS/PPS NAL units already live inside `decrypted`
+                        // so emitNalUnits will deliver them naturally — we
+                        // only need to bootstrap the decoder, not prepend.
+                        if (!spsPpsBootstrapped) {
+                            val inlineCodecCfg = scavengeInlineSpsPps(decrypted, packetIndex)
+                            if (inlineCodecCfg != null) {
+                                onSpsPps(inlineCodecCfg)
+                                spsPpsBootstrapped = true
+                            }
+                        }
                         val prepend = pendingSps
                         pendingSps = null
                         emitNalUnits(decrypted, ptsUs, prepended = prepend)
@@ -112,10 +129,11 @@ class MirrorTcpReceiver(
                         val withStart = parseH264CodecData(payload)
                         if (withStart != null) {
                             pendingSps = withStart
+                            spsPpsBootstrapped = true
                             onSpsPps(withStart)
                         }
                     }
-                    else -> Logger.d("Mirror: unknown packet type 0x${typeUnsigned.toString(16)} size=$payloadSize")
+                    else -> dumpUnknownPacket(typeUnsigned, payload, packetIndex, ptsUs)
                 }
                 packetIndex++
             }
@@ -125,6 +143,68 @@ class MirrorTcpReceiver(
         } finally {
             socket.close()
         }
+    }
+
+    /**
+     * Logs the first [UNKNOWN_DUMP_BYTES] bytes of a non-0x00/0x01 mirror
+     * packet's raw (still-encrypted) payload at INFO so we can identify the
+     * format. YouTube's mirror trace (issue #17) shows occasional `type=0x05`
+     * packets — 25KB each — that the receiver currently drops. The hex dump
+     * lets us pattern-match against AVCC NAL framing vs plist vs heartbeat.
+     */
+    private fun dumpUnknownPacket(
+        typeUnsigned: Int,
+        payload: ByteArray,
+        packetIndex: Long,
+        ptsUs: Long
+    ) {
+        val previewLen = minOf(payload.size, UNKNOWN_DUMP_BYTES)
+        val hex = payload.copyOf(previewLen).joinToString(" ") { "%02x".format(it) }
+        Logger.i(
+            "Mirror: unknown packet type=0x${typeUnsigned.toString(16)} " +
+                "size=${payload.size} pts=$ptsUs packet#$packetIndex " +
+                "first${previewLen}B=$hex"
+        )
+    }
+
+    /**
+     * Scans a decrypted 0x00 video payload for AVCC-framed SPS (nal_type=7) and
+     * PPS (nal_type=8) NAL units. If both are found, returns a single buffer
+     * containing them with Annex-B start codes — the same shape
+     * [parseH264CodecData] produces for a 0x01 packet — so [onSpsPps] can
+     * bootstrap the decoder. Returns null if either parameter set is missing.
+     *
+     * Motivation (issue #17): YouTube's iOS mirror session emits the 0x01
+     * codec-config packet only as the session is torn down, but some senders
+     * also include SPS/PPS NAL units inline at the head of the first IDR.
+     * Treating those as a valid codec config lets us bootstrap the decoder
+     * without waiting for the 0x01.
+     */
+    private fun scavengeInlineSpsPps(data: ByteArray, packetIndex: Long): ByteArray? {
+        var sps: ByteArray? = null
+        var pps: ByteArray? = null
+        var off = 0
+        while (off + 4 <= data.size) {
+            val length = ((data[off].toInt() and 0xFF) shl 24) or
+                ((data[off + 1].toInt() and 0xFF) shl 16) or
+                ((data[off + 2].toInt() and 0xFF) shl 8) or
+                (data[off + 3].toInt() and 0xFF)
+            if (length <= 0 || off + 4 + length > data.size) break
+            val nalType = data[off + 4].toInt() and 0x1F
+            when (nalType) {
+                7 -> sps = data.copyOfRange(off + 4, off + 4 + length)
+                8 -> pps = data.copyOfRange(off + 4, off + 4 + length)
+            }
+            off += 4 + length
+        }
+        if (sps != null && pps != null) {
+            Logger.i(
+                "Mirror: scavenged inline SPS=${sps.size}B + PPS=${pps.size}B " +
+                    "from 0x00 payload at packet#$packetIndex — bootstrapping decoder"
+            )
+            return byteArrayOf(0, 0, 0, 1) + sps + byteArrayOf(0, 0, 0, 1) + pps
+        }
+        return null
     }
 
     /**
@@ -257,5 +337,6 @@ class MirrorTcpReceiver(
     companion object {
         const val MIRROR_PORT = 7100
         private const val MAX_PAYLOAD = 8 * 1024 * 1024
+        private const val UNKNOWN_DUMP_BYTES = 64
     }
 }
