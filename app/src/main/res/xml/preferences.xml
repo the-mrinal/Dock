@@ -26,6 +26,17 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="category_meal_plan"
+        android:title="@string/pref_category_meal">
+
+        <EditTextPreference
+            android:key="meal_plan_url"
+            android:summary="@string/pref_meal_plan_url_summary"
+            android:title="@string/pref_meal_plan_url_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_now_playing"
         android:title="@string/pref_category_now_playing">
 

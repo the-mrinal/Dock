@@ -99,6 +99,12 @@ class SettingsActivity : AppCompatActivity() {
                     true
                 }
 
+            findPreference<EditTextPreference>(MealPlanPreferences.KEY_MEAL_PLAN_URL)
+                ?.setOnPreferenceChangeListener { _, _ ->
+                    MealPlanPoller(requireContext()).publishNow()
+                    true
+                }
+
             findPreference<Preference>("grant_notification_access")?.setOnPreferenceClickListener {
                 val context = requireContext()
                 if (NotificationAccess.openListenerSettings(context)) {

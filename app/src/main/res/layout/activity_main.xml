@@ -196,6 +196,26 @@
                 android:text="@string/page_music"
                 android:textColor="@color/text_tertiary"
                 android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="·"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/textPageMeal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_meal"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp" />
         </LinearLayout>
     </RelativeLayout>
 

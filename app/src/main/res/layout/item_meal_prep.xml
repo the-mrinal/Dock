@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    android:fontFamily="@font/fraunces_italic"
+    android:lineSpacingMultiplier="1.35"
+    android:textColor="@color/meal_ink_2"
+    android:textSize="16sp"
+    tools:text="→ Soak 1 katori chole for tomorrow" />

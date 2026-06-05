@@ -29,6 +29,7 @@
     <string name="page_airplay">AirPlay</string>
     <string name="page_vpn">VPN</string>
     <string name="page_status">Connect</string>
+    <string name="page_meal">Meals</string>
     <string name="airplay_action_turn_on">Turn on</string>
     <string name="airplay_action_turn_off">Turn off</string>
 
@@ -124,6 +125,37 @@
     <string name="pref_personal_calendar_url_summary">Google Calendar secret iCal link</string>
     <string name="pref_work_calendar_url_title">Work calendar URL (optional)</string>
     <string name="pref_work_calendar_url_summary">Outlook ICS link when available — leave empty for now</string>
+
+    <string name="pref_category_meal">Meal plan</string>
+    <string name="pref_meal_plan_url_title">Meal plan JSON URL</string>
+    <string name="pref_meal_plan_url_summary">Raw GitHub URL to a meal-plan.json. Leave blank to hide the Meals tab.</string>
+
+    <string name="meal_today_eyebrow">Today is</string>
+    <string name="meal_up_next_eyebrow">Up next</string>
+    <string name="meal_up_next_now">happening now</string>
+    <string name="meal_in_hr_min_fmt">in %1$dh %2$dm</string>
+    <string name="meal_in_min_fmt">in %1$dm</string>
+    <string name="meal_in_sec_fmt">in %1$ds</string>
+    <string name="meal_kind_normal">Standard day</string>
+    <string name="meal_kind_veg">Strict veg · no eggs</string>
+    <string name="meal_kind_diy">Cook off · DIY day</string>
+    <string name="meal_protein_label">Protein</string>
+    <string name="meal_protein_target_fmt">%s protein</string>
+    <string name="meal_before_event_fmt">Before %1$s · %2$s</string>
+    <string name="meal_prep_eyebrow">Tonight\'s prep · for tomorrow</string>
+    <string name="meal_no_day_data">No meals defined for today.</string>
+    <string name="meal_empty_url_title">Set your meal plan URL</string>
+    <string name="meal_empty_url_subtitle">Settings → Meal plan → Meal plan JSON URL</string>
+    <string name="meal_fetch_error_title">Could not reach meal plan</string>
+    <string name="meal_fetch_error_subtitle">Will retry automatically.</string>
+    <string name="meal_parse_error_title">Plan JSON has a syntax error</string>
+    <string name="meal_parse_error_subtitle">Check that the JSON parses and matches the documented schema.</string>
+    <string name="meal_cache_stale_fmt">Showing cached plan · last updated %s</string>
+    <string name="meal_plan_age_fmt">Plan generated %d days ago — consider updating.</string>
+    <string name="meal_updated_just_now">just now</string>
+    <string name="meal_updated_min_fmt">%dm ago</string>
+    <string name="meal_updated_hr_fmt">%dh ago</string>
+    <string name="meal_updated_day_fmt">%dd ago</string>
 
     <string name="pref_category_now_playing">Now playing</string>
     <string name="pref_show_now_playing_title">Show media on dashboard</string>

@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Meal Plan screen. Opaque cream paper background covers the global Unsplash
+  wallpaper applied to imageHomeBackground in activity_main.xml — this page
+  is intentionally cut off from the rest of the app's design system.
+
+  Three layers:
+    1. mealContentScroll: the full data-bound layout (header, Up Next, meal
+       rows, day note, prep note). Visible when a plan is loaded.
+    2. mealStaleBanners: thin overlays anchored to the top edge for cache /
+       plan-age messaging. Sit above the scroll so they remain visible while
+       scrolling.
+    3. mealOverlayState: full-screen centered empty / error overlays. Visible
+       instead of the scroll when no plan is available.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/meal_bg">
+
+    <!-- ============================ MAIN CONTENT ============================ -->
+    <ScrollView
+        android:id="@+id/mealContentScroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="56dp"
+            android:paddingTop="48dp"
+            android:paddingEnd="56dp"
+            android:paddingBottom="56dp">
+
+            <!-- ====================== HEADER ====================== -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:letterSpacing="0.18"
+                        android:text="@string/meal_today_eyebrow"
+                        android:textAllCaps="true"
+                        android:textColor="@color/meal_red"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/textMealDayName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:fontFamily="@font/fraunces_light_italic"
+                        android:letterSpacing="-0.03"
+                        android:lineSpacingMultiplier="0.92"
+                        android:textColor="@color/meal_ink"
+                        android:textSize="64sp"
+                        tools:ignore="HardcodedText"
+                        xmlns:tools="http://schemas.android.com/tools"
+                        tools:text="Wednesday" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/textMealKindBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_meal_badge_olive"
+                        android:fontFamily="monospace"
+                        android:letterSpacing="0.1"
+                        android:paddingStart="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="6dp"
+                        android:textAllCaps="true"
+                        android:textColor="@color/meal_olive"
+                        android:textSize="11sp"
+                        xmlns:tools="http://schemas.android.com/tools"
+                        tools:text="Standard day" />
+
+                    <TextView
+                        android:id="@+id/textMealProteinBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_meal_badge_red"
+                        android:fontFamily="monospace"
+                        android:letterSpacing="0.1"
+                        android:paddingStart="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="6dp"
+                        android:textAllCaps="true"
+                        android:textColor="@color/meal_red"
+                        android:textSize="11sp"
+                        xmlns:tools="http://schemas.android.com/tools"
+                        tools:text="~145 g protein" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ====================== UP NEXT CARD ====================== -->
+            <LinearLayout
+                android:id="@+id/cardMealUpNext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="36dp"
+                android:background="@drawable/bg_meal_card"
+                android:orientation="vertical"
+                android:paddingStart="28dp"
+                android:paddingTop="24dp"
+                android:paddingEnd="28dp"
+                android:paddingBottom="28dp">
+
+                <TextView
+                    android:id="@+id/textMealUpNextEyebrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.16"
+                    android:textAllCaps="true"
+                    android:textColor="@color/meal_red"
+                    android:textSize="11sp"
+                    xmlns:tools="http://schemas.android.com/tools"
+                    tools:text="UP NEXT · IN 1H 30M" />
+
+                <TextView
+                    android:id="@+id/textMealUpNextTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:fontFamily="@font/fraunces_light_italic"
+                    android:letterSpacing="-0.02"
+                    android:lineSpacingMultiplier="1.0"
+                    android:textColor="@color/meal_red"
+                    android:textSize="40sp"
+                    xmlns:tools="http://schemas.android.com/tools"
+                    tools:text="Dinner — 7:00 PM" />
+
+                <TextView
+                    android:id="@+id/textMealUpNextBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="@font/fraunces_regular"
+                    android:letterSpacing="-0.005"
+                    android:lineSpacingMultiplier="1.32"
+                    android:textColor="@color/meal_ink"
+                    android:textSize="22sp"
+                    xmlns:tools="http://schemas.android.com/tools"
+                    tools:text="Chicken tikka (150 g) + dal + 1 roti" />
+
+                <TextView
+                    android:id="@+id/textMealUpNextProtein"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.12"
+                    android:textAllCaps="true"
+                    android:textColor="@color/meal_ink_3"
+                    android:textSize="11sp"
+                    android:visibility="gone"
+                    xmlns:tools="http://schemas.android.com/tools"
+                    tools:text="Protein · ~50 g"
+                    tools:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/textMealUpNextPreEvent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_meal_pre_event"
+                    android:fontFamily="@font/newsreader_italic"
+                    android:lineSpacingMultiplier="1.4"
+                    android:paddingStart="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="12dp"
+                    android:textColor="@color/meal_ink_2"
+                    android:textSize="16sp"
+                    android:visibility="gone"
+                    xmlns:tools="http://schemas.android.com/tools"
+                    tools:text="Before Dinner · Drink a glass of water now"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <!-- ====================== MEAL ROWS (data-bound) ====================== -->
+            <LinearLayout
+                android:id="@+id/mealRowsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="vertical" />
+
+            <!-- Visible when today's day key is missing from the JSON. -->
+            <TextView
+                android:id="@+id/textMealNoDayData"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:fontFamily="@font/newsreader_italic"
+                android:gravity="center"
+                android:paddingTop="20dp"
+                android:paddingBottom="20dp"
+                android:text="@string/meal_no_day_data"
+                android:textColor="@color/meal_ink_3"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <!-- ====================== DAY NOTE ====================== -->
+            <TextView
+                android:id="@+id/textMealDayNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/bg_meal_day_note"
+                android:fontFamily="@font/newsreader_italic"
+                android:lineSpacingMultiplier="1.45"
+                android:paddingStart="20dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="14dp"
+                android:textColor="@color/meal_ink_2"
+                android:textSize="16sp"
+                android:visibility="gone" />
+
+            <!-- ====================== PREP NOTE ====================== -->
+            <LinearLayout
+                android:id="@+id/groupMealPrepNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_meal_prep_note"
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="14dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.16"
+                    android:text="@string/meal_prep_eyebrow"
+                    android:textAllCaps="true"
+                    android:textColor="@color/meal_red"
+                    android:textSize="11sp" />
+
+                <LinearLayout
+                    android:id="@+id/listMealPrepItems"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="vertical" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ============================ STALE BANNERS ============================ -->
+    <LinearLayout
+        android:id="@+id/mealStaleBanners"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/textMealStaleCache"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_meal_stale_banner"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:paddingStart="20dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp"
+            android:textAllCaps="true"
+            android:textColor="@color/meal_ink_2"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/textMealPlanAge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_meal_stale_banner"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:paddingStart="20dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp"
+            android:textAllCaps="true"
+            android:textColor="@color/meal_ink_2"
+            android:textSize="11sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- ============================ OVERLAY STATES ============================ -->
+    <LinearLayout
+        android:id="@+id/groupMealEmptyUrl"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="56dp"
+        android:paddingEnd="56dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/fraunces_light_italic"
+            android:gravity="center"
+            android:letterSpacing="-0.02"
+            android:text="@string/meal_empty_url_title"
+            android:textColor="@color/meal_ink"
+            android:textSize="44sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/newsreader_italic"
+            android:gravity="center"
+            android:text="@string/meal_empty_url_subtitle"
+            android:textColor="@color/meal_ink_3"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/groupMealFetchError"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="56dp"
+        android:paddingEnd="56dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/textMealFetchErrorTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/fraunces_light_italic"
+            android:gravity="center"
+            android:letterSpacing="-0.02"
+            android:text="@string/meal_fetch_error_title"
+            android:textColor="@color/meal_red"
+            android:textSize="36sp" />
+
+        <TextView
+            android:id="@+id/textMealFetchErrorUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:textColor="@color/meal_ink_3"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/textMealFetchErrorSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:fontFamily="@font/newsreader_italic"
+            android:gravity="center"
+            android:text="@string/meal_fetch_error_subtitle"
+            android:textColor="@color/meal_ink_3"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+</FrameLayout>
