@@ -1,86 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    strings.xml — Deutsch (de)
-
-    Nur Strings, die sich vom Englischen unterscheiden, müssen hier aufgeführt werden.
-    Fehlende Strings werden automatisch aus dem englischen Basis-File (values/strings.xml) übernommen.
--->
 <resources>
-
-    <!-- ── Navigation ──────────────────────────────────────────── -->
-    <string name="nav_home">Startseite</string>
-    <string name="nav_settings">Einstellungen</string>
-
-    <!-- ── HomeFragment ────────────────────────────────────────── -->
-    <string name="home_title">Bereit für Verbindungen</string>
-    <string name="home_device_visible_as">Sichtbar als: %1$s</string>
-
-    <!-- ── Protocol states ─────────────────────────────────────── -->
-    <string name="protocol_state_disabled">Deaktiviert</string>
-    <string name="protocol_state_advertising">Suche nach Geräten…</string>
-    <string name="protocol_state_connected">Verbunden</string>
-    <string name="protocol_state_error">Fehler</string>
-
-    <!-- ── Protocol card detail lines ──────────────────────────── -->
-    <string name="protocol_detail_disabled">In Einstellungen aktivieren</string>
-    <string name="protocol_detail_waiting">Warte auf Sender…</string>
-    <string name="protocol_detail_connected">Streaming von %1$s</string>
-    <string name="protocol_detail_error">WLAN-Einstellungen prüfen</string>
-
-    <!-- ── Service states ──────────────────────────────────────── -->
-    <string name="service_state_running">Aktiv</string>
-    <string name="service_state_stopped">Gestoppt</string>
-    <string name="service_state_restarting">Neustart…</string>
-    <string name="service_state_error">Fehler</string>
-
-    <!-- ── Section headers ─────────────────────────────────────── -->
-    <string name="section_protocols">Protokolle</string>
-    <string name="section_controls">Dienst-Steuerung</string>
-
-    <!-- ── Control buttons ─────────────────────────────────────── -->
-    <string name="action_start">Starten</string>
-    <string name="action_stop">Stoppen</string>
-    <string name="action_restart">Neustart</string>
-
-    <!-- ── Notification ────────────────────────────────────────── -->
+    <!-- Receiver foreground service. Only the strings that still exist in the
+         default locale are translated; the rest of the app is English-only. -->
     <string name="notification_channel_name">PhairPlay-Dienst</string>
     <string name="notification_channel_description">Benachrichtigung für den AirPlay/Miracast/Cast-Empfänger-Dienst</string>
     <string name="notification_status_running">Empfänger aktiv — Werbung im Netzwerk</string>
     <string name="notification_status_stopped">Empfänger gestoppt</string>
-
-    <!-- ── Settings section headers ────────────────────────────── -->
-    <string name="settings_section_display">Anzeige</string>
-    <string name="settings_section_protocols">Protokolle</string>
-    <string name="settings_section_service">Dienst</string>
-    <string name="settings_section_developer">Entwickler</string>
-    <string name="settings_section_about">Über</string>
-
-    <!-- ── Settings row labels ─────────────────────────────────── -->
-    <string name="setting_display_name">Gerätename</string>
-    <string name="setting_display_name_placeholder">Systemname wird verwendet</string>
-    <string name="setting_airplay_enabled">AirPlay-Empfänger</string>
-    <string name="setting_airplay_subtitle">Verbindungen von macOS akzeptieren</string>
-    <string name="setting_miracast_enabled">Miracast-Empfänger</string>
-    <string name="setting_miracast_subtitle">Verbindungen von Windows und Android akzeptieren</string>
-    <string name="setting_cast_enabled">Google Cast-Empfänger</string>
-    <string name="setting_cast_subtitle">Verbindungen von Chrome und Android akzeptieren</string>
-    <string name="setting_airplay_pin">PIN für AirPlay erforderlich</string>
-    <string name="setting_airplay_pin_subtitle">4-stelligen Bestätigungscode auf dem Bildschirm anzeigen</string>
-    <string name="setting_start_on_boot">Beim Starten automatisch starten</string>
-    <string name="setting_debug_overlay">Debug-Overlay</string>
-    <string name="setting_debug_overlay_subtitle">FPS und Latenz auf dem Streaming-Bildschirm anzeigen</string>
-    <string name="setting_version">Version</string>
-    <string name="setting_reset_defaults">Auf Standardwerte zurücksetzen</string>
-
-    <!-- ── Waiting screen ──────────────────────────────────────── -->
-    <string name="waiting_subtitle">Öffne AirPlay auf deinem Mac und wähle dieses Gerät</string>
-    <string name="waiting_device_label">Dieses Gerät:</string>
-
-    <!-- ── Notification ────────────────────────────────────────── -->
     <string name="notification_status_streaming">Streaming von %1$s</string>
-
-    <!-- ── Settings ────────────────────────────────────────────── -->
-    <string name="setting_display_name_dialog_hint">Leer lassen, um den Systemnamen zu verwenden</string>
-    <string name="setting_display_name_reset">Auf Standard zurücksetzen</string>
-
+    <string name="action_stop">Stoppen</string>
+    <string name="action_restart">Neustart</string>
 </resources>
