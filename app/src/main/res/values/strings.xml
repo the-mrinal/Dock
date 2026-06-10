@@ -174,9 +174,8 @@
     <string name="spotify_reconnect_for_controls">Reconnect Spotify in Settings for play/skip controls</string>
 
     <!-- Playlist browser. -->
-    <string name="spotify_browse_playlists">Browse playlists</string>
-    <string name="spotify_browse_back">← Back</string>
-    <string name="spotify_browse_playlists_header">Your playlists</string>
+    <string name="music_tab_playlists">Playlists</string>
+    <string name="spotify_tracks_back">‹  %1$s</string>
     <string name="spotify_playlists_empty">No playlists yet — add some in Spotify first</string>
     <string name="spotify_playlists_tracks_empty">This playlist is empty</string>
     <string name="spotify_playlists_needs_reauth">Reconnect Spotify in Settings to browse playlists</string>

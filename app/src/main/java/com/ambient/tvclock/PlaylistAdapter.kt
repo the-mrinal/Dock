@@ -1,7 +1,6 @@
 package com.ambient.tvclock
 
 import android.graphics.Outline
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,8 +15,15 @@ class PlaylistAdapter(
     private val onPlaylistSelected: (SpotifyPlaylist) -> Unit
 ) : ListAdapter<SpotifyPlaylist, PlaylistAdapter.Holder>(DIFF) {
 
-    fun submit(playlists: List<SpotifyPlaylist>) {
-        submitList(playlists)
+    fun submit(playlists: List<SpotifyPlaylist>, onCommit: (() -> Unit)? = null) {
+        // ListAdapter.submitList computes its diff on a background executor;
+        // the commit callback fires after the new list is fully applied so
+        // findViewHolderForAdapterPosition / focus logic can rely on it.
+        if (onCommit != null) {
+            submitList(playlists, onCommit)
+        } else {
+            submitList(playlists)
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
@@ -37,18 +43,9 @@ class PlaylistAdapter(
         )
         AlbumArtLoader.load(playlist.imageUrl, holder.imageArt)
 
-        val open = { onPlaylistSelected(playlist) }
-        holder.itemView.setOnClickListener { open() }
-        holder.itemView.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_UP &&
-                (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
-            ) {
-                open()
-                true
-            } else {
-                false
-            }
-        }
+        // Rows are focusable+clickable, so DPAD_CENTER/ENTER trigger this
+        // click listener natively — no OnKeyListener needed.
+        holder.itemView.setOnClickListener { onPlaylistSelected(playlist) }
     }
 
     class Holder(view: View) : RecyclerView.ViewHolder(view) {

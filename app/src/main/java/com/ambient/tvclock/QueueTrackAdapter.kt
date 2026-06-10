@@ -1,7 +1,6 @@
 package com.ambient.tvclock
 
 import android.graphics.Outline
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -72,20 +71,11 @@ class QueueTrackAdapter(
         AlbumArtLoader.load(track.imageUrl, holder.imageArt)
         holder.applyLoading(track, loadingUri)
 
-        val playTrack = {
+        // Rows are focusable+clickable, so DPAD_CENTER/ENTER trigger this
+        // click listener natively — no OnKeyListener needed.
+        holder.itemView.setOnClickListener {
             if (track.uri.isNotBlank()) {
                 onTrackSelected(track)
-            }
-        }
-        holder.itemView.setOnClickListener { playTrack() }
-        holder.itemView.setOnKeyListener { _, keyCode, event ->
-            if (event.action == KeyEvent.ACTION_UP &&
-                (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER)
-            ) {
-                playTrack()
-                true
-            } else {
-                false
             }
         }
     }
