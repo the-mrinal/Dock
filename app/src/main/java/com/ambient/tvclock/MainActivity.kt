@@ -15,7 +15,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.ambient.tvclock.receiver.ActiveConnection
 import com.ambient.tvclock.receiver.ReceiverController
@@ -52,6 +51,10 @@ class MainActivity : Activity() {
     private var homeBinder: HomeScreenBinder? = null
     private var calendarBinder: CalendarScreenBinder? = null
     private var musicBinder: MusicScreenBinder? = null
+
+    /** Root view of each instantiated pager page, used to tell interior
+     *  focus moves apart from page-edge moves in [focusMovesWithinPage]. */
+    private val pageRoots = mutableMapOf<DashboardPage, View>()
     private var statusBinder: StatusScreenBinder? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -128,6 +131,7 @@ class MainActivity : Activity() {
         dashboardPager.isUserInputEnabled = false
         dashboardPager.offscreenPageLimit = 1
         dashboardPager.adapter = DashboardPagerAdapter { page, view, isNew ->
+            pageRoots[page] = view
             when (page) {
                 DashboardPage.HOME -> {
                     if (isNew || homeBinder == null) {
@@ -393,30 +397,26 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun shouldNavigatePages(keyCode: Int): Boolean {
-        val focused = currentFocus ?: return true
-
-        // Lists own their own vertical scroll; horizontal still falls through
-        // to page nav so RIGHT/LEFT remains a 1-click jump between pages.
-        if (focused is RecyclerView &&
-            (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN)
-        ) {
-            return false
+    /**
+     * LEFT/RIGHT only switch dashboard pages when D-pad focus has nowhere
+     * further to go inside the current page — interior focus traversal always
+     * wins, so e.g. the Music page's lists and playback controls stay
+     * reachable. ViewPager2 keeps neighbour pages attached
+     * (offscreenPageLimit = 1), so a focusSearch can land on an off-screen
+     * page; require the candidate to be a descendant of the current page's
+     * root before treating the move as interior.
+     */
+    private fun focusMovesWithinPage(direction: Int): Boolean {
+        val focused = currentFocus ?: return false
+        val next = focused.focusSearch(direction) ?: return false
+        if (next === focused) return false
+        val pageRoot = pageRoots[currentPage] ?: return false
+        var view: View? = next
+        while (view != null) {
+            if (view === pageRoot) return true
+            view = view.parent as? View
         }
-
-        // Connect page has two side-by-side action buttons. Inside the page,
-        // honour interior focus traversal so the user can walk between the
-        // AirPlay and VPN buttons. Only page-nav from the outermost edge:
-        //   - AirPlay button (leftmost): LEFT page-navs, RIGHT goes interior
-        //   - VPN button (rightmost): RIGHT page-navs, LEFT goes interior
-        if (currentPage == DashboardPage.STATUS) {
-            return when (focused.id) {
-                R.id.buttonAirplayAction -> keyCode == KeyEvent.KEYCODE_DPAD_LEFT
-                R.id.buttonVpnAction -> keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
-                else -> true
-            }
-        }
-        return true
+        return false
     }
 
     private val clockRunnable = object : Runnable {
@@ -714,18 +714,20 @@ class MainActivity : Activity() {
         }
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                if (shouldNavigatePages(keyCode)) {
+                if (!focusMovesWithinPage(View.FOCUS_RIGHT)) {
                     resetInactivityWatchdog()
                     goNextPage()
                     return true
                 }
+                // Interior move — fall through so the framework shifts focus.
             }
             KeyEvent.KEYCODE_DPAD_LEFT -> {
-                if (shouldNavigatePages(keyCode)) {
+                if (!focusMovesWithinPage(View.FOCUS_LEFT)) {
                     resetInactivityWatchdog()
                     goPreviousPage()
                     return true
                 }
+                // Interior move — fall through so the framework shifts focus.
             }
             KeyEvent.KEYCODE_DPAD_UP -> {
                 if (currentPage == DashboardPage.CALENDAR) {
@@ -758,13 +760,6 @@ class MainActivity : Activity() {
         if (currentPage == DashboardPage.MUSIC) {
             if (keyCode == KeyEvent.KEYCODE_BACK) {
                 if (musicBinder?.onBackPressed() == true) {
-                    resetInactivityWatchdog()
-                    return true
-                }
-            }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
-                val focused = currentFocus
-                if (focused != null && focused.performClick()) {
                     resetInactivityWatchdog()
                     return true
                 }
