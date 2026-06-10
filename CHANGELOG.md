@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/the-mrinal/Dock/compare/v1.1.0...v1.1.1) (2026-06-10)
+
+### Bug Fixes
+
+* **i18n:** drop stale de/fr translations that fail release lint ([736b0c4](https://github.com/the-mrinal/Dock/commit/736b0c4996c8a8e4363e2189b06867a473627516))
+
 ## [1.1.0](https://github.com/the-mrinal/Dock/compare/v1.0.0...v1.1.0) (2026-06-10)
 
 ### Features
