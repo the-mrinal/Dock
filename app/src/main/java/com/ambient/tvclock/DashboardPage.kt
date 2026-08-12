@@ -1,15 +1,17 @@
 package com.ambient.tvclock
 
-enum class DashboardPage(val index: Int) {
-    STATUS(0),
-    HOME(1),
-    CALENDAR(2),
-    MUSIC(3);
+import androidx.annotation.LayoutRes
 
-    companion object {
-        fun fromIndex(index: Int): DashboardPage =
-            values().firstOrNull { it.index == index } ?: HOME
-
-        val LAST: DashboardPage get() = values().last()
-    }
+/**
+ * The dashboard sections. Which pages are actually shown (and in what pager
+ * position) is decided at runtime by MainActivity — HOMELAB is only present
+ * when enabled in settings — so nothing may assume ordinal == pager position.
+ */
+enum class DashboardPage(@LayoutRes val layoutRes: Int) {
+    STATUS(R.layout.screen_status),
+    HOME(R.layout.screen_home),
+    CALENDAR(R.layout.screen_calendar),
+    MUSIC(R.layout.screen_music),
+    ADBLOCK(R.layout.screen_adblock),
+    HOMELAB(R.layout.screen_homelab_placeholder);
 }

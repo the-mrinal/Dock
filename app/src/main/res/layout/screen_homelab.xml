@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:descendantFocusability="blocksDescendants">
+
+    <!-- The WebView is added here programmatically by HomeLabScreenBinder so it
+         can be re-parented across pager adapter rebuilds without reloading. -->
+    <FrameLayout
+        android:id="@+id/homeLabWebContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/homeLabErrorGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-light"
+            android:text="@string/homelab_load_error"
+            android:textColor="@color/text_secondary"
+            android:textSize="18sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="sans-serif-light"
+            android:text="@string/homelab_retrying"
+            android:textColor="@color/text_tertiary"
+            android:textSize="13sp" />
+    </LinearLayout>
+</FrameLayout>

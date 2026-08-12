@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Empty pager slot for the Home Lab section. The actual dashboard renders
+     full-bleed in @id/homeLabOverlay (activity_main.xml), outside the
+     safe-area padding; this page only gives the section a pager position. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:descendantFocusability="blocksDescendants" />

@@ -11,32 +11,31 @@ import androidx.recyclerview.widget.RecyclerView
  * page during pager updates and restores; without this cache we previously allocated
  * a fresh `HomeScreenBinder` / `CalendarScreenBinder` / `MusicScreenBinder` every
  * rebind, throwing away artwork / focus state and re-running `findViewById`.
+ *
+ * The page list is fixed for the adapter's lifetime; when the set of enabled
+ * pages changes (settings toggle), MainActivity swaps in a new adapter.
  */
 class DashboardPagerAdapter(
+    private val pages: List<DashboardPage>,
     private val onPageReady: (DashboardPage, View, isNew: Boolean) -> Unit
 ) : RecyclerView.Adapter<DashboardPagerAdapter.PageHolder>() {
 
-    // Order matches DashboardPage indices: STATUS, HOME, CALENDAR, MUSIC.
-    private val layouts = intArrayOf(
-        R.layout.screen_status,
-        R.layout.screen_home,
-        R.layout.screen_calendar,
-        R.layout.screen_music
-    )
+    override fun getItemCount(): Int = pages.size
 
-    override fun getItemCount(): Int = layouts.size
-
-    override fun getItemViewType(position: Int): Int = position
+    // viewType is the enum ordinal so each page keeps a stable holder identity
+    // regardless of its position in the (runtime-dependent) page list.
+    override fun getItemViewType(position: Int): Int = pages[position].ordinal
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
-        val view = LayoutInflater.from(parent.context).inflate(layouts[viewType], parent, false)
+        val page = DashboardPage.entries[viewType]
+        val view = LayoutInflater.from(parent.context).inflate(page.layoutRes, parent, false)
         return PageHolder(view)
     }
 
     override fun onBindViewHolder(holder: PageHolder, position: Int) {
         val isNew = !holder.bound
         holder.bound = true
-        onPageReady(DashboardPage.fromIndex(position), holder.itemView, isNew)
+        onPageReady(pages[position], holder.itemView, isNew)
     }
 
     class PageHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
