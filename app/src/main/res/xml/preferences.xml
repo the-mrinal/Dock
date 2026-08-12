@@ -115,6 +115,27 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="category_soundbar"
+        android:title="@string/pref_category_soundbar">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="soundbar_keepalive_enabled"
+            android:summary="@string/pref_soundbar_keepalive_summary"
+            android:title="@string/pref_soundbar_keepalive_title" />
+
+        <ListPreference
+            android:defaultValue="@string/soundbar_keepalive_default_value"
+            android:dependency="soundbar_keepalive_enabled"
+            android:entries="@array/soundbar_keepalive_labels"
+            android:entryValues="@array/soundbar_keepalive_values"
+            android:key="soundbar_keepalive_interval_ms"
+            android:summary="@string/pref_soundbar_keepalive_interval_summary"
+            android:title="@string/pref_soundbar_keepalive_interval_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_vpn"
         android:title="@string/pref_category_vpn">
 

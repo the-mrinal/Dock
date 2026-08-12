@@ -148,6 +148,15 @@
     <string name="pref_receiver_start_on_boot_title">Start on device boot</string>
     <string name="pref_receiver_start_on_boot_summary">Keep advertising as soon as the device powers on</string>
 
+    <string name="pref_category_soundbar">Soundbar</string>
+    <string name="pref_soundbar_keepalive_title">Keep soundbar awake</string>
+    <string name="pref_soundbar_keepalive_summary">Periodically play a short inaudible tone while nothing else is playing, so a soundbar with auto-standby never switches itself off</string>
+    <string name="pref_soundbar_keepalive_interval_title">Keep-alive interval</string>
+    <string name="pref_soundbar_keepalive_interval_summary">How often the inaudible tone plays while idle</string>
+    <string name="soundbar_interval_2_min">Every 2 minutes</string>
+    <string name="soundbar_interval_5_min">Every 5 minutes (default)</string>
+    <string name="soundbar_interval_10_min">Every 10 minutes</string>
+
     <string name="pref_category_spotify">Spotify API</string>
     <string name="pref_spotify_connect_title">Connect Spotify</string>
     <string name="pref_spotify_connect_summary">Link your account for up next and recently played (Premium, Development Mode)</string>
