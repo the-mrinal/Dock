@@ -40,6 +40,20 @@
         <item>300000</item>
     </string-array>
 
+    <string name="soundbar_keepalive_default_value">300000</string>
+
+    <string-array name="soundbar_keepalive_labels">
+        <item>@string/soundbar_interval_2_min</item>
+        <item>@string/soundbar_interval_5_min</item>
+        <item>@string/soundbar_interval_10_min</item>
+    </string-array>
+
+    <string-array name="soundbar_keepalive_values">
+        <item>120000</item>
+        <item>300000</item>
+        <item>600000</item>
+    </string-array>
+
     <string-array name="background_idle_source_labels">
         <item>@string/background_source_black</item>
         <item>@string/background_source_unsplash</item>

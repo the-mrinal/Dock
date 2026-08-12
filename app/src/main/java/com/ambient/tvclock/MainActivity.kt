@@ -88,6 +88,7 @@ class MainActivity : Activity() {
     private lateinit var nowPlayingPoller: NowPlayingPoller
     private lateinit var calendarPoller: CalendarPoller
     private lateinit var spotifyQueuePoller: SpotifyQueuePoller
+    private lateinit var soundbarKeepAlive: SoundbarKeepAlive
 
     private val nowPlayingListener: (NowPlayingInfo?) -> Unit = { info ->
         mainHandler.post { applyNowPlaying(info) }
@@ -210,6 +211,7 @@ class MainActivity : Activity() {
         nowPlayingPoller = NowPlayingPoller(this)
         calendarPoller = CalendarPoller(this)
         spotifyQueuePoller = SpotifyQueuePoller(this)
+        soundbarKeepAlive = SoundbarKeepAlive(this)
 
         val initialIndex = savedInstanceState?.getInt(KEY_PAGE, DashboardPage.HOME.index)
             ?: DashboardPage.HOME.index
@@ -235,6 +237,7 @@ class MainActivity : Activity() {
         nowPlayingPoller.start()
         calendarPoller.start()
         spotifyQueuePoller.start()
+        soundbarKeepAlive.start()
 
         ReceiverStateBus.setSurfaceProvider { streamingOverlay.currentSurface() }
         streamingObserverJob = streamingScope.launch {
@@ -284,6 +287,7 @@ class MainActivity : Activity() {
         nowPlayingPoller.stop()
         calendarPoller.stop()
         spotifyQueuePoller.stop()
+        soundbarKeepAlive.stop()
         NowPlayingCenter.removeListener(nowPlayingListener)
         CalendarCenter.removeListener(calendarListener)
         SpotifyQueueCenter.removeListener(queueListener)
@@ -648,6 +652,7 @@ class MainActivity : Activity() {
             nowPlayingPoller.stop()
             calendarPoller.stop()
             spotifyQueuePoller.stop()
+            soundbarKeepAlive.stop()
 
             streamingOverlay.visibility = View.VISIBLE
             streamingOverlay.bringToFront()
@@ -680,6 +685,7 @@ class MainActivity : Activity() {
             nowPlayingPoller.start()
             calendarPoller.start()
             spotifyQueuePoller.start()
+            soundbarKeepAlive.start()
             resetInactivityWatchdog()
         }
         updateOnboardingVisibility()

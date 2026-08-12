@@ -4,6 +4,11 @@ build/
 app/build/
 app/.cxx/
 local.properties
+
+# Signing material — never commit keystores or their staging dir.
+*.keystore
+*.jks
+.signing/
 .DS_Store
 .idea/
 

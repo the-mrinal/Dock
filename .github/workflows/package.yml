@@ -103,12 +103,16 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
         id: signing
         run: |
           set -euo pipefail
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           if [ -n "${SPOTIFY_CLIENT_ID:-}" ]; then
             echo "spotify.clientId=$SPOTIFY_CLIENT_ID" >> local.properties
+          fi
+          if [ -n "${UNSPLASH_ACCESS_KEY:-}" ]; then
+            echo "unsplash.accessKey=$UNSPLASH_ACCESS_KEY" >> local.properties
           fi
 
           if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
