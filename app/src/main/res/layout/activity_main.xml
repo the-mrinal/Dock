@@ -43,6 +43,17 @@
         android:textSize="11sp"
         android:visibility="gone" />
 
+    <!-- Home Lab web dashboard. Lives outside the safe-area padded pager so it
+         renders full-bleed; the pager's HOMELAB page is an empty placeholder
+         and MainActivity crossfades this layer when that page is selected.
+         Sits below the RelativeLayout so the page indicator stays on top. -->
+    <FrameLayout
+        android:id="@+id/homeLabOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:visibility="gone" />
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -196,6 +207,56 @@
                 android:text="@string/page_music"
                 android:textColor="@color/text_tertiary"
                 android:textSize="13sp" />
+
+            <!-- Ad Block is a settings-dependent section; MainActivity toggles
+                 the separator + label visibility with the page set. -->
+            <TextView
+                android:id="@+id/dotPageAdblock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="·"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/textPageAdblock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_adblock"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <!-- Home Lab is a settings-dependent section; MainActivity toggles
+                 the separator + label visibility with the page set. -->
+            <TextView
+                android:id="@+id/dotPageHomeLab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="·"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/textPageHomeLab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_homelab"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp"
+                android:visibility="gone" />
         </LinearLayout>
     </RelativeLayout>
 

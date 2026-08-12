@@ -29,6 +29,20 @@
     <string name="page_airplay">AirPlay</string>
     <string name="page_vpn">VPN</string>
     <string name="page_status">Connect</string>
+    <string name="page_homelab">Home Lab</string>
+    <string name="page_adblock">Ad Block</string>
+
+    <!-- Ad-block status card. Reads a summary from the homelab dashboard. -->
+    <string name="adblock_card_title">Ad &amp; Telemetry Blocking</string>
+    <string name="adblock_status_checking">Checking…</string>
+    <string name="adblock_detail_checking">Reading status from your home lab…</string>
+    <string name="adblock_status_protected">Protected</string>
+    <string name="adblock_status_unprotected">Filtering off</string>
+    <string name="adblock_status_unavailable">Dashboard offline</string>
+    <string name="adblock_detail_stats">%1$s blocked today · %2$s queries · %3$.1f%% filtered</string>
+    <string name="adblock_detail_unavailable">Can\'t reach the home lab dashboard. Check the URL in Settings.</string>
+    <string name="adblock_action_open_dashboard">Open dashboard</string>
+    <string name="adblock_footer">Filtering and debloating run on your home lab</string>
     <string name="airplay_action_turn_on">Turn on</string>
     <string name="airplay_action_turn_off">Turn off</string>
 
@@ -116,6 +130,20 @@
     <string name="ambient_90_seconds">90 seconds (default)</string>
     <string name="ambient_2_minutes">2 minutes</string>
     <string name="ambient_5_minutes">5 minutes</string>
+
+    <string name="pref_category_homelab">Home Lab</string>
+    <string name="pref_show_homelab_title">Show home lab dashboard</string>
+    <string name="pref_show_homelab_summary">Add a section that displays your home lab dashboard web page</string>
+    <string name="pref_homelab_url_title">Dashboard URL</string>
+    <string name="pref_homelab_url_summary">HTTPS address of the dashboard</string>
+    <string name="homelab_load_error">Can\'t reach the home lab dashboard</string>
+
+    <string name="pref_category_adblock">Ad Block</string>
+    <string name="pref_show_adblock_title">Show ad-block status</string>
+    <string name="pref_show_adblock_summary">Add a section showing what your home lab is blocking on this Fire TV</string>
+    <string name="pref_adblock_url_title">Dashboard URL</string>
+    <string name="pref_adblock_url_summary">Address of the Fire TV de-bloat dashboard (e.g. http://homelab.local:8099)</string>
+    <string name="homelab_retrying">Retrying automatically…</string>
 
     <string name="pref_category_calendar">Calendar</string>
     <string name="pref_show_calendar_title">Show calendar</string>

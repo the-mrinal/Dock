@@ -43,6 +43,10 @@ class MainActivity : Activity() {
     private lateinit var textPageCalendar: TextView
     private lateinit var textPageMusic: TextView
     private lateinit var textPageStatus: TextView
+    private lateinit var textPageHomeLab: TextView
+    private lateinit var dotPageHomeLab: TextView
+    private lateinit var textPageAdblock: TextView
+    private lateinit var dotPageAdblock: TextView
     private lateinit var imageHomeBackground: ImageView
     private lateinit var textHomeBackgroundCredit: TextView
     private lateinit var backgroundBinder: BlurredBackgroundBinder
@@ -51,6 +55,11 @@ class MainActivity : Activity() {
     private var homeBinder: HomeScreenBinder? = null
     private var calendarBinder: CalendarScreenBinder? = null
     private var musicBinder: MusicScreenBinder? = null
+    private var homeLabBinder: HomeLabScreenBinder? = null
+    private var adBlockBinder: AdBlockScreenBinder? = null
+
+    /** Pages currently shown, in pager order. HOMELAB is settings-dependent. */
+    private var pages: List<DashboardPage> = emptyList()
 
     /** Root view of each instantiated pager page, used to tell interior
      *  focus moves apart from page-edge moves in [focusMovesWithinPage]. */
@@ -68,6 +77,7 @@ class MainActivity : Activity() {
     @Suppress("unused")
     private val receiverController = ReceiverController
     private lateinit var streamingOverlay: StreamingOverlay
+    private lateinit var homeLabOverlay: FrameLayout
     private lateinit var onboardingPill: LinearLayout
     private var streamingActive = false
     // Set by long-press BACK while mirroring: hides the overlay but keeps the sender's
@@ -113,6 +123,10 @@ class MainActivity : Activity() {
         textPageCalendar = findViewById(R.id.textPageCalendar)
         textPageMusic = findViewById(R.id.textPageMusic)
         textPageStatus = findViewById(R.id.textPageStatus)
+        textPageHomeLab = findViewById(R.id.textPageHomeLab)
+        dotPageHomeLab = findViewById(R.id.dotPageHomeLab)
+        textPageAdblock = findViewById(R.id.textPageAdblock)
+        dotPageAdblock = findViewById(R.id.dotPageAdblock)
         imageHomeBackground = findViewById(R.id.imageHomeBackground)
         textHomeBackgroundCredit = findViewById(R.id.textHomeBackgroundCredit)
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
@@ -122,6 +136,7 @@ class MainActivity : Activity() {
             onUnsplashPhotoChanged = ::onUnsplashPhotoChanged,
         )
         streamingOverlay = findViewById(R.id.streamingOverlay)
+        homeLabOverlay = findViewById(R.id.homeLabOverlay)
         onboardingPill = findViewById(R.id.onboardingPill)
         findViewById<View>(R.id.onboardingDismiss).setOnClickListener {
             OnboardingPreferences.markDismissed(this)
@@ -131,66 +146,15 @@ class MainActivity : Activity() {
 
         dashboardPager.isUserInputEnabled = false
         dashboardPager.offscreenPageLimit = 1
-        dashboardPager.adapter = DashboardPagerAdapter { page, view, isNew ->
-            pageRoots[page] = view
-            when (page) {
-                DashboardPage.HOME -> {
-                    if (isNew || homeBinder == null) {
-                        homeBinder = HomeScreenBinder(view)
-                    }
-                    homeBinder?.apply {
-                        updateClock(force = true)
-                        bindCalendar(CalendarCenter.current)
-                        bindNowPlaying(NowPlayingCenter.current)
-                        bindQueue(SpotifyQueueCenter.current)
-                        setMinimalWallpaperMode(backgroundController.activePhoto() != null)
-                    }
-                }
-                DashboardPage.CALENDAR -> {
-                    if (isNew || calendarBinder == null) {
-                        calendarBinder = CalendarScreenBinder(view)
-                    }
-                    calendarBinder?.bind(CalendarCenter.current)
-                }
-                DashboardPage.MUSIC -> {
-                    if (isNew || musicBinder == null) {
-                        musicBinder = MusicScreenBinder(view) {
-                            resetInactivityWatchdog()
-                            spotifyQueuePoller.publishNow()
-                        }
-                    }
-                    musicBinder?.apply {
-                        bindNowPlaying(NowPlayingCenter.current)
-                        bindQueue(SpotifyQueueCenter.current)
-                        if (isNew && currentPage == DashboardPage.MUSIC) {
-                            requestControlFocus()
-                        }
-                    }
-                }
-                DashboardPage.STATUS -> {
-                    if (isNew || statusBinder == null) {
-                        statusBinder = StatusScreenBinder(
-                            view,
-                            onAirplayAction = { action -> handleAirplayAction(action) },
-                            onVpnAction = { action -> handleVpnAction(action) }
-                        )
-                    }
-                    statusBinder?.apply {
-                        bindAirplay(currentActiveConnection)
-                        bindVpn(currentVpnState)
-                    }
-                    if (isNew && currentPage == DashboardPage.STATUS) {
-                        statusBinder?.vpnButton?.post { statusBinder?.vpnButton?.requestFocus() }
-                    }
-                }
-            }
-        }
+        pages = computePages()
+        buildPagerAdapter()
 
         dashboardPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                currentPage = DashboardPage.fromIndex(position)
+                currentPage = pages[position]
                 updatePageIndicator()
                 updateOnboardingVisibility()
+                setHomeLabOverlayVisible(currentPage == DashboardPage.HOMELAB)
                 when (currentPage) {
                     DashboardPage.MUSIC -> musicBinder?.requestControlFocus()
                     DashboardPage.CALENDAR -> calendarBinder?.requestScrollToCurrent()
@@ -201,7 +165,14 @@ class MainActivity : Activity() {
                         }
                         statusBinder?.vpnButton?.post { statusBinder?.vpnButton?.requestFocus() }
                     }
-                    DashboardPage.HOME -> { /* nothing extra */ }
+                    DashboardPage.ADBLOCK -> {
+                        adBlockBinder?.refresh()
+                        adBlockBinder?.actionButton?.post {
+                            adBlockBinder?.actionButton?.requestFocus()
+                        }
+                    }
+                    DashboardPage.HOME,
+                    DashboardPage.HOMELAB -> { /* nothing extra */ }
                 }
             }
         })
@@ -213,10 +184,12 @@ class MainActivity : Activity() {
         spotifyQueuePoller = SpotifyQueuePoller(this)
         soundbarKeepAlive = SoundbarKeepAlive(this)
 
-        val initialIndex = savedInstanceState?.getInt(KEY_PAGE, DashboardPage.HOME.index)
-            ?: DashboardPage.HOME.index
-        dashboardPager.setCurrentItem(initialIndex, false)
-        currentPage = DashboardPage.fromIndex(initialIndex)
+        val restoredPage = savedInstanceState?.getString(KEY_PAGE)
+            ?.let { name -> DashboardPage.entries.firstOrNull { it.name == name } }
+            ?.takeIf { it in pages }
+            ?: DashboardPage.HOME
+        dashboardPager.setCurrentItem(pages.indexOf(restoredPage), false)
+        currentPage = restoredPage
         updatePageIndicator()
 
         startClockTicker()
@@ -225,7 +198,142 @@ class MainActivity : Activity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(KEY_PAGE, currentPage.index)
+        outState.putString(KEY_PAGE, currentPage.name)
+    }
+
+    private fun computePages(): List<DashboardPage> = buildList {
+        add(DashboardPage.STATUS)
+        add(DashboardPage.HOME)
+        add(DashboardPage.CALENDAR)
+        add(DashboardPage.MUSIC)
+        if (AdBlockPreferences.isPageAvailable(this@MainActivity)) {
+            add(DashboardPage.ADBLOCK)
+        }
+        if (HomeLabPreferences.isPageAvailable(this@MainActivity)) {
+            add(DashboardPage.HOMELAB)
+        }
+    }
+
+    private fun buildPagerAdapter() {
+        dashboardPager.adapter = DashboardPagerAdapter(pages, ::onPageReady)
+    }
+
+    /** Inflate the dashboard content into the full-bleed overlay on first use. */
+    private fun ensureHomeLabOverlay() {
+        if (homeLabBinder != null) return
+        layoutInflater.inflate(R.layout.screen_homelab, homeLabOverlay, true)
+        homeLabBinder = HomeLabScreenBinder(this)
+        homeLabBinder?.attach(homeLabOverlay)
+    }
+
+    private fun setHomeLabOverlayVisible(visible: Boolean) {
+        if (visible) {
+            ensureHomeLabOverlay()
+            homeLabBinder?.onPageVisible()
+            homeLabOverlay.visibility = View.VISIBLE
+            homeLabOverlay.animate().cancel()
+            homeLabOverlay.animate().alpha(1f).setDuration(STREAMING_FADE_MS).start()
+        } else {
+            homeLabBinder?.onPageHidden()
+            if (homeLabOverlay.visibility == View.VISIBLE) {
+                homeLabOverlay.animate().cancel()
+                homeLabOverlay.animate()
+                    .alpha(0f)
+                    .setDuration(STREAMING_FADE_MS)
+                    .withEndAction { homeLabOverlay.visibility = View.GONE }
+                    .start()
+            }
+        }
+    }
+
+    private fun destroyHomeLab() {
+        homeLabBinder?.destroy()
+        homeLabBinder = null
+        homeLabOverlay.animate().cancel()
+        homeLabOverlay.removeAllViews()
+        homeLabOverlay.alpha = 0f
+        homeLabOverlay.visibility = View.GONE
+    }
+
+    private fun onPageReady(page: DashboardPage, view: View, isNew: Boolean) {
+        pageRoots[page] = view
+        when (page) {
+            DashboardPage.HOME -> {
+                if (isNew || homeBinder == null) {
+                    homeBinder = HomeScreenBinder(view)
+                }
+                homeBinder?.apply {
+                    updateClock(force = true)
+                    bindCalendar(CalendarCenter.current)
+                    bindNowPlaying(NowPlayingCenter.current)
+                    bindQueue(SpotifyQueueCenter.current)
+                    setMinimalWallpaperMode(backgroundController.activePhoto() != null)
+                }
+            }
+            DashboardPage.CALENDAR -> {
+                if (isNew || calendarBinder == null) {
+                    calendarBinder = CalendarScreenBinder(view)
+                }
+                calendarBinder?.bind(CalendarCenter.current)
+            }
+            DashboardPage.MUSIC -> {
+                if (isNew || musicBinder == null) {
+                    musicBinder = MusicScreenBinder(view) {
+                        resetInactivityWatchdog()
+                        spotifyQueuePoller.publishNow()
+                    }
+                }
+                musicBinder?.apply {
+                    bindNowPlaying(NowPlayingCenter.current)
+                    bindQueue(SpotifyQueueCenter.current)
+                    if (isNew && currentPage == DashboardPage.MUSIC) {
+                        requestControlFocus()
+                    }
+                }
+            }
+            DashboardPage.STATUS -> {
+                if (isNew || statusBinder == null) {
+                    statusBinder = StatusScreenBinder(
+                        view,
+                        onAirplayAction = { action -> handleAirplayAction(action) },
+                        onVpnAction = { action -> handleVpnAction(action) }
+                    )
+                }
+                statusBinder?.apply {
+                    bindAirplay(currentActiveConnection)
+                    bindVpn(currentVpnState)
+                }
+                if (isNew && currentPage == DashboardPage.STATUS) {
+                    statusBinder?.vpnButton?.post { statusBinder?.vpnButton?.requestFocus() }
+                }
+            }
+            DashboardPage.ADBLOCK -> {
+                if (isNew || adBlockBinder == null) {
+                    adBlockBinder = AdBlockScreenBinder(
+                        view,
+                        onOpenDashboard = { openAdBlockDashboard() }
+                    )
+                }
+                adBlockBinder?.refresh()
+                if (isNew && currentPage == DashboardPage.ADBLOCK) {
+                    adBlockBinder?.actionButton?.post { adBlockBinder?.actionButton?.requestFocus() }
+                }
+            }
+            DashboardPage.HOMELAB -> {
+                // Placeholder page — the dashboard renders in homeLabOverlay,
+                // shown/hidden from onPageSelected.
+            }
+        }
+    }
+
+    /** From the ad-block card: jump to the HomeLab dashboard page if it's
+     *  enabled, otherwise open Settings so the user can configure it. */
+    private fun openAdBlockDashboard() {
+        if (DashboardPage.HOMELAB in pages) {
+            goToPage(DashboardPage.HOMELAB)
+        } else {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
     }
 
     override fun onStart() {
@@ -291,6 +399,7 @@ class MainActivity : Activity() {
         NowPlayingCenter.removeListener(nowPlayingListener)
         CalendarCenter.removeListener(calendarListener)
         SpotifyQueueCenter.removeListener(queueListener)
+        homeLabBinder?.onPageHidden()
         backgroundController.onStop()
         super.onStop()
     }
@@ -302,6 +411,34 @@ class MainActivity : Activity() {
         nowPlayingPoller.publishNow()
         calendarPoller.publishNow()
         updateOnboardingVisibility()
+        applyPageSetChange()
+    }
+
+    /**
+     * The Home Lab section is the only settings-dependent page; recompute the
+     * page set after returning from SettingsActivity and rebuild the pager if
+     * it changed. The retained WebView survives the adapter swap via
+     * re-parenting in [HomeLabScreenBinder.attach].
+     */
+    private fun applyPageSetChange() {
+        val newPages = computePages()
+        if (newPages == pages) {
+            if (currentPage == DashboardPage.HOMELAB) {
+                // Reload check after returning to the app (URL edit, staleness).
+                homeLabBinder?.onPageVisible()
+            }
+            return
+        }
+        pages = newPages
+        if (DashboardPage.HOMELAB !in pages) {
+            destroyHomeLab()
+        }
+        pageRoots.clear()
+        buildPagerAdapter()
+        val target = if (currentPage in pages) currentPage else DashboardPage.HOME
+        dashboardPager.setCurrentItem(pages.indexOf(target), false)
+        currentPage = target
+        updatePageIndicator()
     }
 
     private fun updateOnboardingVisibility() {
@@ -371,6 +508,16 @@ class MainActivity : Activity() {
         applyIndicatorStyle(textPageHome, DashboardPage.HOME)
         applyIndicatorStyle(textPageCalendar, DashboardPage.CALENDAR)
         applyIndicatorStyle(textPageMusic, DashboardPage.MUSIC)
+        applyIndicatorStyle(textPageAdblock, DashboardPage.ADBLOCK)
+        applyIndicatorStyle(textPageHomeLab, DashboardPage.HOMELAB)
+        val adblockVisibility =
+            if (DashboardPage.ADBLOCK in pages) View.VISIBLE else View.GONE
+        dotPageAdblock.visibility = adblockVisibility
+        textPageAdblock.visibility = adblockVisibility
+        val homeLabVisibility =
+            if (DashboardPage.HOMELAB in pages) View.VISIBLE else View.GONE
+        dotPageHomeLab.visibility = homeLabVisibility
+        textPageHomeLab.visibility = homeLabVisibility
     }
 
     private fun applyIndicatorStyle(label: TextView, page: DashboardPage) {
@@ -386,18 +533,22 @@ class MainActivity : Activity() {
 
     private fun goToPage(page: DashboardPage) {
         if (currentPage == page) return
-        dashboardPager.setCurrentItem(page.index, true)
+        val index = pages.indexOf(page)
+        if (index < 0) return
+        dashboardPager.setCurrentItem(index, true)
     }
 
     private fun goNextPage() {
-        if (currentPage.index < DashboardPage.LAST.index) {
-            goToPage(DashboardPage.fromIndex(currentPage.index + 1))
+        val index = pages.indexOf(currentPage)
+        if (index in 0 until pages.lastIndex) {
+            dashboardPager.setCurrentItem(index + 1, true)
         }
     }
 
     private fun goPreviousPage() {
-        if (currentPage.index > 0) {
-            goToPage(DashboardPage.fromIndex(currentPage.index - 1))
+        val index = pages.indexOf(currentPage)
+        if (index > 0) {
+            dashboardPager.setCurrentItem(index - 1, true)
         }
     }
 
@@ -495,7 +646,7 @@ class MainActivity : Activity() {
 
         // Always show the clock when entering ambient mode so it can drift safely.
         if (currentPage != DashboardPage.HOME) {
-            dashboardPager.setCurrentItem(DashboardPage.HOME.index, false)
+            dashboardPager.setCurrentItem(pages.indexOf(DashboardPage.HOME), false)
         }
 
         // Seconds always fade well before ambient kicks in (90s vs minutes),
@@ -667,6 +818,10 @@ class MainActivity : Activity() {
             streamingOverlay.senderPill.translationY = 0f
             mainHandler.removeCallbacks(pillBurnInRunnable)
             mainHandler.postDelayed(pillBurnInRunnable, PILL_DRIFT_INTERVAL_MS)
+
+            // The home lab overlay sits outside contentDisplayGroup, so the
+            // fade above doesn't cover it — hide it explicitly.
+            setHomeLabOverlayVisible(false)
         } else {
             streamingOverlay.animate().cancel()
             streamingOverlay.animate()
@@ -686,6 +841,7 @@ class MainActivity : Activity() {
             calendarPoller.start()
             spotifyQueuePoller.start()
             soundbarKeepAlive.start()
+            setHomeLabOverlayVisible(currentPage == DashboardPage.HOMELAB)
             resetInactivityWatchdog()
         }
         updateOnboardingVisibility()
@@ -741,6 +897,11 @@ class MainActivity : Activity() {
                     resetInactivityWatchdog()
                     return true
                 }
+                if (currentPage == DashboardPage.HOMELAB) {
+                    homeLabBinder?.scrollBy(-calendarScrollStep)
+                    resetInactivityWatchdog()
+                    return true
+                }
                 if (currentPage == DashboardPage.HOME &&
                     backgroundController.activePhoto() != null
                 ) {
@@ -752,6 +913,11 @@ class MainActivity : Activity() {
             KeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (currentPage == DashboardPage.CALENDAR) {
                     calendarBinder?.scrollBy(calendarScrollStep)
+                    resetInactivityWatchdog()
+                    return true
+                }
+                if (currentPage == DashboardPage.HOMELAB) {
+                    homeLabBinder?.scrollBy(calendarScrollStep)
                     resetInactivityWatchdog()
                     return true
                 }
@@ -834,6 +1000,8 @@ class MainActivity : Activity() {
         super.onDestroy()
         mainHandler.removeCallbacksAndMessages(null)
         streamingScope.cancel()
+        homeLabBinder?.destroy()
+        homeLabBinder = null
     }
 
     override fun onTrimMemory(level: Int) {

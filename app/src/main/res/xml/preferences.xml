@@ -26,6 +26,44 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="category_homelab"
+        android:title="@string/pref_category_homelab">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="show_homelab"
+            android:summary="@string/pref_show_homelab_summary"
+            android:title="@string/pref_show_homelab_title" />
+
+        <EditTextPreference
+            android:defaultValue="https://home.mrinal.dev"
+            android:dependency="show_homelab"
+            android:key="homelab_url"
+            android:summary="@string/pref_homelab_url_summary"
+            android:title="@string/pref_homelab_url_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="category_adblock"
+        android:title="@string/pref_category_adblock">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="show_adblock"
+            android:summary="@string/pref_show_adblock_summary"
+            android:title="@string/pref_show_adblock_title" />
+
+        <EditTextPreference
+            android:defaultValue="http://homelab.local:8099"
+            android:dependency="show_adblock"
+            android:key="adblock_dashboard_url"
+            android:summary="@string/pref_adblock_url_summary"
+            android:title="@string/pref_adblock_url_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_now_playing"
         android:title="@string/pref_category_now_playing">
 

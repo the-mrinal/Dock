@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingStart="32dp"
+    android:paddingTop="24dp"
+    android:paddingEnd="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.32"
+        android:text="@string/page_adblock"
+        android:textAllCaps="true"
+        android:textColor="@color/text_tertiary"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.24"
+            android:text="@string/adblock_card_title"
+            android:textAllCaps="true"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <FrameLayout
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginTop="16dp">
+
+            <View
+                android:id="@+id/adblockStatusHalo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_status_halo" />
+
+            <View
+                android:id="@+id/adblockStatusDot"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_status_dot" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/textAdblockStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="sans-serif-thin"
+            android:includeFontPadding="false"
+            android:text="@string/adblock_status_checking"
+            android:textColor="@color/text_primary"
+            android:textSize="32sp" />
+
+        <TextView
+            android:id="@+id/textAdblockDetail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="sans-serif-light"
+            android:gravity="center"
+            android:maxWidth="420dp"
+            android:text="@string/adblock_detail_checking"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/buttonAdblockAction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_status_action"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:letterSpacing="0.16"
+            android:minWidth="200dp"
+            android:paddingStart="24dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="10dp"
+            android:text="@string/adblock_action_open_dashboard"
+            android:textAllCaps="true"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:fontFamily="sans-serif-light"
+        android:gravity="center"
+        android:letterSpacing="0.12"
+        android:maxWidth="520dp"
+        android:text="@string/adblock_footer"
+        android:textAllCaps="true"
+        android:textColor="@color/text_tertiary"
+        android:textSize="10sp" />
+</LinearLayout>
