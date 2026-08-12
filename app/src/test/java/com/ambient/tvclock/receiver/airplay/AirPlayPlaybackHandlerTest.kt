@@ -37,7 +37,7 @@ class AirPlayPlaybackHandlerTest {
         playRequestedNames.clear()
         handler = AirPlayPlaybackHandler(
             videoPlayer = player,
-            onPlayRequested = { name -> playRequestedNames += name }
+            onPlayRequested = { name, _, _ -> playRequestedNames += name }
         )
     }
 
@@ -115,18 +115,18 @@ class AirPlayPlaybackHandlerTest {
 
     @Test fun `play invokes onPlayRequested with extracted sender name`() {
         val body = "Content-Location: http://x.example/m.m3u8\r\n"
-        val req = request("POST", "/play", body = body, userAgent = "MediaControl/1.0")
+        val req = request("POST", "/play", body = body, userAgent = "iPhone OS/17.0")
 
         handler.handle(req)
 
-        assertEquals(listOf("MediaControl"), playRequestedNames)
+        assertEquals(listOf("iPhone"), playRequestedNames)
     }
 
     @Test fun `play uses default sender name when User-Agent absent`() {
         val body = "Content-Location: http://x.example/m.m3u8\r\n"
         handler.handle(request("POST", "/play", body = body, userAgent = null))
 
-        assertEquals(listOf("AirPlay"), playRequestedNames)
+        assertEquals(listOf("Apple device"), playRequestedNames)
     }
 
     // ─── /stop ───────────────────────────────────────────────────────────────

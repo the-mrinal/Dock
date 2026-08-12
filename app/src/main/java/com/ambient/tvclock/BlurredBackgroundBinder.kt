@@ -281,13 +281,15 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
         val sample = computeSampleSize(bounds.outWidth, bounds.outHeight, decodeTargetPx)
         val opts = BitmapFactory.Options().apply {
             inSampleSize = sample
-            // Wallpaper mode never reads pixels back (no CPU blur), so we can
-            // ask for HARDWARE on API 26+ to keep the 14 MB / 2400 px bitmap
-            // out of the Dalvik heap. Wash mode keeps ARGB_8888 because the
-            // CPU box-blur path on API < 31 needs to scan pixels.
+            // HARDWARE bitmaps avoid the Dalvik heap, but the Fire TV Stick
+            // (kara / Android 9) Mali driver aborts the RenderThread with
+            // `glEGLImageTargetTexture2DOES GL_INVALID_OPERATION` when Skia
+            // uploads a large HARDWARE-config wallpaper. API 31+'s Skia path
+            // is reliable; below that we fall back to ARGB_8888 (the wallpaper
+            // path already downsamples via WALLPAPER_DECODE_TARGET).
             inPreferredConfig = if (
                 mode == Mode.SHARP_WALLPAPER &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
             ) {
                 Bitmap.Config.HARDWARE
             } else {
@@ -367,11 +369,11 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
 
         // Decode targets are mode-specific: the wash mode is heavily blurred
         // so a 512 px source is plenty, while the sharp wallpaper path keeps
-        // the photo near its source resolution (Unsplash `full` is ~2400 px)
-        // so it stays crisp on 4K panels. ARGB_8888 @ 2400×1500 ≈ 14 MB —
-        // acceptable for a single background bitmap on Fire TV Stick 4K Max.
+        // the photo near its source resolution so it stays crisp on 4K panels.
+        // 1920 keeps ARGB_8888 @ ~1920×1200 ≈ 9 MB — safe for Fire TV Stick's
+        // Dalvik heap on the ARGB_8888 fallback path (see decodeSoftware).
         private const val WASH_DECODE_TARGET = 512
-        private const val WALLPAPER_DECODE_TARGET = 2400
+        private const val WALLPAPER_DECODE_TARGET = 1920
 
         private const val FADE_IN_MS = 700L
         private const val FADE_OUT_MS = 700L

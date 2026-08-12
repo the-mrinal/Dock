@@ -41,7 +41,7 @@ open class RtspHandler(
     private val onStreamingStarted: (session: SessionDescription) -> Unit,
     private val onStreamingStopped: () -> Unit,
     private val controlHandler: AirPlayControlHandler,
-    private val onMirrorRecord: () -> Unit = {}
+    private val onMirrorRecord: (senderLabel: String, peer: InetAddress?, headers: Map<String, String>) -> Unit = { _, _, _ -> }
 ) {
 
     // The server socket that accepts incoming AirPlay connections on port 7000
@@ -194,7 +194,13 @@ open class RtspHandler(
                     if (request.method == "RECORD" && r.statusCode == 200) {
                         mirrorMode = true
                         streamingStarted = true
-                        onMirrorRecord()
+                        SenderIdentity.logIdentityHeaders("RECORD (mirror)", request.headers)
+                        val peer = peerAddress(socket)
+                        onMirrorRecord(
+                            SenderIdentity.label(request.headers, peer),
+                            peer,
+                            request.headers
+                        )
                     }
                     // POST /play (AirPlay video URL) — iOS frequently never sends
                     // POST /stop; the session ends when the TCP connection closes.
@@ -208,7 +214,7 @@ open class RtspHandler(
                     }
                     r
                 } else {
-                    val r = routeRequest(request, outputStream)
+                    val r = routeRequest(request, outputStream, peerAddress(socket))
                     if (request.method == "RECORD" && r.statusCode == 200) {
                         streamingStarted = true
                     }
@@ -383,11 +389,15 @@ open class RtspHandler(
      *
      * @return An [RtspResponse] to send back to the client.
      */
-    private fun routeRequest(request: RtspRequest, outputStream: OutputStream): RtspResponse {
+    private fun routeRequest(
+        request: RtspRequest,
+        outputStream: OutputStream,
+        peer: InetAddress? = null
+    ): RtspResponse {
         Logger.d("RTSP ${request.method} ${request.uri}")
         return when (request.method) {
             "OPTIONS"       -> handleOptionsInternal(request)
-            "ANNOUNCE"      -> handleAnnounceInternal(request)
+            "ANNOUNCE"      -> handleAnnounceInternal(request, peer)
             "SETUP"         -> handleSetupInternal(request)
             "RECORD"        -> handleRecordInternal(request)
             "TEARDOWN"      -> handleTeardownInternal(request)
@@ -426,7 +436,10 @@ open class RtspHandler(
      *
      * Security: if SDP parsing fails completely, we return 400 Bad Request.
      */
-    open fun handleAnnounceInternal(request: RtspRequest): RtspResponse {
+    open fun handleAnnounceInternal(
+        request: RtspRequest,
+        peer: InetAddress? = null
+    ): RtspResponse {
         Logger.d("ANNOUNCE body (${request.body.length} bytes)")
         val parsed = SdpParser.parse(request.body)
 
@@ -435,23 +448,14 @@ open class RtspHandler(
             return RtspResponse(statusCode = 400, statusMessage = "Bad Request")
         }
 
-        currentSession = parsed.copy(senderName = extractSenderName(request.headers["User-Agent"]))
+        SenderIdentity.logIdentityHeaders("ANNOUNCE", request.headers)
+        currentSession = parsed.copy(senderName = SenderIdentity.label(request.headers, peer))
         val s = currentSession!!
         Logger.i("Session: hasVideo=${s.hasVideo} hasAudio=${s.hasAudio} " +
                  "codec=${s.audioCodec} encrypted=${s.isAudioEncrypted} sender='${s.senderName}'")
 
         setupCount = 0
         return RtspResponse(statusCode = 200, statusMessage = "OK")
-    }
-
-    /**
-     * Extracts a readable sender name from the RTSP `User-Agent` header (S6-1).
-     * "AirPlay/376.1.1" → "AirPlay", "iTunes/12.12" → "iTunes", absent → fallback.
-     */
-    private fun extractSenderName(userAgent: String?): String {
-        if (userAgent.isNullOrBlank()) return DEFAULT_SENDER_NAME
-        val name = userAgent.substringBefore("/").trim()
-        return name.ifEmpty { DEFAULT_SENDER_NAME }
     }
 
     /**
@@ -629,9 +633,6 @@ open class RtspHandler(
          * We keep a separate const here to avoid a circular compile-time dependency.
          */
         private const val AUDIO_RTP_PORT = 6001
-
-        /** Fallback sender name when User-Agent header is absent or unparseable. */
-        private const val DEFAULT_SENDER_NAME = "AirPlay Sender"
     }
 }
 
