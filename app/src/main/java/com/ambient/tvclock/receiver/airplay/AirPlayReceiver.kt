@@ -227,13 +227,16 @@ class AirPlayReceiver(
     private fun startRtspHandler() {
         val playbackHandler = AirPlayPlaybackHandler(
             videoPlayer = videoPlayer,
-            onPlayRequested = { senderName ->
+            onPlayRequested = { senderName, peer, headers ->
                 videoUrlSenderName = senderName
                 // iOS expects the mirror pipeline to be free before the
                 // video URL bind takes the Surface — release synchronously
                 // on the request thread so the main-thread ExoPlayer.play
                 // dispatch never races a live MediaCodec on the same output.
                 releaseMediaComponents()
+                if (peer != null) {
+                    SenderProbe(context, peer, headers, "POST", "/play").start()
+                }
             }
         )
         val controlHandler = AirPlayControlHandler(
@@ -255,7 +258,12 @@ class AirPlayReceiver(
             onStreamingStarted = { session -> onStreamingStarted(session) },
             onStreamingStopped = { onStreamingStopped() },
             controlHandler = controlHandler,
-            onMirrorRecord = { onMirrorStreamingStarted() }
+            onMirrorRecord = { senderLabel, peer, headers ->
+                onMirrorStreamingStarted(senderLabel)
+                if (peer != null) {
+                    SenderProbe(context, peer, headers, "RECORD", "<mirror>").start()
+                }
+            }
         ).also { it.start(scope) }
         Logger.d("RTSP handler started on port 7000")
     }
@@ -384,9 +392,9 @@ class AirPlayReceiver(
         }
     }
 
-    private fun onMirrorStreamingStarted() {
+    private fun onMirrorStreamingStarted(senderLabel: String) {
         scope.launch {
-            onSenderNameChanged("Mac")
+            onSenderNameChanged(senderLabel)
             emitState(ProtocolState.CONNECTED)
         }
     }

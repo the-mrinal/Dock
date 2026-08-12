@@ -6,6 +6,7 @@ import com.dd.plist.NSNumber
 import com.dd.plist.NSString
 import com.dd.plist.PropertyListParser
 import com.ambient.tvclock.util.Logger
+import java.net.InetAddress
 
 /**
  * AirPlayPlaybackHandler — Routes the AirPlay video URL HTTP endpoints.
@@ -41,7 +42,7 @@ class AirPlayPlaybackHandler(
      * uses this hook to synchronously release the mirror pipeline before
      * ExoPlayer ever sees the Surface.
      */
-    private val onPlayRequested: (senderName: String) -> Unit = {}
+    private val onPlayRequested: (senderName: String, peer: InetAddress?, headers: Map<String, String>) -> Unit = { _, _, _ -> }
 ) {
 
     /**
@@ -53,11 +54,11 @@ class AirPlayPlaybackHandler(
         return path in CLAIMED_PATHS
     }
 
-    fun handle(request: RtspRequest): RtspResponse {
+    fun handle(request: RtspRequest, peer: InetAddress? = null): RtspResponse {
         val path = pathOf(request.uri)
         Logger.i("AirPlay video: ${request.method} $path (uri=${request.uri})")
         return when {
-            request.method == "POST" && path == "/play"       -> handlePlay(request)
+            request.method == "POST" && path == "/play"       -> handlePlay(request, peer)
             request.method == "POST" && path == "/stop"       -> handleStop()
             request.method == "POST" && path == "/rate"       -> handleRate(request)
             request.method == "POST" && path == "/scrub"      -> handleScrub(request)
@@ -69,14 +70,15 @@ class AirPlayPlaybackHandler(
 
     // ─── /play ───────────────────────────────────────────────────────────────
 
-    private fun handlePlay(request: RtspRequest): RtspResponse {
+    private fun handlePlay(request: RtspRequest, peer: InetAddress?): RtspResponse {
         val parsed = parsePlayBody(request)
         if (parsed == null || parsed.contentLocation.isBlank()) {
             Logger.w("/play: missing Content-Location in body (size=${request.bodyBytes.size})")
             return RtspResponse(400, "Bad Request")
         }
         Logger.i("/play url='${parsed.contentLocation}' start=${parsed.startPosition}")
-        onPlayRequested(extractSenderName(request.headers["User-Agent"]))
+        SenderIdentity.logIdentityHeaders("/play", request.headers)
+        onPlayRequested(SenderIdentity.label(request.headers, peer), peer, request.headers)
         videoPlayer.play(parsed.contentLocation, parsed.startPosition)
         return RtspResponse(200, "OK")
     }
@@ -260,15 +262,6 @@ class AirPlayPlaybackHandler(
             String(body, 0, 6, Charsets.US_ASCII) == "bplist"
 
     data class PlayParams(val contentLocation: String, val startPosition: Double)
-
-    /**
-     * Same shape as [RtspHandler.extractSenderName] — mirrors the existing
-     * naming behaviour for mirror sessions so the UI shows a consistent label.
-     */
-    private fun extractSenderName(userAgent: String?): String {
-        if (userAgent.isNullOrBlank()) return "AirPlay"
-        return userAgent.substringBefore("/").trim().ifEmpty { "AirPlay" }
-    }
 
     companion object {
         private val CLAIMED_PATHS = setOf(

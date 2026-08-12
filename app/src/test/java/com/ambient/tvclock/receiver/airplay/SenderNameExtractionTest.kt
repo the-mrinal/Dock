@@ -6,25 +6,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * SenderNameExtractionTest — Tests for S6-1: sender name extraction from RTSP User-Agent.
+ * SenderNameExtractionTest — Tests that sender identity flows end-to-end from
+ * RTSP ANNOUNCE headers into [SessionDescription.senderName].
  *
- * WHY: The sender name shown in the notification and home screen comes from the RTSP
- * ANNOUNCE `User-Agent` header. If parsing is wrong, users see a generic "AirPlay Sender"
- * even when the actual sender is identifiable — and a crash in parsing could break
- * the entire streaming session.
- *
- * WHAT WE TEST:
- * - Standard AirPlay User-Agent ("AirPlay/376.1.1") → senderName = "AirPlay"
- * - iTunes User-Agent ("iTunes/12.12 CFNetwork/1") → senderName = "iTunes"
- * - Missing User-Agent header → fallback non-empty name
- * - Blank User-Agent header → fallback non-empty name
- * - User-Agent with no slash → whole string used as name
- * - senderName flows through ANNOUNCE → RECORD into [SessionDescription]
- * - [SessionDescription.senderName] defaults to "" when not set
- *
- * HOW: We use [TestableRtspHandler] (defined in RtspHandlerTest.kt) to exercise
- * the full ANNOUNCE → RECORD path and inspect the [SessionDescription] delivered
- * to [onStreamingStarted].
+ * The actual label-derivation rules live in [SenderIdentity] and are unit-
+ * tested there; this suite covers the *plumbing*: that
+ * [RtspHandler.handleAnnounceInternal] feeds the headers through
+ * SenderIdentity.label and stashes the result on the session, and that the
+ * session survives the ANNOUNCE → RECORD hand-off.
  */
 class SenderNameExtractionTest {
 
@@ -38,29 +27,38 @@ class SenderNameExtractionTest {
 
     @Test
     fun `SessionDescription copy preserves senderName`() {
-        val original = SessionDescription(hasVideo = false, hasAudio = true, senderName = "AirPlay")
+        val original = SessionDescription(hasVideo = false, hasAudio = true, senderName = "iPhone")
         val copy = original.copy(audioCodec = AudioCodec.ALAC)
-        assertEquals("AirPlay", copy.senderName)
+        assertEquals("iPhone", copy.senderName)
     }
 
-    // ─── senderName extraction via ANNOUNCE → RECORD ─────────────────────────
+    // ─── senderName flows via ANNOUNCE → RECORD ──────────────────────────────
 
     @Test
-    fun `AirPlay slash User-Agent extracts application name before slash`() {
-        val session = announceAndRecord(userAgent = "AirPlay/376.1.1")
-        assertEquals("AirPlay", session?.senderName)
-    }
-
-    @Test
-    fun `iTunes User-Agent extracts iTunes as sender name`() {
-        val session = announceAndRecord(userAgent = "iTunes/12.12.4 CFNetwork/1327.0.4")
-        assertEquals("iTunes", session?.senderName)
+    fun `iPhone in User-Agent surfaces as iPhone`() {
+        val session = announceAndRecord(userAgent = "iPhone OS/17.0 (AirPlay/720)")
+        assertEquals("iPhone", session?.senderName)
     }
 
     @Test
-    fun `User-Agent with no slash uses entire string as sender name`() {
-        val session = announceAndRecord(userAgent = "CustomSender")
-        assertEquals("CustomSender", session?.senderName)
+    fun `Mac in User-Agent surfaces as Mac`() {
+        val session = announceAndRecord(userAgent = "Macintosh OS/14.0 (AirPlay/950)")
+        assertEquals("Mac", session?.senderName)
+    }
+
+    @Test
+    fun `friendly-name header wins over User-Agent heuristic`() {
+        val session = announceAndRecord(
+            userAgent = "AirPlay/950.7.1",
+            extraHeaders = mapOf("X-Apple-Client-Name" to "Mrinal's MacBook Pro")
+        )
+        assertEquals("Mrinal's MacBook Pro", session?.senderName)
+    }
+
+    @Test
+    fun `generic User-Agent falls back to Apple device default`() {
+        val session = announceAndRecord(userAgent = "AirPlay/950.7.1")
+        assertEquals("Apple device", session?.senderName)
     }
 
     @Test
@@ -70,27 +68,16 @@ class SenderNameExtractionTest {
         assertTrue("Fallback must be non-empty", session!!.senderName.isNotEmpty())
     }
 
-    @Test
-    fun `blank User-Agent header results in non-empty fallback sender name`() {
-        val session = announceAndRecord(userAgent = "   ")
-        assertNotNull(session)
-        assertTrue("Blank UA fallback must be non-empty", session!!.senderName.isNotEmpty())
-    }
-
-    @Test
-    fun `senderName is preserved in SessionDescription after full ANNOUNCE-RECORD cycle`() {
-        val session = announceAndRecord(userAgent = "AirPlay/420.0")
-        assertNotNull("Session must not be null after valid ANNOUNCE+RECORD", session)
-        assertEquals("AirPlay", session!!.senderName)
-    }
-
     // ─── Helper ──────────────────────────────────────────────────────────────
 
     /**
      * Drives a minimal ANNOUNCE → RECORD cycle and returns the [SessionDescription]
      * delivered to [onStreamingStarted], or null if RECORD did not fire the callback.
      */
-    private fun announceAndRecord(userAgent: String?): SessionDescription? {
+    private fun announceAndRecord(
+        userAgent: String?,
+        extraHeaders: Map<String, String> = emptyMap()
+    ): SessionDescription? {
         var captured: SessionDescription? = null
         val handler = TestableRtspHandler(
             onStreamingStarted = { session -> captured = session },
@@ -100,6 +87,7 @@ class SenderNameExtractionTest {
         val announceHeaders = buildMap {
             put("CSeq", "3")
             if (userAgent != null) put("User-Agent", userAgent)
+            putAll(extraHeaders)
         }
 
         handler.handleAnnouncePublic(

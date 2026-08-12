@@ -78,12 +78,15 @@ class StreamingOverlay @JvmOverloads constructor(
         })
 
         senderPill.apply {
-            setTextColor(Color.parseColor("#F5F5F5"))
+            // Translucent overlay: text dimmed slightly and background alpha
+            // reduced so the pill reads as a quiet caption — not a chrome bar —
+            // over the mirrored video behind it.
+            setTextColor(Color.parseColor("#D0F0F0F0"))
             typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setBackgroundResource(R.drawable.bg_sender_pill)
-            val paddingX = dp(16)
-            val paddingY = dp(6)
+            val paddingX = dp(10)
+            val paddingY = dp(4)
             setPadding(paddingX, paddingY, paddingX, paddingY)
         }
         val pillLayout = LayoutParams(
@@ -91,7 +94,7 @@ class StreamingOverlay @JvmOverloads constructor(
             LayoutParams.WRAP_CONTENT,
             Gravity.TOP or Gravity.END,
         ).apply {
-            val margin = dp(24)
+            val margin = dp(20)
             setMargins(margin, margin, margin, margin)
         }
         addView(senderPill, pillLayout)

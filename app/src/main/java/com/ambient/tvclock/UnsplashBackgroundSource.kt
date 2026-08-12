@@ -34,7 +34,13 @@ class UnsplashBackgroundSource(context: Context) {
 
     private val appContext = context.applicationContext
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val ioExecutor = Executors.newSingleThreadExecutor { r ->
+    // Recreated on every start(): stop() shuts the pool down, and the activity
+    // restarts the same source instance on every onStop/onStart cycle (e.g.
+    // returning from Settings) — executing on the terminated pool would throw
+    // RejectedExecutionException and crash.
+    private var ioExecutor = newIoExecutor()
+
+    private fun newIoExecutor() = Executors.newSingleThreadExecutor { r ->
         Thread(r, "unsplash-source").apply { isDaemon = true }
     }
     private val prefs by lazy { PreferenceManager.getDefaultSharedPreferences(appContext) }
@@ -56,6 +62,9 @@ class UnsplashBackgroundSource(context: Context) {
      * Does NOT hit the network unless the persisted page is stale or absent.
      */
     fun start(listener: (UnsplashClient.Photo) -> Unit) {
+        if (ioExecutor.isShutdown) {
+            ioExecutor = newIoExecutor()
+        }
         tickListener = listener
         restoreCache()
         paused = false
@@ -70,6 +79,9 @@ class UnsplashBackgroundSource(context: Context) {
         mainHandler.removeCallbacks(tickRunnable)
         paused = true
         ioExecutor.shutdownNow()
+        // shutdownNow() can kill a fetch before it resets this on main;
+        // clear it so the next start() isn't blocked from fetching forever.
+        fetchInFlight = false
     }
 
     fun pause() {

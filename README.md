@@ -48,33 +48,43 @@ This is that screen.
 
 ### A clock you actually want to look at
 
-A huge, thin, beautifully kerned time display — with seconds that quietly fade away after 90 seconds of stillness so the resting face is just `7:00 PM`. When idle, the whole dashboard melts into a true-black screensaver and the clock drifts a few pixels every minute so your panel never burns in.
+A huge, thin, beautifully kerned time display — with seconds that quietly fade away after 90 seconds of stillness so the resting face is just `7:00 PM`. When idle, the whole dashboard melts into ambient mode — clock plus a single thin music × calendar strip — and the clock drifts a few pixels every minute so your panel never burns in.
 
 ### Your calendar, at the exact moment you need it
 
-The dashboard shows what's happening *now* and what's next. Walk past the screen and you instantly know: *"keep coding"* or *"stand up, meeting in five."* Tap into the **Calendar** page for the full timeline — personal + work feeds merged from your Google / Outlook iCal URLs, colour-tagged.
+The dashboard shows what's happening *now* and what's next. Walk past the screen and you instantly know: *"keep coding"* or *"stand up, meeting in five."* Tap into the **Calendar** page for the full timeline — personal + work feeds merged from your Google / Outlook iCal URLs, colour-tagged, refreshed every 15 minutes.
 
 ### A remote control for Spotify, on your wall
 
-The **Music** page is a full-blown Spotify Connect remote: album art, transport buttons, your live queue, your recently played tracks — driven by the actual MediaSession on your TV plus the Spotify Web API. Skip from across the room with the Android TV remote. Switch playback to your headphones, kitchen speaker, or living-room TV from one focus ring.
+The **Music** page is a full-blown Spotify Connect remote, driven by the actual MediaSession on your TV plus the Spotify Web API:
 
-### Phone mirroring — AirPlay, Cast, Miracast
+- **Browse your library** — your own playlists (Spotify-curated mixes filtered out), **Liked Songs**, and your recently played tracks, all in a D-pad-friendly list. Drill into a playlist and press OK on any track — it plays *in that playlist's context*, so the queue keeps flowing.
+- **Transport from the couch** — album art, play/pause, skip, previous, and a live **Up next** card, all reachable with the Android TV remote.
+- **Send playback anywhere** — switch the active device to your headphones, kitchen speaker, or living-room TV from one focus ring.
 
-Flip the switch in Settings and the dock starts advertising itself on your network as a wireless display target for **AirPlay** (iPhone, iPad, Mac), **Google Cast** (Chrome, Android), and **Miracast** (Windows, Android). The dashboard stays calm at rest; the moment a sender connects, it crossfades out and your phone or laptop takes the screen edge-to-edge. A small *"Casting from {device} via AirPlay"* pill rests in the corner, drifting a few pixels every minute (same burn-in protection as the clock). Each protocol is independently toggleable.
+### AirPlay receiver — mirror, video, and music
+
+Flip the switch in Settings and the dock advertises itself on your network as an **AirPlay** target for your iPhone, iPad, or Mac. The dashboard stays calm at rest; the moment a sender connects, it crossfades out and the stream takes the screen. Three session types, each handled natively:
+
+- **Screen mirroring** — hardware H.264 decode straight to the panel, letterboxed correctly for portrait phones. A small *"Casting from {device} via AirPlay"* pill rests in the corner, drifting a few pixels every minute (same burn-in protection as the clock).
+- **Video apps** — apps that hand off a direct stream URL (YouTube and friends) play through ExoPlayer with HLS support instead of lossy mirroring.
+- **Audio** — play Apple Music or Spotify from your phone and the dock decodes the ALAC stream (software decoder included for picky hardware) and shows a full-screen **Now Playing** view: blurred artwork, track metadata, and a smooth progress bar, with the screen kept awake.
+
+**Google Cast** and **Miracast** toggles exist in Settings, but those receivers are scaffolding for now — AirPlay is the protocol that actually works today. Track the roadmap in the issues.
 
 ### WireGuard VPN, baked in
 
-The dock ships with a native WireGuard tunnel. Drop a `.conf` from your laptop over the LAN, tap **Connect** on the new **Connect** page, and every byte the TV sends goes through the tunnel — Netflix, Plex, the launcher, everything. A discreet country pill confirms the tunnel is up. The system "Always-on / kill-switch" hook is one tap away so non-VPN traffic gets blocked at the kernel.
+The dock ships with a native WireGuard tunnel. Drop a `.conf` from your laptop over the LAN, tap **Connect** on the **Connect** page, and every byte the TV sends goes through the tunnel — Netflix, Plex, the launcher, everything. A discreet country pill confirms the tunnel is up. The system "Always-on / kill-switch" hook is one tap away so non-VPN traffic gets blocked at the kernel.
 
 ### A background that breathes
 
-Every screen carries a softly blurred wash of the current track's album art — Gaussian-quality (pyramid downsample + 3-pass box blur, plus GPU `RenderEffect` on API 31+). When you stop touching the remote, the wash fades to black so the clock owns the room.
+Pick what the screen rests on: **true black** (OLED-friendly), a softly blurred wash of the current track's **album art** (pyramid downsample + 3-pass box blur, GPU `RenderEffect` on API 31+), or **Unsplash wallpapers** matched to your keywords and shuffled on a timer. Idle and playing states get independent choices — album art while music plays, black when the room goes quiet.
 
 ### Quietly good behaviour
 
 - **Stay awake** while visible — no screen-off mid-meeting
-- **Sleep timer** so the dock gracefully exits when you go to bed
-- **Burn-in protection** for OLED panels — clock drifts in ambient mode
+- **Inactivity timeout** so the dock gracefully exits when you go to bed (30 min – 8 h, or never)
+- **Burn-in protection** for OLED panels — clock and casting pill drift in ambient mode
 - **Android TV native** — uses the remote, D-pad, and media keys exactly as you'd expect
 - **No cloud, no telemetry, no account required** — Spotify is optional and PKCE-based
 
@@ -99,8 +109,8 @@ Every screen carries a softly blurred wash of the current track's album art — 
       <sub><b>Calendar</b> — the day on one screen, with personal/work tags</sub>
     </td>
     <td align="center" width="50%">
-      <a href="screenshots/music.png"><img src="screenshots/music.png" alt="Music page with transport and queue"></a><br>
-      <sub><b>Music</b> — transport, up next, recently played</sub>
+      <a href="screenshots/music.png"><img src="screenshots/music.png" alt="Music page with browse panel and transport"></a><br>
+      <sub><b>Music</b> — playlist browser, transport, up next</sub>
     </td>
   </tr>
   <tr>
@@ -141,7 +151,9 @@ The `firetv` build flavor is the default and targets `minSdk 25` (older Amazon F
 
 `spotify.clientId` comes from the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Redirect URI: `com.ambient.tvclock://spotify-callback`. Add your Spotify account under **User Management** (Development Mode).
 
-`unsplash.accessKey` comes from [Unsplash Developers](https://unsplash.com/developers) — create an app, copy the **Access Key** (not Secret Key). Drives the configurable background image feature. Free Demo tier is 50 req/hr, which the dock stays well under because one search returns a page of 30 URLs that get cycled locally.
+`unsplash.accessKey` comes from [Unsplash Developers](https://unsplash.com/developers) — create an app, copy the **Access Key** (not Secret Key). Drives the Unsplash background mode. Free Demo tier is 50 req/hr, which the dock stays well under because one search returns a page of 30 URLs that get cycled locally.
+
+For signed release builds, run `./scripts/setup-signing.sh` once to create a keystore and wire the `signing.*` keys into `local.properties`.
 
 ---
 
@@ -169,17 +181,19 @@ adb shell cmd notification allow_listener $LISTENER
 
 Or just run `./scripts/install-firetv.sh` — it does all three steps in one shot.
 
-For **Premium** users who want queue + remote transport:
+For **Premium** users who want the playlist browser, queue, and remote transport:
 
 1. Add `spotify.clientId` to `local.properties` and rebuild
 2. **Settings → Connect Spotify** — sign in on the TV (WebView)
 3. Play Spotify on the same account; this TV must be the active Connect device for queue data
-4. Focus a transport button or track row and press **OK**
+4. On the Music page: D-pad **Up/Down** walks the browse list (Recently Played, Playlists, Liked Songs), **OK** drills in or plays, **Back** pops out, **Right** jumps to the transport controls
 5. Focus **Playing on … · OK to switch** to move playback to another device
 
-### Phone mirroring
+### Phone mirroring (AirPlay)
 
-**Settings → Phone mirroring (beta) → Enable mirroring receiver.** Set a device name if you want a custom one in the AirPlay picker. Each protocol (AirPlay / Cast / Miracast) is independently toggleable. The dock starts a small foreground service that advertises on the LAN; flip it off and everything goes back to sleep.
+**Settings → Phone mirroring (beta) → Enable mirroring receiver.** Set a device name if you want a custom one in the AirPlay picker, and optionally require a **PIN** for pairing. **Start on boot** keeps the receiver available without opening the app. The dock starts a small foreground service that advertises on the LAN; flip it off and everything goes back to sleep.
+
+Cast and Miracast toggles are present but those receivers aren't functional yet — AirPlay is the supported protocol today.
 
 ### WireGuard VPN
 
@@ -191,13 +205,22 @@ Settings → VPN → Receive config from laptop (LAN)
 
 To activate, head to the **Connect** page and press **OK** on the VPN card. The kill-switch lives one tap away under **Settings → VPN → Always-on / kill-switch (system)**.
 
+### Backgrounds
+
+**Settings → Background.** Choose independent sources for **idle** and **playing** states (black / album art / Unsplash), toggle the blur, pick Unsplash keyword presets or type your own, and set the shuffle interval (default 10 min — or press **Shuffle photo now**). Keyword changes are rate-limited to once per 2 hours to stay inside Unsplash's demo-tier quota.
+
+### Sleep
+
+**Settings → Sleep.** **Ambient delay** (default 90 s) controls how long until the dashboard fades to the clock-only ambient face. **Inactivity timeout** (default 3 h) exits the app entirely after a long stretch with no remote input — set it to *never* for a true always-on installation.
+
 ### Inputs
 
 | Input | Where | What it does |
 |---|---|---|
 | D-pad Left / Right | Anywhere | Switch between Connect, Home, Calendar, Music |
-| D-pad Up / Down | Calendar | Scroll the day |
-| D-pad / OK | Music, Connect | Focus + activate transport, tracks, devices, AirPlay, VPN |
+| D-pad Up / Down | Calendar, Music | Scroll the day / walk the browse list |
+| D-pad / OK | Music, Connect | Drill into playlists, play tracks, switch devices, activate AirPlay / VPN |
+| Back | Music | Pop out of a playlist back to the browse list |
 | Media keys | Music | Play/pause, skip, previous (works with the Android TV remote media buttons) |
 | Menu | Anywhere | Settings |
 
@@ -214,29 +237,33 @@ flowchart TD
     DP --> H[Home<br/>HomeScreenBinder]
     DP --> CA[Calendar<br/>CalendarScreenBinder]
     DP --> M[Music<br/>MusicScreenBinder]
-    DP --> BG[BlurredBackgroundBinder<br/>AlbumArtBlur]
+    DP --> BG[BackgroundController<br/>black / album art / Unsplash]
 
     H --> CP[CalendarPoller<br/>IcalParser]
     CA --> CP
 
     H --> NP[NowPlayingPoller<br/>MediaSession]
     M --> NP
-    M --> SC[SpotifyApiClient<br/>OAuth PKCE]
+    M --> SC[SpotifyApiClient<br/>OAuth PKCE + playlists/queue]
 
-    C --> RS[ReceiverService<br/>AirPlay / Cast / Miracast]
+    C --> RS[ReceiverService<br/>AirPlay receiver]
     C --> WG[WireGuardTunnel<br/>VPN service]
 
-    RS --> SO[StreamingOverlay<br/>SurfaceView crossfade]
+    RS --> SO[StreamingOverlay<br/>mirroring crossfade]
+    RS --> VP[AirPlayVideoPlayer<br/>ExoPlayer · direct URLs]
+    RS --> NPA[AirPlayNowPlayingActivity<br/>audio sessions]
 ```
 
 - `MainActivity.kt` — dashboard pager, drift, ambient watchdog, input routing, streaming-overlay crossfade
 - `Home/Calendar/Music/StatusScreenBinder.kt` — per-page view binders
-- `BlurredBackgroundBinder.kt` + `AlbumArtBlur.kt` — full-bleed artwork wash (pyramid downsample + 3-pass box blur ≈ Gaussian, GPU `RenderEffect` pass on API 31+)
+- `BackgroundController.kt` + `BlurredBackgroundBinder.kt` + `AlbumArtBlur.kt` — background source switching and the full-bleed artwork wash (pyramid downsample + 3-pass box blur ≈ Gaussian, GPU `RenderEffect` pass on API 31+); `UnsplashBackgroundSource.kt` for wallpaper mode
 - `CalendarPoller.kt` / `IcalParser.kt` — iCal feed polling, every 15 min
-- `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue / recently-played
+- `SpotifyApiClient.kt` / `SpotifyPlaylistRepository.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE, playlist/Liked Songs browsing, queue, recently played, device transfer
 - `NowPlayingPoller.kt` — MediaSession bridge
-- `receiver/ReceiverService.kt` — foreground service hosting AirPlay / Google Cast / Miracast, plus the RTSP + MediaCodec pipeline for the AirPlay video stream
-- `receiver/ui/StreamingOverlay.kt` — full-bleed SurfaceView the dashboard crossfades into when a sender connects
+- `receiver/ReceiverService.kt` — foreground service hosting the AirPlay receiver: mDNS advertisement, pairing, RTSP handshake, and the MediaCodec mirroring pipeline
+- `receiver/airplay/AirPlayVideoPlayer.kt` — ExoPlayer (HLS) playback for direct video-URL sessions
+- `receiver/airplay/AirPlayNowPlayingActivity.kt` + `AlacSoftwareDecoder.kt` — full-screen Now Playing for audio sessions, with software ALAC decode
+- `receiver/ui/StreamingOverlay.kt` — full-bleed SurfaceView the dashboard crossfades into when a sender mirrors
 - `vpn/` — WireGuard tunnel manager + the LAN config-import endpoint
 
 Built on plain Android views (no Compose, no React Native) so it stays buttery on older Android TV hardware.
@@ -270,10 +297,11 @@ Pull requests welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening on
 ## Acknowledgements
 
 - [WireGuard for Android](https://git.zx2c4.com/wireguard-android/) — `com.wireguard.android:tunnel`
+- [AndroidX Media3 / ExoPlayer](https://developer.android.com/media/media3) — direct video-URL playback with HLS
 - [dd-plist](https://github.com/3breadt/dd-plist) — Apple plist parsing for AirPlay session attributes
 - [OkHttp](https://square.github.io/okhttp/) and [Bouncy Castle](https://www.bouncycastle.org/) — networking + crypto
 - [Timber](https://github.com/JakeWharton/timber) — logging
-- [Spotify Web API](https://developer.spotify.com/documentation/web-api) — queue / device control
+- [Spotify Web API](https://developer.spotify.com/documentation/web-api) — playlists, queue, device control
 - The screen-saver photo frames of the world — for being almost-but-not-quite what I wanted
 
 ---

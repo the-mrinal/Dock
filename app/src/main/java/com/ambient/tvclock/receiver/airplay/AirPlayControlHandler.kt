@@ -53,7 +53,7 @@ class AirPlayControlHandler(
         // Video URL protocol routes are delegated first — they share port 7000
         // with the mirroring control surface, and we want their dedicated
         // handler to win for /play, /stop, /scrub, /rate, /playback-info.
-        playbackHandler?.let { if (it.claims(request)) return it.handle(request) }
+        playbackHandler?.let { if (it.claims(request)) return it.handle(request, clientAddress) }
         return when {
             request.method == "GET" && request.uri.startsWith("/server-info") ->
                 handleServerInfo()
