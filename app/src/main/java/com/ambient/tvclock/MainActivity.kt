@@ -329,11 +329,15 @@ class MainActivity : Activity() {
     /** From the ad-block card: jump to the HomeLab dashboard page if it's
      *  enabled, otherwise open Settings so the user can configure it. */
     private fun openAdBlockDashboard() {
-        if (DashboardPage.HOMELAB in pages) {
-            goToPage(DashboardPage.HOMELAB)
-        } else {
+        val url = AdBlockPreferences.getDashboardUrl(this)
+        if (url.isBlank()) {
             startActivity(Intent(this, SettingsActivity::class.java))
+            return
         }
+        startActivity(
+            Intent(this, DashboardWebActivity::class.java)
+                .putExtra(DashboardWebActivity.EXTRA_URL, url)
+        )
     }
 
     override fun onStart() {
