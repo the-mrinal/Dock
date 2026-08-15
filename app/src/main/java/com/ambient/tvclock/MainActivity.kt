@@ -396,6 +396,13 @@ class MainActivity : Activity() {
         airPlayNowPlayingJob = null
         ReceiverStateBus.setSurfaceProvider(null)
 
+        // Timers must not run while another activity (e.g. Settings) is on
+        // top: the watchdog would finishAndRemoveTask() the dashboard out from
+        // under it. onResume() re-arms all three via resetInactivityWatchdog().
+        mainHandler.removeCallbacks(watchdogRunnable)
+        mainHandler.removeCallbacks(enterAmbientRunnable)
+        mainHandler.removeCallbacks(fadeSecondsRunnable)
+
         nowPlayingPoller.stop()
         calendarPoller.stop()
         spotifyQueuePoller.stop()

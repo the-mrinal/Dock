@@ -34,8 +34,19 @@ class UnsplashBackgroundSource(context: Context) {
 
     private val appContext = context.applicationContext
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val ioExecutor = Executors.newSingleThreadExecutor { r ->
+    // Recreated on demand: stop() shuts the executor down to abort in-flight
+    // fetches, and the same source instance is started again when the activity
+    // returns to the foreground (e.g. after a round-trip through Settings).
+    private var ioExecutor = newIoExecutor()
+
+    private fun newIoExecutor() = Executors.newSingleThreadExecutor { r ->
         Thread(r, "unsplash-source").apply { isDaemon = true }
+    }
+
+    private fun ensureExecutorAlive() {
+        if (ioExecutor.isShutdown) {
+            ioExecutor = newIoExecutor()
+        }
     }
     private val prefs by lazy { PreferenceManager.getDefaultSharedPreferences(appContext) }
 
@@ -56,6 +67,7 @@ class UnsplashBackgroundSource(context: Context) {
      * Does NOT hit the network unless the persisted page is stale or absent.
      */
     fun start(listener: (UnsplashClient.Photo) -> Unit) {
+        ensureExecutorAlive()
         tickListener = listener
         restoreCache()
         paused = false
@@ -80,6 +92,7 @@ class UnsplashBackgroundSource(context: Context) {
 
     fun resume() {
         if (!paused) return
+        ensureExecutorAlive()
         paused = false
         scheduleNextTick()
         ensurePageAvailable()
