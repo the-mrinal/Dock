@@ -72,6 +72,11 @@ class SettingsActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
             updateNotificationAccessSummary()
+
+            findPreference<Preference>("remote_setup")?.setOnPreferenceClickListener {
+                startActivity(Intent(requireContext(), SetupActivity::class.java))
+                true
+            }
             updateSpotifyStatus()
             updateUnsplashKeyStatus()
 

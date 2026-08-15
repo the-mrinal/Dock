@@ -145,6 +145,14 @@
     <string name="pref_adblock_url_summary">Address of the Fire TV de-bloat dashboard (e.g. http://homelab.local:8099)</string>
     <string name="homelab_retrying">Retrying automatically…</string>
 
+    <string name="pref_category_setup">Setup</string>
+    <string name="pref_remote_setup_title">Set up from phone or laptop</string>
+    <string name="pref_remote_setup_summary">Edit calendar and dashboard URLs in a browser instead of the remote</string>
+    <string name="setup_title">Set up from your phone</string>
+    <string name="setup_pin_label">Enter this PIN on the page:</string>
+    <string name="setup_done">Done</string>
+    <string name="setup_status_saved">Saved: %1$s</string>
+    <string name="setup_status_waiting">Waiting for changes… (%1$d:%2$02d remaining)</string>
     <string name="pref_category_calendar">Calendar</string>
     <string name="pref_show_calendar_title">Show calendar</string>
     <string name="pref_show_calendar_summary">Display today\'s events on Home and Calendar screens</string>
