@@ -1,3 +1,16 @@
+## [1.2.0](https://github.com/the-mrinal/Dock/compare/v1.1.1...v1.2.0) (2026-08-15)
+
+### Features
+
+* **audio:** inaudible soundbar keep-alive tone when idle ([bf52ab1](https://github.com/the-mrinal/Dock/commit/bf52ab10177749028b82349a5b53b508ec2173c8))
+* **dashboard:** Home Lab page with live dashboard and ad-block status card ([652fa1a](https://github.com/the-mrinal/Dock/commit/652fa1a8c2bfd0091e94d65555a9a6287a29ce19))
+* **setup:** configure URL settings from a phone/laptop browser ([8aa6e28](https://github.com/the-mrinal/Dock/commit/8aa6e2895df076327b86432adc9098f2548bec55))
+
+### Bug Fixes
+
+* **adblock:** open dashboard in WebView + allow cleartext for LAN ([592cf27](https://github.com/the-mrinal/Dock/commit/592cf27acf27e46aae7d5cdfbdc02ab7ed64732f))
+* **dashboard:** crash when returning from Settings kicked user to launcher ([623d20e](https://github.com/the-mrinal/Dock/commit/623d20eeeded7bcbf446b26c2c4446b6114e48e9))
+
 ## [1.1.1](https://github.com/the-mrinal/Dock/compare/v1.1.0...v1.1.1) (2026-06-10)
 
 ### Bug Fixes
