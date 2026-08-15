@@ -110,6 +110,31 @@
     <string name="calendar_last_updated">Updated %1$s</string>
     <string name="calendar_fetch_error">Could not refresh calendar</string>
 
+    <!-- Split Decks home -->
+    <string name="deck_personal">Personal</string>
+    <string name="deck_work">Work</string>
+    <string name="deck_quiet_work_title">No meetings today</string>
+    <string name="deck_quiet_work_subtitle">Your work calendar is clear</string>
+    <string name="deck_quiet_personal_title">No plans today</string>
+    <string name="deck_quiet_personal_subtitle">Your day is open</string>
+    <string name="deck_setup_hint">Add a calendar URL in Settings</string>
+    <string name="deck_next_preview">NEXT · %1$s · %2$s</string>
+    <string name="deck_nothing_scheduled">NOTHING SCHEDULED THIS WEEK</string>
+    <string name="deck_more_count">+%1$d MORE</string>
+    <string name="stage_live_now">LIVE NOW</string>
+    <string name="stage_next_up">NEXT UP</string>
+    <string name="stage_now_playing">NOW PLAYING</string>
+    <string name="stage_min_left">%1$s · %2$d MIN LEFT</string>
+    <string name="stage_in_duration">IN %1$s</string>
+    <string name="row_now_tag">NOW</string>
+    <string name="meta_teams">Teams</string>
+    <string name="meta_meet">Meet</string>
+    <string name="meta_zoom">Zoom</string>
+    <string name="meta_accepted">✓ Accepted</string>
+    <string name="meta_tentative">\? Tentative</string>
+    <string name="meta_oof">Out of office</string>
+    <string name="meta_free">Free</string>
+
     <string name="pref_category_sleep">Sleep timer</string>
     <string name="pref_inactivity_timeout_title">Auto-exit after inactivity</string>
     <string name="pref_inactivity_timeout_summary">Closes the app and allows the TV to sleep when no remote input is detected</string>

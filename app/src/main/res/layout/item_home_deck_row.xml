@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One event row inside a Split Decks home deck. The indicator slot shows a
+     Google-style color dot (personal) or an Outlook-style busy bar (work);
+     HomeScreenBinder flips visibility and tints. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rowRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="6dp"
+    android:paddingTop="7dp"
+    android:paddingEnd="6dp"
+    android:paddingBottom="7dp">
+
+    <FrameLayout
+        android:layout_width="12dp"
+        android:layout_height="34dp">
+
+        <View
+            android:id="@+id/rowDot"
+            android:layout_width="9dp"
+            android:layout_height="9dp"
+            android:layout_gravity="center"
+            android:background="@drawable/shape_event_dot"
+            android:visibility="gone" />
+
+        <View
+            android:id="@+id/rowBar"
+            android:layout_width="4dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:background="@drawable/shape_event_bar"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="72dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/rowTimeStart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/jetbrains_mono_medium"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/rowTimeEnd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/text_dim"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/rowTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope_semibold"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/rowNowTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_now_tag"
+                android:fontFamily="@font/jetbrains_mono_bold"
+                android:includeFontPadding="false"
+                android:letterSpacing="0.16"
+                android:paddingStart="5dp"
+                android:paddingTop="1dp"
+                android:paddingEnd="5dp"
+                android:paddingBottom="1dp"
+                android:text="@string/row_now_tag"
+                android:textColor="#0A0A0B"
+                android:textSize="8sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/rowMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/manrope_medium"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

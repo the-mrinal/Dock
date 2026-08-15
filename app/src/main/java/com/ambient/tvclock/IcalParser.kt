@@ -21,6 +21,11 @@ object IcalParser {
     private fun parseEvent(body: String, source: CalendarSource): CalendarEvent? {
         val props = parseProperties(body)
 
+        // Cancelled events still appear in published feeds; never surface them.
+        if (props["STATUS"]?.value?.trim()?.uppercase() == "CANCELLED") {
+            return null
+        }
+
         val summary = props["SUMMARY"]?.value
             ?.replace("\\n", " ")
             ?.replace("\\,", ",")
@@ -64,9 +69,71 @@ object IcalParser {
             location = location,
             source = source,
             timeZoneId = tzId,
-            rrule = rrule
+            rrule = rrule,
+            busyStatus = parseBusyStatus(props),
+            categories = parseCategories(props),
+            onlineMeetingUrl = findMeetingUrl(props, location),
+            organizer = parseOrganizer(props),
+            colorHex = parseColor(props)
         )
     }
+
+    private fun parseBusyStatus(props: Map<String, IcalProperty>): BusyStatus {
+        when (props["X-MICROSOFT-CDO-BUSYSTATUS"]?.value?.trim()?.uppercase()) {
+            "FREE" -> return BusyStatus.FREE
+            "TENTATIVE" -> return BusyStatus.TENTATIVE
+            "OOF" -> return BusyStatus.OOF
+            "BUSY" -> return BusyStatus.BUSY
+        }
+        if (props["STATUS"]?.value?.trim()?.uppercase() == "TENTATIVE") {
+            return BusyStatus.TENTATIVE
+        }
+        if (props["TRANSP"]?.value?.trim()?.uppercase() == "TRANSPARENT") {
+            return BusyStatus.FREE
+        }
+        return BusyStatus.BUSY
+    }
+
+    private fun parseCategories(props: Map<String, IcalProperty>): List<String> {
+        val raw = props["CATEGORIES"]?.value ?: return emptyList()
+        return raw.split(',')
+            .map { it.replace("\\,", ",").trim() }
+            .filter { it.isNotEmpty() }
+    }
+
+    private fun findMeetingUrl(props: Map<String, IcalProperty>, location: String): String? {
+        props["X-MICROSOFT-SKYPETEAMSMEETINGURL"]?.value?.trim()
+            ?.takeIf { it.startsWith("http") }
+            ?.let { return it }
+        val haystacks = listOfNotNull(
+            location,
+            props["DESCRIPTION"]?.value,
+            props["X-GOOGLE-CONFERENCE"]?.value,
+            props["URL"]?.value
+        )
+        for (text in haystacks) {
+            MEETING_URL_REGEX.find(text)?.let { return it.value.trimEnd('\\', '>', ')', '.') }
+        }
+        return null
+    }
+
+    private fun parseOrganizer(props: Map<String, IcalProperty>): String? {
+        val prop = props["ORGANIZER"] ?: return null
+        prop.param("CN")?.trim('"')?.takeIf { it.isNotBlank() }?.let { return it }
+        return prop.value.removePrefix("mailto:").takeIf { it.isNotBlank() }
+    }
+
+    private fun parseColor(props: Map<String, IcalProperty>): String? {
+        val raw = (props["X-APPLE-CALENDAR-COLOR"] ?: props["COLOR"])?.value?.trim()
+            ?: return null
+        // Accept #RRGGBB / #RRGGBBAA; CSS color names are not worth mapping.
+        if (!raw.startsWith("#") || raw.length < 7) return null
+        return raw.substring(0, 7)
+    }
+
+    private val MEETING_URL_REGEX = Regex(
+        "https://(?:[\\w.-]*teams\\.microsoft\\.com/l/meetup-join|meet\\.google\\.com|[\\w.-]*zoom\\.us/j)[^\\s\"'<>]*"
+    )
 
     private fun parseProperties(body: String): Map<String, IcalProperty> {
         val map = mutableMapOf<String, IcalProperty>()
