@@ -18,19 +18,9 @@ object CalendarRepository {
 
         val personalUrl = CalendarPreferences.getPersonalUrl(context)
         val workUrl = CalendarPreferences.getWorkUrl(context)
-        if (personalUrl.isBlank() && workUrl.isBlank()) {
+        val googleApi = GoogleCalendarClient.isConfigured
+        if (personalUrl.isBlank() && workUrl.isBlank() && !googleApi) {
             return CalendarSnapshot(emptyList(), System.currentTimeMillis())
-        }
-
-        val merged = mutableListOf<CalendarEvent>()
-        var fetchFailed = false
-
-        if (personalUrl.isNotBlank()) {
-            mergeFeed(personalUrl, CalendarSource.PERSONAL, merged).also { if (!it) fetchFailed = true }
-        }
-
-        if (workUrl.isNotBlank()) {
-            mergeFeed(workUrl, CalendarSource.WORK, merged).also { if (!it) fetchFailed = true }
         }
 
         val cal = Calendar.getInstance()
@@ -43,6 +33,27 @@ object CalendarRepository {
         val endOfDay = cal.timeInMillis
         cal.add(Calendar.DAY_OF_YEAR, PREVIEW_LOOKAHEAD_DAYS)
         val previewEnd = cal.timeInMillis
+
+        val merged = mutableListOf<CalendarEvent>()
+        var fetchFailed = false
+
+        // Personal: Google Calendar API when provisioned (real colors, RSVP,
+        // attendees, server-side recurrence expansion), else the ICS feed.
+        val apiEvents = if (googleApi) {
+            GoogleCalendarClient.fetchEvents(startOfDay, previewEnd)
+        } else {
+            null
+        }
+        when {
+            apiEvents != null -> merged.addAll(apiEvents)
+            googleApi && personalUrl.isBlank() -> fetchFailed = true
+            personalUrl.isNotBlank() ->
+                mergeFeed(personalUrl, CalendarSource.PERSONAL, merged).also { if (!it) fetchFailed = true }
+        }
+
+        if (workUrl.isNotBlank()) {
+            mergeFeed(workUrl, CalendarSource.WORK, merged).also { if (!it) fetchFailed = true }
+        }
 
         // Expand across the whole preview window in one pass; today's list
         // and the per-source "next after today" previews both come out of it.

@@ -8,6 +8,9 @@ package com.ambient.tvclock
  */
 enum class BusyStatus { FREE, TENTATIVE, BUSY, OOF }
 
+/** The signed-in user's own RSVP to an event, where the source knows it. */
+enum class RsvpStatus { NEEDS_ACTION, DECLINED, TENTATIVE, ACCEPTED, ORGANIZER }
+
 data class CalendarEvent(
     val title: String,
     val startMillis: Long,
@@ -28,7 +31,10 @@ data class CalendarEvent(
      * secret iCal never does) — stays null until a Google Calendar API
      * integration fills it. UI falls back to a per-source accent.
      */
-    val colorHex: String? = null
+    val colorHex: String? = null,
+    /** Null when the feed can't say (ICS); populated by API integrations. */
+    val myResponse: RsvpStatus? = null,
+    val attendeeCount: Int = 0
 ) {
     fun isHappeningNow(nowMillis: Long): Boolean {
         if (isAllDay) {

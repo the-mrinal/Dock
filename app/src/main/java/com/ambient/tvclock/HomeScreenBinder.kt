@@ -376,12 +376,14 @@ class HomeScreenBinder(private val root: View) {
     private fun renderDeck(source: CalendarSource, deck: DeckViews) {
         val context = root.context
         val now = System.currentTimeMillis()
-        val url = when (source) {
-            CalendarSource.PERSONAL -> CalendarPreferences.getPersonalUrl(context)
-            CalendarSource.WORK -> CalendarPreferences.getWorkUrl(context)
+        val configured = when (source) {
+            CalendarSource.PERSONAL ->
+                CalendarPreferences.getPersonalUrl(context).isNotBlank() ||
+                    GoogleCalendarClient.isConfigured
+            CalendarSource.WORK -> CalendarPreferences.getWorkUrl(context).isNotBlank()
         }
 
-        if (!CalendarPreferences.isEnabled(context) || url.isBlank()) {
+        if (!CalendarPreferences.isEnabled(context) || !configured) {
             showDeckQuiet(deck, glyph = "+", title = context.getString(R.string.deck_setup_hint), sub = null)
             deck.footer.text = ""
             return
@@ -515,9 +517,10 @@ class HomeScreenBinder(private val root: View) {
                 if (event.isAllDay) {
                     stylePersonalAllDayPill(title)
                 } else {
-                    cleanLocation(event)?.let {
+                    val metaText = buildEventMeta(context, event, includeOrganizer = false)
+                    if (metaText.isNotEmpty()) {
                         meta.visibility = View.VISIBLE
-                        meta.text = it
+                        meta.text = metaText
                     }
                 }
             }
@@ -601,28 +604,53 @@ class HomeScreenBinder(private val root: View) {
             }
         }
 
-        when (event.busyStatus) {
-            BusyStatus.TENTATIVE -> appendPart(
+        // Real RSVP (API sources) beats the busy-status proxy (ICS sources).
+        when (event.myResponse) {
+            RsvpStatus.ACCEPTED -> appendPart(
+                context.getString(R.string.meta_accepted),
+                ContextCompat.getColor(context, R.color.rsvp_accepted),
+                bold = true
+            )
+            RsvpStatus.TENTATIVE -> appendPart(
                 context.getString(R.string.meta_tentative),
                 ContextCompat.getColor(context, R.color.rsvp_tentative),
                 bold = true
             )
-            BusyStatus.OOF -> appendPart(
-                context.getString(R.string.meta_oof),
-                ContextCompat.getColor(context, R.color.text_muted)
+            RsvpStatus.NEEDS_ACTION -> appendPart(
+                context.getString(R.string.meta_awaiting),
+                dimColor
             )
-            BusyStatus.FREE -> appendPart(context.getString(R.string.meta_free), dimColor)
-            BusyStatus.BUSY -> if (event.source == CalendarSource.WORK &&
-                (event.onlineMeetingUrl != null || event.organizer != null)
-            ) {
-                // On the user's own published calendar, committed meetings ride
-                // as BUSY — a fair proxy for "accepted" until Graph lands.
-                appendPart(
-                    context.getString(R.string.meta_accepted),
-                    ContextCompat.getColor(context, R.color.rsvp_accepted),
+            RsvpStatus.DECLINED, RsvpStatus.ORGANIZER -> Unit
+            null -> when (event.busyStatus) {
+                BusyStatus.TENTATIVE -> appendPart(
+                    context.getString(R.string.meta_tentative),
+                    ContextCompat.getColor(context, R.color.rsvp_tentative),
                     bold = true
                 )
+                BusyStatus.OOF -> appendPart(
+                    context.getString(R.string.meta_oof),
+                    ContextCompat.getColor(context, R.color.text_muted)
+                )
+                BusyStatus.FREE -> appendPart(context.getString(R.string.meta_free), dimColor)
+                BusyStatus.BUSY -> if (event.source == CalendarSource.WORK &&
+                    (event.onlineMeetingUrl != null || event.organizer != null)
+                ) {
+                    // On the user's own published calendar, committed meetings
+                    // ride as BUSY — a fair proxy for "accepted" until Graph lands.
+                    appendPart(
+                        context.getString(R.string.meta_accepted),
+                        ContextCompat.getColor(context, R.color.rsvp_accepted),
+                        bold = true
+                    )
+                }
             }
+        }
+
+        if (event.attendeeCount > 1) {
+            appendPart(
+                context.getString(R.string.meta_people, event.attendeeCount),
+                ContextCompat.getColor(context, R.color.text_muted)
+            )
         }
 
         event.categories.firstOrNull()?.let { category ->

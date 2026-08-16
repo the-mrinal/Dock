@@ -132,6 +132,8 @@
     <string name="meta_zoom">Zoom</string>
     <string name="meta_accepted">✓ Accepted</string>
     <string name="meta_tentative">\? Tentative</string>
+    <string name="meta_awaiting">Awaiting reply</string>
+    <string name="meta_people">%1$d people</string>
     <string name="meta_oof">Out of office</string>
     <string name="meta_free">Free</string>
 
