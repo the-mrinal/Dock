@@ -103,6 +103,14 @@ android {
         }
     }
 
+    lint {
+        // CI gates on *new* problems. The baseline records what was already
+        // here when the gate went in, so existing debt is visible and tracked
+        // rather than silently suppressed — delete an entry as you fix it.
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+    }
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -141,4 +149,10 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    // org.json ships inside android.jar, which unit tests only see as a stub
+    // (every method returns a default). A real implementation on the test
+    // classpath lets JSON parsing be tested on the JVM, no device needed.
+    testImplementation("org.json:json:20240303")
+    // Drives the sync client against a real socket without a real server.
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
 }

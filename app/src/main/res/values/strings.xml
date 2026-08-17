@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Dock</string>
     <string name="settings_title">Settings</string>
 
@@ -287,6 +287,55 @@
     <string name="vpn_overlay_needs_permission">Grant “Display over other apps” for this app to enable the overlay</string>
 
     <!-- Background image (Unsplash) settings. -->
+    <!-- Wallpaper library (grainstorm sync) -->
+    <string name="pref_category_wallpaper">Wallpaper</string>
+    <string name="pref_wallpaper_browse_title">Browse wallpapers…</string>
+    <string name="pref_wallpaper_browse_summary">Pick from your grainstorm library</string>
+    <string name="pref_wallpaper_panel_title">This screen</string>
+    <string name="pref_wallpaper_register_title">Register this screen</string>
+    <string name="pref_wallpaper_register_summary">Tell the library this panel\'s exact resolution so wallpapers are rendered to fit</string>
+    <string name="pref_wallpaper_server_title">Library server</string>
+    <string name="pref_wallpaper_server_summary">e.g. http://homelab:8079</string>
+    <string name="pref_wallpaper_token_title">Access token</string>
+    <string name="pref_wallpaper_token_summary">The device token from your server. Lets this screen enrol itself and pick a wallpaper — nothing more.</string>
+    <string name="pref_wallpaper_device_key_title">Device name</string>
+    <string name="pref_wallpaper_device_key_summary">How this screen is identified in the library</string>
+    <string name="pref_wallpaper_test_title">Test connection</string>
+    <string name="pref_wallpaper_test_summary">Check the dock can reach the library</string>
+    <string name="pref_wallpaper_poll_title">Check for a new wallpaper</string>
+    <string name="pref_wallpaper_poll_summary">How often to ask the library whether the wallpaper has changed</string>
+    <string name="pref_background_when_ambient_title">Screensaver background</string>
+    <string name="pref_background_when_ambient_summary">What fills the screen once the dock goes idle</string>
+    <string name="background_source_grainstorm">Grainstorm wallpaper</string>
+    <string name="background_source_same_as_awake">Same as above</string>
+
+    <string name="wallpaper_poll_5m">Every 5 minutes</string>
+    <string name="wallpaper_poll_15m">Every 15 minutes</string>
+    <string name="wallpaper_poll_1h">Every hour</string>
+    <string name="wallpaper_poll_6h">Every 6 hours</string>
+
+    <string name="wallpaper_not_configured">Set a library server first</string>
+    <string name="wallpaper_panel_unknown">Could not read this display</string>
+    <string name="wallpaper_testing">Checking…</string>
+    <string name="wallpaper_test_ok">Connected</string>
+    <string name="wallpaper_registering">Registering…</string>
+    <string name="wallpaper_registered">Registered as %1$s at %2$s</string>
+    <string name="wallpaper_error_unreachable">Could not reach the server</string>
+    <string name="wallpaper_error_unauthorized">The server rejected this token</string>
+    <string name="wallpaper_error_not_found">Not found on the server</string>
+    <string name="wallpaper_error_server">Server error (%1$d)</string>
+    <string name="wallpaper_error_malformed">The server sent something unexpected</string>
+
+    <string name="wallpaper_picker_title">Wallpapers</string>
+    <string name="wallpaper_picker_loading">Loading your library…</string>
+    <string name="wallpaper_picker_empty" tools:ignore="TypographyDashes">No wallpapers yet.\n\nRun \u0022Grainstorm --apply\u0022 on your Mac, or save one from the web creator.</string>
+    <string name="wallpaper_picker_offline">Could not reach the library. Showing the wallpaper already on this screen.</string>
+    <string name="wallpaper_picker_applied">Wallpaper set</string>
+    <string name="wallpaper_picker_applying">Setting…</string>
+    <string name="wallpaper_picker_seed">Seed %1$d</string>
+    <string name="wallpaper_picker_size">%1$d × %2$d</string>
+    <string name="wallpaper_picker_current">On screen now</string>
+
     <string name="pref_category_background">Background image</string>
     <string name="pref_background_when_idle_title">Background when nothing is playing</string>
     <string name="pref_background_when_idle_summary">Show a black screen or rotate through Unsplash landscape photos</string>

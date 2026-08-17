@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.preference.PreferenceManager
+import com.ambient.tvclock.background.BackgroundImage
+import com.ambient.tvclock.background.BackgroundSource
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.Executors
@@ -30,7 +32,9 @@ import java.util.concurrent.Executors
  * happens on a single background thread; results post back to main and emit
  * via [tickListener].
  */
-class UnsplashBackgroundSource(context: Context) {
+class UnsplashBackgroundSource(context: Context) : BackgroundSource {
+
+    override val id: String = BackgroundPreferences.SOURCE_UNSPLASH
 
     private val appContext = context.applicationContext
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -66,9 +70,9 @@ class UnsplashBackgroundSource(context: Context) {
      * photo immediately if available, and schedules the first shuffle tick.
      * Does NOT hit the network unless the persisted page is stale or absent.
      */
-    fun start(listener: (UnsplashClient.Photo) -> Unit) {
+    override fun start(listener: (BackgroundImage) -> Unit) {
         ensureExecutorAlive()
-        tickListener = listener
+        tickListener = { photo -> listener(photo.toBackgroundImage()) }
         restoreCache()
         paused = false
         // Caller (BackgroundController) may have set the source to something
@@ -77,20 +81,20 @@ class UnsplashBackgroundSource(context: Context) {
         ensurePageAvailable()
     }
 
-    fun stop() {
+    override fun stop() {
         tickListener = null
         mainHandler.removeCallbacks(tickRunnable)
         paused = true
         ioExecutor.shutdownNow()
     }
 
-    fun pause() {
+    override fun pause() {
         if (paused) return
         paused = true
         mainHandler.removeCallbacks(tickRunnable)
     }
 
-    fun resume() {
+    override fun resume() {
         if (!paused) return
         ensureExecutorAlive()
         paused = false
@@ -101,6 +105,32 @@ class UnsplashBackgroundSource(context: Context) {
     /** Current photo without advancing the cursor — used to repaint on a
      *  preference change without re-fetching. Null if cache is empty. */
     fun currentPhoto(): UnsplashClient.Photo? = page.getOrNull(cursor)
+
+    override fun current(): BackgroundImage? = currentPhoto()?.toBackgroundImage()
+
+    /**
+     * The controller no longer knows which preferences this source cares
+     * about — it forwards every change and the source decides.
+     */
+    override fun onSettingChanged(key: String) {
+        when (key) {
+            BackgroundPreferences.KEY_SHUFFLE_INTERVAL_MS -> onIntervalChanged()
+            BackgroundPreferences.KEY_KEYWORD_PRESETS,
+            BackgroundPreferences.KEY_CUSTOM_KEYWORDS -> onKeywordsChanged()
+        }
+    }
+
+    /** Unsplash's terms require the photographer credit to travel with the
+     *  image, so it rides along rather than being looked up separately. */
+    private fun UnsplashClient.Photo.toBackgroundImage() = BackgroundImage.Remote(
+        uri = imageUrl,
+        key = "url|" + imageUrl,
+        credit = BackgroundImage.Credit(
+            name = photographerName,
+            description = description,
+            link = photographerUsername,
+        ),
+    )
 
     /** Called when the shuffle interval preference changes — drops the
      *  pending tick and rebases on the new interval. */
@@ -116,7 +146,7 @@ class UnsplashBackgroundSource(context: Context) {
      * page is already in memory. Auto-shuffle timer is restarted so the user's
      * manual tap effectively resets the countdown to the next auto-cycle.
      */
-    fun shuffleNow() {
+    override fun shuffleNow() {
         if (page.isEmpty()) {
             // Nothing cached yet — kick off a fetch so the next tick has data.
             ensurePageAvailable()

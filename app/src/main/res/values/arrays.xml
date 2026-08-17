@@ -57,21 +57,55 @@
     <string-array name="background_idle_source_labels">
         <item>@string/background_source_black</item>
         <item>@string/background_source_unsplash</item>
+        <item>@string/background_source_grainstorm</item>
     </string-array>
 
     <string-array name="background_idle_source_values">
         <item>black</item>
         <item>unsplash</item>
+        <item>grainstorm</item>
+    </string-array>
+
+    <!-- The screensaver. "Same as above" carries whatever was already showing
+         into the idle state; naming a source pins it regardless. -->
+    <string-array name="background_ambient_source_labels">
+        <item>@string/background_source_black</item>
+        <item>@string/background_source_grainstorm</item>
+        <item>@string/background_source_unsplash</item>
+        <item>@string/background_source_same_as_awake</item>
+    </string-array>
+
+    <string-array name="background_ambient_source_values">
+        <item>black</item>
+        <item>grainstorm</item>
+        <item>unsplash</item>
+        <item>same</item>
+    </string-array>
+
+    <string-array name="wallpaper_poll_labels">
+        <item>@string/wallpaper_poll_5m</item>
+        <item>@string/wallpaper_poll_15m</item>
+        <item>@string/wallpaper_poll_1h</item>
+        <item>@string/wallpaper_poll_6h</item>
+    </string-array>
+
+    <string-array name="wallpaper_poll_values">
+        <item>300000</item>
+        <item>900000</item>
+        <item>3600000</item>
+        <item>21600000</item>
     </string-array>
 
     <string-array name="background_playing_source_labels">
         <item>@string/background_source_album_art</item>
         <item>@string/background_source_unsplash</item>
+        <item>@string/background_source_grainstorm</item>
     </string-array>
 
     <string-array name="background_playing_source_values">
         <item>album_art</item>
         <item>unsplash</item>
+        <item>grainstorm</item>
     </string-array>
 
     <string-array name="background_keyword_preset_labels">

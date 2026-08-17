@@ -12,6 +12,7 @@ import androidx.preference.MultiSelectListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
+import com.ambient.tvclock.grainstorm.WallpaperSettings
 import com.ambient.tvclock.receiver.ReceiverController
 import androidx.lifecycle.lifecycleScope
 import com.ambient.tvclock.vpn.ConfigImportActivity
@@ -141,6 +142,7 @@ class SettingsActivity : AppCompatActivity() {
             wireVpnPreferences()
             wireBackgroundKeywordLock()
             wireShuffleNow()
+            WallpaperSettings.wire(this)
         }
 
         private fun wireShuffleNow() {

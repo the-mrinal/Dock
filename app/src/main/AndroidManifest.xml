@@ -60,6 +60,13 @@
         </activity>
 
         <activity
+            android:name=".grainstorm.WallpaperPickerActivity"
+            android:exported="false"
+            android:label="@string/wallpaper_picker_title"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.TvAwakeClock" />
+
+        <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="@string/settings_title"

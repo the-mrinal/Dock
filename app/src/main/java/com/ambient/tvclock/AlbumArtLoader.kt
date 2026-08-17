@@ -2,6 +2,7 @@ package com.ambient.tvclock
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.LruCache
@@ -81,7 +82,15 @@ object AlbumArtLoader {
             // here because every caller only hands the bitmap to an ImageView;
             // nothing in this code path ever reads back with getPixels() or
             // draws into a software Canvas.
-            inPreferredConfig = Bitmap.Config.HARDWARE
+            //
+            // It only exists from API 26, and the firetv flavor still targets
+            // minSdk 25 for older Fire OS sticks — referencing it unguarded
+            // would be a NoSuchFieldError on exactly that hardware.
+            inPreferredConfig = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Bitmap.Config.HARDWARE
+            } else {
+                Bitmap.Config.ARGB_8888
+            }
         }
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
     }

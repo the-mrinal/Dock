@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
+import com.ambient.tvclock.background.BackgroundImage
 import com.ambient.tvclock.receiver.ActiveConnection
 import com.ambient.tvclock.receiver.ReceiverController
 import com.ambient.tvclock.receiver.ReceiverStateBus
@@ -132,8 +133,8 @@ class MainActivity : Activity() {
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
         backgroundController = BackgroundController(
             context = this,
-            binder = backgroundBinder,
-            onUnsplashPhotoChanged = ::onUnsplashPhotoChanged,
+            surface = backgroundBinder,
+            onBackgroundChanged = ::onBackgroundChanged,
         )
         streamingOverlay = findViewById(R.id.streamingOverlay)
         homeLabOverlay = findViewById(R.id.homeLabOverlay)
@@ -468,12 +469,17 @@ class MainActivity : Activity() {
         // up the change directly — no need to forward it here.
     }
 
-    private fun onUnsplashPhotoChanged(photo: UnsplashClient.Photo?) {
-        // Home layout swap: with a photo, drop the widget cards & shrink the
-        // clock so the photo becomes the focal element.
-        homeBinder?.setMinimalWallpaperMode(photo != null)
+    /**
+     * A new background is on screen (or none). Any source that carries a
+     * required credit shows one; the wallpaper source has nothing to attribute.
+     */
+    private fun onBackgroundChanged(image: BackgroundImage.Remote?) {
+        // Home layout swap: with a full-bleed image, drop the widget cards and
+        // shrink the clock so the image becomes the focal element.
+        homeBinder?.setMinimalWallpaperMode(image != null)
 
-        if (photo == null) {
+        val credit = image?.credit
+        if (credit == null) {
             if (textHomeBackgroundCredit.visibility != View.GONE) {
                 textHomeBackgroundCredit.animate().cancel()
                 textHomeBackgroundCredit.animate()
@@ -484,8 +490,7 @@ class MainActivity : Activity() {
             }
             return
         }
-        val text = formatCredit(photo)
-        textHomeBackgroundCredit.text = text
+        textHomeBackgroundCredit.text = formatCredit(credit)
         textHomeBackgroundCredit.visibility = View.VISIBLE
         textHomeBackgroundCredit.animate().cancel()
         textHomeBackgroundCredit.animate()
@@ -494,9 +499,9 @@ class MainActivity : Activity() {
             .start()
     }
 
-    private fun formatCredit(photo: UnsplashClient.Photo): String {
-        val photographer = photo.photographerName.ifBlank { "Unsplash" }
-        val description = photo.description
+    private fun formatCredit(credit: BackgroundImage.Credit): String {
+        val photographer = credit.name.ifBlank { "Unsplash" }
+        val description = credit.description
         return if (description.isNotBlank()) {
             getString(R.string.background_credit_with_description, description, photographer)
         } else {

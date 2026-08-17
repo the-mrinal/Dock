@@ -13,7 +13,10 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.widget.ImageView
+import com.ambient.tvclock.background.BackgroundImage
+import com.ambient.tvclock.background.BackgroundSurface
 import okhttp3.Request
+import java.io.File
 import java.util.concurrent.Executors
 
 /**
@@ -29,10 +32,13 @@ import java.util.concurrent.Executors
  * the ImageView's [RenderEffect]; on older API levels it switches the CPU
  * prep path between [AlbumArtBlur.blurForBackground] and a plain downscale.
  *
- * In ambient mode the background fades out entirely so the lone clock reads
- * as the only bright element on screen.
+ * In ambient mode the background is *dimmed*, not discarded. Whether the
+ * screensaver shows anything at all is [com.ambient.tvclock.background
+ * .AmbientBackgroundPolicy]'s decision, made by the controller; this class
+ * only paints what it is handed. It used to force a fade-out here, which is
+ * why the screensaver was black even with a wallpaper selected.
  */
-class BlurredBackgroundBinder(private val imageView: ImageView) {
+class BlurredBackgroundBinder(private val imageView: ImageView) : BackgroundSurface {
 
     /**
      * What the binder is currently rendering.
@@ -80,10 +86,9 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
     }
 
     private val targetAlpha: Float
-        get() = when {
-            ambient -> AMBIENT_ALPHA
-            mode == Mode.SHARP_WALLPAPER -> WALLPAPER_ALPHA
-            else -> ACTIVE_ALPHA
+        get() = when (mode) {
+            Mode.SHARP_WALLPAPER -> if (ambient) AMBIENT_WALLPAPER_ALPHA else WALLPAPER_ALPHA
+            Mode.ALBUM_ART_WASH -> if (ambient) AMBIENT_WASH_ALPHA else ACTIVE_ALPHA
         }
 
     private val decodeTargetPx: Int
@@ -98,7 +103,7 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
      * Caller is responsible for re-issuing the current source when the change
      * needs to apply retroactively on API < 31.
      */
-    fun setBlurEnabled(enabled: Boolean) {
+    override fun setBlurEnabled(enabled: Boolean) {
         if (this.blurEnabled == enabled) return
         this.blurEnabled = enabled
         applyRenderEffect()
@@ -107,14 +112,8 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
     fun isBlurEnabled(): Boolean = blurEnabled
 
     fun bind(info: NowPlayingInfo?) {
-        // In ambient/screensaver mode we want a pure black background so the
-        // clock is the lone bright element. Skip applying any artwork; if a
-        // previous bitmap was visible, fade it out.
-        if (ambient) {
-            fadeOutIfShowing()
-            return
-        }
-
+        // Ambient is no longer a veto here — the controller decides whether a
+        // screensaver shows anything, and dims via targetAlpha if it does.
         val art = info?.artwork
         val show = info?.hasActiveSession == true && art != null
 
@@ -149,17 +148,21 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
      * layout change to drop the widget cards.
      */
     fun applyPhotoUrl(url: String) {
-        if (ambient) {
-            fadeOutIfShowing()
-            return
-        }
-        if (url.isBlank()) {
+        applyPhotoUri(url, "url|$url")
+    }
+
+    /**
+     * As [applyPhotoUrl], but with an explicit dedupe key. A locally cached
+     * wallpaper keeps the same path when it is replaced, so the key has to be
+     * the content hash or the new image would never repaint.
+     */
+    fun applyPhotoUri(uri: String, key: String) {
+        if (uri.isBlank()) {
             fadeOutIfShowing()
             return
         }
         switchMode(Mode.SHARP_WALLPAPER)
-        val key = "url|$url"
-        applyPreparedAsync(key) { fetchSoftwareBitmap(url) }
+        applyPreparedAsync(key) { loadSoftwareBitmap(uri) }
     }
 
     private fun switchMode(target: Mode) {
@@ -181,7 +184,7 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
      * trim signals and when the controller stops (MainActivity.onStop). The
      * next [bind] or [applyPhotoUrl] call will re-decode from the source.
      */
-    fun releaseBitmap() {
+    override fun releaseBitmap() {
         lastKey = null
         currentDrawable = null
         imageView.animate().cancel()
@@ -193,17 +196,24 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
      * Slightly dim the background while ambient/screensaver is engaged so the
      * lone clock still reads as the primary element on the screen.
      */
-    fun setAmbient(ambient: Boolean) {
+    override fun setAmbient(ambient: Boolean) {
         if (this.ambient == ambient) return
         this.ambient = ambient
-        if (ambient) {
-            // Screensaver: drop the artwork wash entirely so the wall behind
-            // the clock is solid black.
-            fadeOutIfShowing()
-        } else {
-            // Coming back from ambient: let the next bind() repopulate the
-            // background from the current now-playing info.
-            NowPlayingCenter.current?.let { bind(it) }
+        // Only the brightness changes. What is painted while idle — a
+        // wallpaper, the album art, or nothing at all — is the controller's
+        // call, and it re-issues show() around this.
+        if (lastKey != null) {
+            imageView.animate().cancel()
+            imageView.animate().alpha(targetAlpha).setDuration(FADE_IN_MS).start()
+        }
+    }
+
+    /** Paint [image], or fade to nothing when it is null. */
+    override fun show(image: BackgroundImage?) {
+        when (image) {
+            null -> fadeBackgroundOut()
+            is BackgroundImage.AlbumArt -> bind(image.info)
+            is BackgroundImage.Remote -> applyPhotoUri(image.uri, image.key)
         }
     }
 
@@ -260,6 +270,23 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
         } catch (_: Exception) {
             null
         }
+    }
+
+    /**
+     * Bytes for a `file://` or `http(s)://` image. The local branch is what
+     * lets a cached wallpaper render with no network at all — a dock that
+     * boots offline still comes up showing yesterday's image.
+     */
+    private fun loadSoftwareBitmap(uri: String): Bitmap? {
+        if (uri.startsWith("file://") || uri.startsWith("/")) {
+            val file = if (uri.startsWith("file://")) File(java.net.URI.create(uri)) else File(uri)
+            return try {
+                if (!file.isFile) null else decodeSoftware(file.readBytes())
+            } catch (_: Exception) {
+                null
+            }
+        }
+        return fetchSoftwareBitmap(uri)
     }
 
     private fun fetchSoftwareBitmap(url: String): Bitmap? {
@@ -355,9 +382,11 @@ class BlurredBackgroundBinder(private val imageView: ImageView) {
         // drops the widget cards in tandem so foreground text reads on top of
         // the photo directly via its drop-shadow.
         private const val WALLPAPER_ALPHA = 0.95f
-        // Screensaver / ambient: artwork is hidden entirely (see setAmbient).
-        // Kept as a documentation anchor; targetAlpha branch is unused now.
-        private const val AMBIENT_ALPHA = 0.0f
+        // Screensaver: the wallpaper stays up but steps back so the drifting
+        // clock still owns the room. The album-art wash goes nearly dark —
+        // it was only ever a backdrop for cards that ambient mode hides.
+        private const val AMBIENT_WALLPAPER_ALPHA = 0.72f
+        private const val AMBIENT_WASH_ALPHA = 0.18f
 
         // GPU Gaussian radius (in output pixels). On API 31+ this *is* the blur
         // — the input bitmap is just a downscaled crop of the album art. Tuned
