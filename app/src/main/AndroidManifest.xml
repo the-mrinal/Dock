@@ -103,6 +103,23 @@
             </intent-filter>
         </activity>
 
+        <!-- The system screensaver. Fire OS does not expose the picker on
+             every build; where it is missing, select it with
+             `adb shell settings put secure screensaver_components`. -->
+        <service
+            android:name=".dream.GrainstormDreamService"
+            android:exported="true"
+            android:label="@string/dream_label"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/grainstorm_dream" />
+        </service>
+
         <service
             android:name=".MediaNotificationListener"
             android:exported="true"

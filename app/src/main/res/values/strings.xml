@@ -289,6 +289,7 @@
     <!-- Background image (Unsplash) settings. -->
     <!-- Wallpaper library (grainstorm sync) -->
     <string name="pref_category_wallpaper">Wallpaper</string>
+    <string name="dream_label">Grainstorm wallpaper</string>
     <string name="pref_wallpaper_browse_title">Browse wallpapers…</string>
     <string name="pref_wallpaper_browse_summary">Pick from your grainstorm library</string>
     <string name="pref_wallpaper_panel_title">This screen</string>
