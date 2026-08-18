@@ -15,6 +15,7 @@ import android.os.Looper
 import android.widget.ImageView
 import com.ambient.tvclock.background.BackgroundImage
 import com.ambient.tvclock.background.BackgroundSurface
+import com.ambient.tvclock.background.ImageLocation
 import okhttp3.Request
 import java.io.File
 import java.util.concurrent.Executors
@@ -273,21 +274,22 @@ class BlurredBackgroundBinder(private val imageView: ImageView) : BackgroundSurf
     }
 
     /**
-     * Bytes for a `file://` or `http(s)://` image. The local branch is what
-     * lets a cached wallpaper render with no network at all — a dock that
-     * boots offline still comes up showing yesterday's image.
+     * Bytes for a local or `http(s)://` image. [ImageLocation] owns the
+     * which-is-it decision — see the note there on why a local URI must never
+     * be retried over the network. The on-disk branch is what lets a cached
+     * wallpaper render with no network at all: a dock that boots offline
+     * still comes up showing yesterday's image.
      */
-    private fun loadSoftwareBitmap(uri: String): Bitmap? {
-        if (uri.startsWith("file://") || uri.startsWith("/")) {
-            val file = if (uri.startsWith("file://")) File(java.net.URI.create(uri)) else File(uri)
-            return try {
-                if (!file.isFile) null else decodeSoftware(file.readBytes())
+    private fun loadSoftwareBitmap(uri: String): Bitmap? =
+        when (val location = ImageLocation.of(uri)) {
+            is ImageLocation.OnDisk -> try {
+                if (!location.file.isFile) null else decodeSoftware(location.file.readBytes())
             } catch (_: Exception) {
                 null
             }
+            is ImageLocation.Url -> fetchSoftwareBitmap(location.value)
+            null -> null
         }
-        return fetchSoftwareBitmap(uri)
-    }
 
     private fun fetchSoftwareBitmap(url: String): Bitmap? {
         val request = Request.Builder().url(url).get().build()
