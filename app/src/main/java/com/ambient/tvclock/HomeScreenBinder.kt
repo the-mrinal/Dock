@@ -809,18 +809,19 @@ class HomeScreenBinder(private val root: View) {
     }
 
     /**
-     * Keep the middle of the screen clear when a photo owns it.
+     * Keep the artwork clear when a photo owns the screen.
      *
      * The ambient row is centred, which is also where a grainstorm wallpaper
      * sets its quote — the two land on top of each other and neither reads.
-     * Over a photo the row moves to the foot of the screen, so the layout
-     * reads clock (top-left), artwork and quote (middle, untouched), now and
-     * next (bottom). Centred again as soon as there is no photo to protect.
+     * Over a photo the row goes to the bottom-left corner, under the clock:
+     * one left-hand column of text, the whole rest of the frame left to the
+     * image. Centred again as soon as there is no photo to work around, so
+     * album art and the plain black screensaver are untouched.
      */
     private fun positionAmbientRow(overPhoto: Boolean) {
         val params = ambientRow.layoutParams as? FrameLayout.LayoutParams ?: return
         params.gravity = if (overPhoto) {
-            Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            Gravity.BOTTOM or Gravity.START
         } else {
             Gravity.CENTER
         }
@@ -830,6 +831,12 @@ class HomeScreenBinder(private val root: View) {
             0
         }
         ambientRow.layoutParams = params
+        // Centred content reads as stranded once the block is in a corner.
+        (ambientRow as? LinearLayout)?.gravity = if (overPhoto) {
+            Gravity.START or Gravity.CENTER_VERTICAL
+        } else {
+            Gravity.CENTER
+        }
     }
 
     /** One quiet line under the clock when a photo owns the screen. */
