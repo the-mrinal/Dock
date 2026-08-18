@@ -132,6 +132,7 @@ class HomeScreenBinder(private val root: View) {
     private var queueUpNext: String? = null
     private var stageMode = StageMode.NONE
     private var minimalWallpaperMode: Boolean = false
+    private var widgetsAmbient: Boolean = false
     private val defaultClockTimePx: Float = textClockTime.textSize
     private val inflater = LayoutInflater.from(root.context)
 
@@ -249,7 +250,14 @@ class HomeScreenBinder(private val root: View) {
         if (minimalWallpaperMode) {
             stage.visibility = View.GONE
             musicPill.visibility = View.GONE
-            renderMinimalWhisper()
+            // The ambient row is the richer version of the same thought — now
+            // and next, laid out to be read across a room. When it is up, the
+            // whisper is the same event printed twice.
+            if (widgetsAmbient) {
+                textMinimalWhisper.visibility = View.GONE
+            } else {
+                renderMinimalWhisper()
+            }
             return
         }
         textMinimalWhisper.visibility = View.GONE
@@ -830,6 +838,8 @@ class HomeScreenBinder(private val root: View) {
     // ------------------------------------------------------------------
 
     fun setWidgetsAmbient(ambient: Boolean) {
+        widgetsAmbient = ambient
+        renderHome()
         if (ambient) {
             renderAmbientCalendar()
             renderAmbientMusic()

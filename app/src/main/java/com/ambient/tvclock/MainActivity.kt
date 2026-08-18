@@ -268,7 +268,7 @@ class MainActivity : Activity() {
                     bindCalendar(CalendarCenter.current)
                     bindNowPlaying(NowPlayingCenter.current)
                     bindQueue(SpotifyQueueCenter.current)
-                    setMinimalWallpaperMode(backgroundController.activePhoto() != null)
+                    setMinimalWallpaperMode(backgroundController.activePhoto() != null && ambientMode)
                 }
             }
             DashboardPage.CALENDAR -> {
@@ -474,9 +474,11 @@ class MainActivity : Activity() {
      * required credit shows one; the wallpaper source has nothing to attribute.
      */
     private fun onBackgroundChanged(image: BackgroundImage.Remote?) {
-        // Home layout swap: with a full-bleed image, drop the widget cards and
-        // shrink the clock so the image becomes the focal element.
-        homeBinder?.setMinimalWallpaperMode(image != null)
+        // Home layout swap: a full-bleed image only takes the screen over once
+        // the screensaver is up. While the dashboard is awake the decks and
+        // widgets are the reason it is on the wall, so they stay — the image
+        // is a washed, blurred backdrop behind them.
+        homeBinder?.setMinimalWallpaperMode(image != null && ambientMode)
 
         val credit = image?.credit
         if (credit == null) {
@@ -671,6 +673,8 @@ class MainActivity : Activity() {
         homeBinder?.setSecondsVisible(false)
         homeBinder?.setWidgetsAmbient(true)
         backgroundController.setAmbient(true)
+        // Now the photo may own the screen, so hand it the layout.
+        homeBinder?.setMinimalWallpaperMode(backgroundController.activePhoto() != null)
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
             .alpha(0f)
@@ -688,6 +692,9 @@ class MainActivity : Activity() {
 
         homeBinder?.setWidgetsAmbient(false)
         backgroundController.setAmbient(false)
+        // The dashboard is back; the decks get the screen, the photo steps
+        // behind them.
+        homeBinder?.setMinimalWallpaperMode(false)
         updateOnboardingVisibility()
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
