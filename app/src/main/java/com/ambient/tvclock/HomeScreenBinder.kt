@@ -11,6 +11,7 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -803,7 +804,32 @@ class HomeScreenBinder(private val root: View) {
             textMinimalWhisper.visibility = View.GONE
         }
         applyWallpaperTextShadows(enabled)
+        positionAmbientRow(enabled)
         renderHome()
+    }
+
+    /**
+     * Keep the middle of the screen clear when a photo owns it.
+     *
+     * The ambient row is centred, which is also where a grainstorm wallpaper
+     * sets its quote — the two land on top of each other and neither reads.
+     * Over a photo the row moves to the foot of the screen, so the layout
+     * reads clock (top-left), artwork and quote (middle, untouched), now and
+     * next (bottom). Centred again as soon as there is no photo to protect.
+     */
+    private fun positionAmbientRow(overPhoto: Boolean) {
+        val params = ambientRow.layoutParams as? FrameLayout.LayoutParams ?: return
+        params.gravity = if (overPhoto) {
+            Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+        } else {
+            Gravity.CENTER
+        }
+        params.bottomMargin = if (overPhoto) {
+            (AMBIENT_ROW_PHOTO_BOTTOM_DP * root.resources.displayMetrics.density).toInt()
+        } else {
+            0
+        }
+        ambientRow.layoutParams = params
     }
 
     /** One quiet line under the clock when a photo owns the screen. */
@@ -966,6 +992,8 @@ class HomeScreenBinder(private val root: View) {
         private const val MAX_ROWS = 4
         private const val PAST_ROW_ALPHA = 0.38f
 
+        /** How far above the bottom edge the now/next row sits over a photo. */
+        private const val AMBIENT_ROW_PHOTO_BOTTOM_DP = 24f
         private const val MINIMAL_CLOCK_SP = 56f
         private const val MINIMAL_FOREGROUND_ALPHA = 0.7f
         private const val MINIMAL_TEXT_SHADOW_COLOR = 0xCC000000.toInt()
