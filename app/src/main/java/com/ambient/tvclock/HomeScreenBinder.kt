@@ -11,6 +11,7 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -132,6 +133,7 @@ class HomeScreenBinder(private val root: View) {
     private var queueUpNext: String? = null
     private var stageMode = StageMode.NONE
     private var minimalWallpaperMode: Boolean = false
+    private var widgetsAmbient: Boolean = false
     private val defaultClockTimePx: Float = textClockTime.textSize
     private val inflater = LayoutInflater.from(root.context)
 
@@ -249,7 +251,14 @@ class HomeScreenBinder(private val root: View) {
         if (minimalWallpaperMode) {
             stage.visibility = View.GONE
             musicPill.visibility = View.GONE
-            renderMinimalWhisper()
+            // The ambient row is the richer version of the same thought — now
+            // and next, laid out to be read across a room. When it is up, the
+            // whisper is the same event printed twice.
+            if (widgetsAmbient) {
+                textMinimalWhisper.visibility = View.GONE
+            } else {
+                renderMinimalWhisper()
+            }
             return
         }
         textMinimalWhisper.visibility = View.GONE
@@ -795,7 +804,39 @@ class HomeScreenBinder(private val root: View) {
             textMinimalWhisper.visibility = View.GONE
         }
         applyWallpaperTextShadows(enabled)
+        positionAmbientRow(enabled)
         renderHome()
+    }
+
+    /**
+     * Keep the artwork clear when a photo owns the screen.
+     *
+     * The ambient row is centred, which is also where a grainstorm wallpaper
+     * sets its quote — the two land on top of each other and neither reads.
+     * Over a photo the row goes to the bottom-left corner, under the clock:
+     * one left-hand column of text, the whole rest of the frame left to the
+     * image. Centred again as soon as there is no photo to work around, so
+     * album art and the plain black screensaver are untouched.
+     */
+    private fun positionAmbientRow(overPhoto: Boolean) {
+        val params = ambientRow.layoutParams as? FrameLayout.LayoutParams ?: return
+        params.gravity = if (overPhoto) {
+            Gravity.BOTTOM or Gravity.START
+        } else {
+            Gravity.CENTER
+        }
+        params.bottomMargin = if (overPhoto) {
+            (AMBIENT_ROW_PHOTO_BOTTOM_DP * root.resources.displayMetrics.density).toInt()
+        } else {
+            0
+        }
+        ambientRow.layoutParams = params
+        // Centred content reads as stranded once the block is in a corner.
+        (ambientRow as? LinearLayout)?.gravity = if (overPhoto) {
+            Gravity.START or Gravity.CENTER_VERTICAL
+        } else {
+            Gravity.CENTER
+        }
     }
 
     /** One quiet line under the clock when a photo owns the screen. */
@@ -830,6 +871,8 @@ class HomeScreenBinder(private val root: View) {
     // ------------------------------------------------------------------
 
     fun setWidgetsAmbient(ambient: Boolean) {
+        widgetsAmbient = ambient
+        renderHome()
         if (ambient) {
             renderAmbientCalendar()
             renderAmbientMusic()
@@ -956,6 +999,8 @@ class HomeScreenBinder(private val root: View) {
         private const val MAX_ROWS = 4
         private const val PAST_ROW_ALPHA = 0.38f
 
+        /** How far above the bottom edge the now/next row sits over a photo. */
+        private const val AMBIENT_ROW_PHOTO_BOTTOM_DP = 24f
         private const val MINIMAL_CLOCK_SP = 56f
         private const val MINIMAL_FOREGROUND_ALPHA = 0.7f
         private const val MINIMAL_TEXT_SHADOW_COLOR = 0xCC000000.toInt()

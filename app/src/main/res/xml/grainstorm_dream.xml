@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Screensaver metadata. settingsActivity points at the app's own Settings,
+     where the Wallpaper section lives. -->
+<dream xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.ambient.tvclock/.SettingsActivity" />

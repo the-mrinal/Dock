@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
+import com.ambient.tvclock.background.BackgroundImage
 import com.ambient.tvclock.receiver.ActiveConnection
 import com.ambient.tvclock.receiver.ReceiverController
 import com.ambient.tvclock.receiver.ReceiverStateBus
@@ -132,8 +133,8 @@ class MainActivity : Activity() {
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
         backgroundController = BackgroundController(
             context = this,
-            binder = backgroundBinder,
-            onUnsplashPhotoChanged = ::onUnsplashPhotoChanged,
+            surface = backgroundBinder,
+            onBackgroundChanged = ::onBackgroundChanged,
         )
         streamingOverlay = findViewById(R.id.streamingOverlay)
         homeLabOverlay = findViewById(R.id.homeLabOverlay)
@@ -267,7 +268,7 @@ class MainActivity : Activity() {
                     bindCalendar(CalendarCenter.current)
                     bindNowPlaying(NowPlayingCenter.current)
                     bindQueue(SpotifyQueueCenter.current)
-                    setMinimalWallpaperMode(backgroundController.activePhoto() != null)
+                    setMinimalWallpaperMode(backgroundController.activePhoto() != null && ambientMode)
                 }
             }
             DashboardPage.CALENDAR -> {
@@ -468,12 +469,19 @@ class MainActivity : Activity() {
         // up the change directly — no need to forward it here.
     }
 
-    private fun onUnsplashPhotoChanged(photo: UnsplashClient.Photo?) {
-        // Home layout swap: with a photo, drop the widget cards & shrink the
-        // clock so the photo becomes the focal element.
-        homeBinder?.setMinimalWallpaperMode(photo != null)
+    /**
+     * A new background is on screen (or none). Any source that carries a
+     * required credit shows one; the wallpaper source has nothing to attribute.
+     */
+    private fun onBackgroundChanged(image: BackgroundImage.Remote?) {
+        // Home layout swap: a full-bleed image only takes the screen over once
+        // the screensaver is up. While the dashboard is awake the decks and
+        // widgets are the reason it is on the wall, so they stay — the image
+        // is a washed, blurred backdrop behind them.
+        homeBinder?.setMinimalWallpaperMode(image != null && ambientMode)
 
-        if (photo == null) {
+        val credit = image?.credit
+        if (credit == null) {
             if (textHomeBackgroundCredit.visibility != View.GONE) {
                 textHomeBackgroundCredit.animate().cancel()
                 textHomeBackgroundCredit.animate()
@@ -484,8 +492,7 @@ class MainActivity : Activity() {
             }
             return
         }
-        val text = formatCredit(photo)
-        textHomeBackgroundCredit.text = text
+        textHomeBackgroundCredit.text = formatCredit(credit)
         textHomeBackgroundCredit.visibility = View.VISIBLE
         textHomeBackgroundCredit.animate().cancel()
         textHomeBackgroundCredit.animate()
@@ -494,9 +501,9 @@ class MainActivity : Activity() {
             .start()
     }
 
-    private fun formatCredit(photo: UnsplashClient.Photo): String {
-        val photographer = photo.photographerName.ifBlank { "Unsplash" }
-        val description = photo.description
+    private fun formatCredit(credit: BackgroundImage.Credit): String {
+        val photographer = credit.name.ifBlank { "Unsplash" }
+        val description = credit.description
         return if (description.isNotBlank()) {
             getString(R.string.background_credit_with_description, description, photographer)
         } else {
@@ -666,6 +673,8 @@ class MainActivity : Activity() {
         homeBinder?.setSecondsVisible(false)
         homeBinder?.setWidgetsAmbient(true)
         backgroundController.setAmbient(true)
+        // Now the photo may own the screen, so hand it the layout.
+        homeBinder?.setMinimalWallpaperMode(backgroundController.activePhoto() != null)
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()
             .alpha(0f)
@@ -683,6 +692,9 @@ class MainActivity : Activity() {
 
         homeBinder?.setWidgetsAmbient(false)
         backgroundController.setAmbient(false)
+        // The dashboard is back; the decks get the screen, the photo steps
+        // behind them.
+        homeBinder?.setMinimalWallpaperMode(false)
         updateOnboardingVisibility()
         pageIndicatorGroup.animate().cancel()
         pageIndicatorGroup.animate()

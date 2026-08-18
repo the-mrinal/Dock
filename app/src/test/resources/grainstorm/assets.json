@@ -1,0 +1,43 @@
+{
+    "version": 1,
+    "total": 2,
+    "assets": [
+        {
+            "version": 1,
+            "id": "b2c3d4e5f6071829",
+            "seed": 6653,
+            "createdAt": "2026-08-17T17:22:13.839Z",
+            "design": {
+                "hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "scene": "landscape",
+                "quote": "quiet work\n*compounds*."
+            },
+            "color": "#0e1418",
+            "aspect": 1.5397,
+            "renditions": {
+                "thumb": {
+                    "url": "/v1/assets/b2c3d4e5f6071829/r/thumb",
+                    "w": 400,
+                    "h": 260,
+                    "bytes": 181,
+                    "sha256": "181bd10083052e2593e1e711f4a266b6fca10906f2f5b1c41a1a001c8673befc"
+                },
+                "full": {
+                    "url": "/v1/assets/b2c3d4e5f6071829/r/full",
+                    "w": 3024,
+                    "h": 1964,
+                    "bytes": 5849,
+                    "sha256": "b150ee9f5a8cbffefabdbdb7e4694e37f6e339ecdceef03396f21295d7cd1278"
+                },
+                "device:firetv-dock": {
+                    "url": "/v1/assets/b2c3d4e5f6071829/r/device%3Afiretv-dock",
+                    "w": 3840,
+                    "h": 2160,
+                    "bytes": 8132,
+                    "sha256": "b81474abf174dd477cfab24575dd4c916dcc2466b08e9b572f0301ec552748fe"
+                }
+            }
+        }
+    ],
+    "nextCursor": "b2c3d4e5f6071829"
+}

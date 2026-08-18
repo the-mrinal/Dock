@@ -222,6 +222,56 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="category_wallpaper"
+        android:title="@string/pref_category_wallpaper">
+
+        <Preference
+            android:key="wallpaper_browse"
+            android:summary="@string/pref_wallpaper_browse_summary"
+            android:title="@string/pref_wallpaper_browse_title" />
+
+        <Preference
+            android:key="wallpaper_panel_size"
+            android:selectable="false"
+            android:title="@string/pref_wallpaper_panel_title" />
+
+        <Preference
+            android:key="wallpaper_register"
+            android:summary="@string/pref_wallpaper_register_summary"
+            android:title="@string/pref_wallpaper_register_title" />
+
+        <EditTextPreference
+            android:key="wallpaper_server_url"
+            android:summary="@string/pref_wallpaper_server_summary"
+            android:title="@string/pref_wallpaper_server_title" />
+
+        <EditTextPreference
+            android:key="wallpaper_device_token"
+            android:summary="@string/pref_wallpaper_token_summary"
+            android:title="@string/pref_wallpaper_token_title" />
+
+        <EditTextPreference
+            android:defaultValue="firetv-dock"
+            android:key="wallpaper_device_key"
+            android:summary="@string/pref_wallpaper_device_key_summary"
+            android:title="@string/pref_wallpaper_device_key_title" />
+
+        <Preference
+            android:key="wallpaper_test_connection"
+            android:summary="@string/pref_wallpaper_test_summary"
+            android:title="@string/pref_wallpaper_test_title" />
+
+        <ListPreference
+            android:defaultValue="900000"
+            android:entries="@array/wallpaper_poll_labels"
+            android:entryValues="@array/wallpaper_poll_values"
+            android:key="wallpaper_poll_interval_ms"
+            android:summary="@string/pref_wallpaper_poll_summary"
+            android:title="@string/pref_wallpaper_poll_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_background"
         android:title="@string/pref_category_background">
 
@@ -293,6 +343,15 @@
             android:key="ambient_delay_ms"
             android:summary="@string/pref_ambient_delay_summary"
             android:title="@string/pref_ambient_delay_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            android:defaultValue="black"
+            android:entries="@array/background_ambient_source_labels"
+            android:entryValues="@array/background_ambient_source_values"
+            android:key="background_when_ambient"
+            android:summary="@string/pref_background_when_ambient_summary"
+            android:title="@string/pref_background_when_ambient_title"
             app:useSimpleSummaryProvider="true" />
 
         <ListPreference

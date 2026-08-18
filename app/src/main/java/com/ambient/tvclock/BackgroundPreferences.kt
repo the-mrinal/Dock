@@ -18,6 +18,10 @@ object BackgroundPreferences {
      *  from Settings. [BackgroundController] watches this key (any change) and
      *  cycles to the next cached photo — no API call, unlimited. */
     const val KEY_SHUFFLE_SIGNAL = "background_shuffle_signal"
+    /** What the screensaver shows once the dock goes idle. Its own decision,
+     *  separate from the awake background — album art while music plays and
+     *  the wallpaper as a screensaver is a perfectly reasonable pairing. */
+    const val KEY_WHEN_AMBIENT = "background_when_ambient"
 
     /** Minimum gap between user-initiated keyword changes. */
     const val KEYWORDS_LOCK_WINDOW_MS = 2L * 60L * 60L * 1000L
@@ -25,19 +29,29 @@ object BackgroundPreferences {
     const val SOURCE_BLACK = "black"
     const val SOURCE_UNSPLASH = "unsplash"
     const val SOURCE_ALBUM_ART = "album_art"
+    const val SOURCE_GRAINSTORM = "grainstorm"
 
     const val DEFAULT_WHEN_IDLE = SOURCE_BLACK
     const val DEFAULT_WHEN_PLAYING = SOURCE_ALBUM_ART
+    /** Black, so an existing dock behaves exactly as it did before the
+     *  screensaver became configurable. Nothing changes until asked. */
+    const val DEFAULT_WHEN_AMBIENT = SOURCE_BLACK
     const val DEFAULT_BLUR = true
     const val DEFAULT_SHUFFLE_INTERVAL_MS = 600_000L // 10 min
 
-    enum class Source { BLACK, UNSPLASH, ALBUM_ART }
+    /**
+     * Sources are identified by string, not by an enum, so a new background is
+     * a registry entry rather than a new enum constant plus every `when` that
+     * switches on it.
+     */
+    fun whenIdleSource(context: Context): String =
+        stringPref(context, KEY_WHEN_IDLE, DEFAULT_WHEN_IDLE)
 
-    fun whenIdleSource(context: Context): Source =
-        parseSource(stringPref(context, KEY_WHEN_IDLE, DEFAULT_WHEN_IDLE))
+    fun whenPlayingSource(context: Context): String =
+        stringPref(context, KEY_WHEN_PLAYING, DEFAULT_WHEN_PLAYING)
 
-    fun whenPlayingSource(context: Context): Source =
-        parseSource(stringPref(context, KEY_WHEN_PLAYING, DEFAULT_WHEN_PLAYING))
+    fun whenAmbientSource(context: Context): String =
+        stringPref(context, KEY_WHEN_AMBIENT, DEFAULT_WHEN_AMBIENT)
 
     fun blurEnabled(context: Context): Boolean =
         PreferenceManager.getDefaultSharedPreferences(context)
@@ -99,17 +113,15 @@ object BackgroundPreferences {
             .apply()
     }
 
-    /** True if either the idle or now-playing source is set to Unsplash. */
+    /** True if any of the three slots is set to Unsplash. */
     fun isUnsplashConfigured(context: Context): Boolean =
-        whenIdleSource(context) == Source.UNSPLASH ||
-            whenPlayingSource(context) == Source.UNSPLASH
+        SOURCE_UNSPLASH in setOf(
+            whenIdleSource(context),
+            whenPlayingSource(context),
+            whenAmbientSource(context),
+        )
 
     private fun stringPref(context: Context, key: String, default: String): String =
         PreferenceManager.getDefaultSharedPreferences(context).getString(key, default) ?: default
 
-    private fun parseSource(raw: String): Source = when (raw) {
-        SOURCE_UNSPLASH -> Source.UNSPLASH
-        SOURCE_ALBUM_ART -> Source.ALBUM_ART
-        else -> Source.BLACK
-    }
 }
