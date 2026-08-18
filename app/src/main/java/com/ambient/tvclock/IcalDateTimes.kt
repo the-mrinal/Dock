@@ -21,7 +21,7 @@ object IcalDateTimes {
         val patterns = if (value.endsWith("Z")) {
             listOf("yyyyMMdd'T'HHmmss'Z'" to TimeZone.getTimeZone("UTC"))
         } else {
-            val tz = if (timeZoneId.isNullOrBlank()) TimeZone.getDefault() else TimeZone.getTimeZone(timeZoneId)
+            val tz = IcalTimeZones.timeZone(timeZoneId)
             listOf("yyyyMMdd'T'HHmmss" to tz, "yyyyMMdd'T'HHmmssX" to tz)
         }
 
@@ -55,7 +55,9 @@ object IcalDateTimes {
             return null
         }
 
-        val tz = if (timeZoneId.isNullOrBlank()) TimeZone.getDefault() else TimeZone.getTimeZone(timeZoneId)
+        // A trailing Z marks UTC and takes precedence over any TZID on the property.
+        val isUtc = value.length > 15 && value[15] == 'Z'
+        val tz = if (isUtc) TimeZone.getTimeZone("UTC") else IcalTimeZones.timeZone(timeZoneId)
         val cal = Calendar.getInstance(tz)
         cal.set(
             datePart.substring(0, 4).toInt(),
@@ -70,7 +72,7 @@ object IcalDateTimes {
     }
 
     fun parseDate(raw: String, endOfDay: Boolean, timeZoneId: String?): Long {
-        val tz = if (timeZoneId.isNullOrBlank()) TimeZone.getDefault() else TimeZone.getTimeZone(timeZoneId)
+        val tz = IcalTimeZones.timeZone(timeZoneId)
         val cal = Calendar.getInstance(tz)
         val digits = raw.trim()
         if (digits.length == 8 && digits.all { it.isDigit() }) {

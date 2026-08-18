@@ -160,8 +160,7 @@ object RruleExpander {
         }
     }
 
-    private fun timeZone(id: String?): TimeZone =
-        if (id.isNullOrBlank()) TimeZone.getDefault() else TimeZone.getTimeZone(id)
+    private fun timeZone(id: String?): TimeZone = IcalTimeZones.timeZone(id)
 
     private fun startOfDay(millis: Long, tz: TimeZone): Calendar =
         Calendar.getInstance(tz).apply {

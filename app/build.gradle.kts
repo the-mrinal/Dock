@@ -14,6 +14,13 @@ val localProperties = Properties().apply {
 val spotifyClientId = localProperties.getProperty("spotify.clientId", "")
 val unsplashAccessKey = localProperties.getProperty("unsplash.accessKey", "")
 
+// Google Calendar API (read-only). Provisioned once via a Desktop-client
+// loopback flow (see docs/CALENDAR_API_RESEARCH.md); empty values disable the
+// integration and the app falls back to the personal ICS URL.
+val googleOauthClientId = localProperties.getProperty("google.oauth.client.id", "")
+val googleOauthClientSecret = localProperties.getProperty("google.oauth.client.secret", "")
+val googleOauthRefreshToken = localProperties.getProperty("google.oauth.refresh.token", "")
+
 val signingKeystoreFile = localProperties.getProperty("signing.keystoreFile", "")
 val signingKeystorePassword = localProperties.getProperty("signing.keystorePassword", "")
 val signingKeyAlias = localProperties.getProperty("signing.keyAlias", "")
@@ -31,6 +38,9 @@ android {
         versionName = "1.2.0"
         buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$spotifyClientId\"")
         buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"$unsplashAccessKey\"")
+        buildConfigField("String", "GOOGLE_OAUTH_CLIENT_ID", "\"$googleOauthClientId\"")
+        buildConfigField("String", "GOOGLE_OAUTH_CLIENT_SECRET", "\"$googleOauthClientSecret\"")
+        buildConfigField("String", "GOOGLE_OAUTH_REFRESH_TOKEN", "\"$googleOauthRefreshToken\"")
     }
 
     flavorDimensions += "platform"

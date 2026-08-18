@@ -31,4 +31,28 @@
     <color name="status_pending">#F5A623</color>
     <color name="status_idle">#707070</color>
     <color name="status_error">#FF3B30</color>
+
+    <!-- Split Decks home (docs/REDESIGN_PLAN.md token direction). -->
+    <color name="deck_bg">#101014</color>
+    <color name="deck_stroke">#1E1E25</color>
+    <color name="deck_hairline">#17171C</color>
+    <color name="stage_bg">#17181D</color>
+    <color name="text_dim">#5A5A63</color>
+    <color name="text_muted">#A8A8B3</color>
+    <!-- Chartreuse is reserved exclusively for "happening right now". -->
+    <color name="accent_now">#C8F25C</color>
+    <!-- Provider vernacular -->
+    <color name="outlook_blue">#0F6CBD</color>
+    <color name="teams_chip">#9A9DF0</color>
+    <color name="rsvp_accepted">#6BB700</color>
+    <color name="rsvp_tentative">#C9A227</color>
+    <!-- Fallback for personal (Google) events until the Calendar API supplies
+         real per-event colors; Peacock from Google's event palette. -->
+    <color name="gcal_fallback">#039BE5</color>
+    <color name="gcal_allday">#F6BF26</color>
+    <!-- Google brand dots for the Personal deck header. -->
+    <color name="gdot_blue">#4285F4</color>
+    <color name="gdot_red">#EA4335</color>
+    <color name="gdot_yellow">#FBBC04</color>
+    <color name="gdot_green">#34A853</color>
 </resources>

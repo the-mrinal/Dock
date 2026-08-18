@@ -3,7 +3,7 @@
     android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_screen"
+    android:background="@drawable/bg_screen_ambient"
     android:clipChildren="false"
     android:clipToPadding="false"
     android:keepScreenOn="true">

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stage card: layer 0 is the accent rail (tinted per stage mode in code),
+     visible as the 3dp strip the inset body layer leaves uncovered. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent_now" />
+            <corners android:radius="7dp" />
+        </shape>
+    </item>
+    <item android:left="3dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/stage_bg" />
+            <corners
+                android:topLeftRadius="0dp"
+                android:bottomLeftRadius="0dp"
+                android:topRightRadius="7dp"
+                android:bottomRightRadius="7dp" />
+        </shape>
+    </item>
+</layer-list>
