@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Personal all-day pill, Google-agenda style (Banana until real colors). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#26F6BF26" />
+    <stroke android:width="1dp" android:color="#80F6BF26" />
+    <corners android:radius="999dp" />
+</shape>

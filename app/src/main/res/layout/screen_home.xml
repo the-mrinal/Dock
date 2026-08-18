@@ -1,478 +1,798 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Split Decks home (design: Open Design "Dock Home Redesign", iteration C).
+     Top band: compact clock (left) + priority stage card (right — live
+     meeting > now playing > next up). Below: two provider decks, Personal
+     (Google vernacular: color dots) and Work (Outlook vernacular: busy bars,
+     Teams/RSVP/category metadata). A compact music pill sits bottom-right
+     when music plays while a meeting owns the stage.
+     The ambient strip layer is unchanged from the previous layout. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:paddingTop="24dp">
+    android:layout_height="match_parent">
 
     <LinearLayout
-        android:id="@+id/homeClockGroup"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:baselineAligned="true"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingTop="6dp">
 
-        <TextView
-            android:id="@+id/textHomeClockTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-thin"
-            android:includeFontPadding="false"
-            android:text="12:00"
-            android:textColor="@color/text_primary"
-            android:textSize="80sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textHomeClockSeconds"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="2dp"
-            android:fontFamily="sans-serif-thin"
-            android:includeFontPadding="false"
-            android:text=":00"
-            android:textColor="@color/text_secondary"
-            android:textSize="36sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textHomeClockAmPm"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:fontFamily="sans-serif-medium"
-            android:includeFontPadding="false"
-            android:letterSpacing="0.08"
-            android:text="AM"
-            android:textColor="@color/text_secondary"
-            android:textSize="26sp" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/textHomeClockDate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:fontFamily="sans-serif-light"
-        android:text="Monday, January 1"
-        android:textColor="@color/text_secondary"
-        android:textSize="22sp" />
-
-    <FrameLayout
-        android:id="@+id/homeContentSlot"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="40dp"
-        android:layout_weight="1"
-        android:clipChildren="false"
-        android:clipToPadding="false"
-        android:paddingBottom="24dp">
-
+        <!-- ============ Top band: clock + stage ============ -->
         <LinearLayout
-            android:id="@+id/homeWidgetsRow"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:baselineAligned="false"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-        <!-- Today widget -->
-        <LinearLayout
-            android:id="@+id/homeCalendarWidget"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_widget_card"
-            android:minHeight="184dp"
-            android:orientation="vertical"
-            android:padding="24dp">
-
-            <TextView
-                android:id="@+id/textHomeCalendarSectionLabel"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.1"
-                android:text="@string/widget_today"
-                android:textAllCaps="true"
-                android:textColor="@color/text_tertiary"
-                android:textSize="11sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/textHomeCalendarBadge"
+                    android:id="@+id/textHomeClockDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="10dp"
-                    android:background="@drawable/bg_now_badge"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.1"
-                    android:paddingStart="8dp"
-                    android:paddingTop="3dp"
-                    android:paddingEnd="8dp"
-                    android:paddingBottom="3dp"
-                    android:text="@string/calendar_happening_now"
-                    android:textAllCaps="true"
-                    android:textColor="#000000"
-                    android:textSize="10sp"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/textHomeCalendarTime"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:singleLine="true"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp"
-                    android:visibility="gone" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/textHomeCalendarPrimary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif-light"
-                android:maxLines="2"
-                android:textColor="@color/text_primary"
-                android:textSize="20sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/textHomeCalendarMeta"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.08"
-                    android:maxLines="1"
-                    android:paddingStart="8dp"
-                    android:paddingTop="2dp"
-                    android:paddingEnd="8dp"
-                    android:paddingBottom="2dp"
-                    android:textAllCaps="true"
-                    android:textColor="@color/text_secondary"
+                    android:fontFamily="@font/jetbrains_mono"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="0.3"
+                    android:text="MON · JAN 1"
+                    android:textColor="@color/text_tertiary"
                     android:textSize="10sp" />
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:id="@+id/textHomeCalendarTeaser"
+                <LinearLayout
+                    android:id="@+id/homeClockGroup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-light"
-                    android:textColor="@color/text_tertiary"
-                    android:textSize="13sp" />
+                    android:layout_marginTop="2dp"
+                    android:baselineAligned="true"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/textHomeClockTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/manrope_extralight"
+                        android:includeFontPadding="false"
+                        android:text="12:00"
+                        android:textColor="@color/text_primary"
+                        android:textSize="76sp" />
+
+                    <TextView
+                        android:id="@+id/textHomeClockSeconds"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="@font/jetbrains_mono"
+                        android:includeFontPadding="false"
+                        android:text=":00"
+                        android:textColor="@color/text_dim"
+                        android:textSize="22sp" />
+
+                    <TextView
+                        android:id="@+id/textHomeClockAmPm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:fontFamily="@font/manrope_medium"
+                        android:includeFontPadding="false"
+                        android:letterSpacing="0.1"
+                        android:text="AM"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <!-- Single-line event whisper, shown only in minimal
+                     wallpaper mode when the decks are hidden. -->
+                <TextView
+                    android:id="@+id/textHomeMinimalWhisper"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/manrope_light"
+                    android:maxLines="1"
+                    android:maxWidth="420dp"
+                    android:textColor="@color/text_muted"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
             </LinearLayout>
-        </LinearLayout>
 
-        <!-- Now playing widget -->
-        <LinearLayout
-            android:id="@+id/homeMusicWidget"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_widget_card"
-            android:minHeight="184dp"
-            android:orientation="vertical"
-            android:padding="24dp">
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
-            <TextView
-                android:id="@+id/textHomeMusicSectionLabel"
-                android:layout_width="wrap_content"
+            <!-- Priority stage: live meeting > now playing > next up. -->
+            <FrameLayout
+                android:id="@+id/homeStage"
+                android:layout_width="400dp"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.1"
-                android:text="@string/widget_now_playing"
-                android:textAllCaps="true"
-                android:textColor="@color/text_tertiary"
-                android:textSize="11sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:id="@+id/homeAlbumArtContainer"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:background="@drawable/bg_album_frame">
-
-                    <ImageView
-                        android:id="@+id/imageHomeAlbumArt"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@string/cd_album_art"
-                        android:scaleType="centerCrop"
-                        android:visibility="gone" />
-
-                    <ImageView
-                        android:id="@+id/imageHomeAlbumPlaceholder"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_music_placeholder" />
-                </FrameLayout>
+                android:background="@drawable/bg_stage"
+                android:visibility="gone">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="13dp">
+
+                    <FrameLayout
+                        android:id="@+id/homeStageArtFrame"
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/bg_album_frame"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:id="@+id/imageHomeStageArt"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/cd_album_art"
+                            android:scaleType="centerCrop"
+                            android:visibility="gone" />
+
+                        <ImageView
+                            android:id="@+id/imageHomeStagePlaceholder"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_music_placeholder" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/textHomeStageTag"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_now_tag"
+                                android:fontFamily="@font/jetbrains_mono_bold"
+                                android:includeFontPadding="false"
+                                android:letterSpacing="0.16"
+                                android:paddingStart="6dp"
+                                android:paddingTop="1dp"
+                                android:paddingEnd="6dp"
+                                android:paddingBottom="1dp"
+                                android:textColor="#0A0A0B"
+                                android:textSize="9sp" />
+
+                            <TextView
+                                android:id="@+id/textHomeStageInfo"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="9dp"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:fontFamily="@font/jetbrains_mono"
+                                android:includeFontPadding="false"
+                                android:maxLines="1"
+                                android:textColor="@color/text_dim"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/textHomeStageTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="5dp"
+                            android:ellipsize="end"
+                            android:fontFamily="@font/manrope_semibold"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:textColor="@color/text_primary"
+                            android:textSize="17sp" />
+
+                        <TextView
+                            android:id="@+id/textHomeStageMeta"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:ellipsize="end"
+                            android:fontFamily="@font/manrope_medium"
+                            android:includeFontPadding="false"
+                            android:maxLines="1"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp" />
+
+                        <FrameLayout
+                            android:id="@+id/homeStageProgressTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:layout_marginTop="9dp"
+                            android:background="#26262C"
+                            android:visibility="gone">
+
+                            <View
+                                android:id="@+id/homeStageProgressFill"
+                                android:layout_width="1dp"
+                                android:layout_height="match_parent"
+                                android:background="@color/accent_now" />
+                        </FrameLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- ============ Decks / ambient slot ============ -->
+        <FrameLayout
+            android:id="@+id/homeContentSlot"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="14dp"
+            android:layout_weight="1"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingBottom="38dp">
+
+            <LinearLayout
+                android:id="@+id/homeWidgetsRow"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <!-- Personal deck (Google vernacular) -->
+                <LinearLayout
+                    android:id="@+id/deckPersonal"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="12dp"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:background="@drawable/bg_deck"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="11dp">
 
-                    <TextView
-                        android:id="@+id/textHomeTrackTitle"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="5dp"
+                            android:layout_height="5dp"
+                            android:background="@drawable/shape_event_dot"
+                            android:backgroundTint="@color/gdot_blue" />
+
+                        <View
+                            android:layout_width="5dp"
+                            android:layout_height="5dp"
+                            android:layout_marginStart="2dp"
+                            android:background="@drawable/shape_event_dot"
+                            android:backgroundTint="@color/gdot_red" />
+
+                        <View
+                            android:layout_width="5dp"
+                            android:layout_height="5dp"
+                            android:layout_marginStart="2dp"
+                            android:background="@drawable/shape_event_dot"
+                            android:backgroundTint="@color/gdot_yellow" />
+
+                        <View
+                            android:layout_width="5dp"
+                            android:layout_height="5dp"
+                            android:layout_marginStart="2dp"
+                            android:background="@drawable/shape_event_dot"
+                            android:backgroundTint="@color/gdot_green" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:fontFamily="@font/jetbrains_mono"
+                            android:includeFontPadding="false"
+                            android:letterSpacing="0.24"
+                            android:text="@string/deck_personal"
+                            android:textAllCaps="true"
+                            android:textColor="@color/text_primary"
+                            android:textSize="10sp" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:id="@+id/textDeckPersonalSub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/manrope_medium"
+                            android:includeFontPadding="false"
+                            android:text="Google"
+                            android:textColor="@color/text_dim"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@color/deck_hairline" />
+
+                    <LinearLayout
+                        android:id="@+id/deckPersonalRows"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="3dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical" />
+
+                    <LinearLayout
+                        android:id="@+id/deckPersonalQuiet"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <FrameLayout
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:background="@drawable/bg_quiet_ring">
+
+                            <TextView
+                                android:id="@+id/textDeckPersonalGlyph"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="☾"
+                                android:textColor="@color/text_dim"
+                                android:textSize="17sp" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/textDeckPersonalQuietTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="9dp"
+                            android:fontFamily="@font/manrope_semibold"
+                            android:text="@string/deck_quiet_personal_title"
+                            android:textColor="@color/text_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/textDeckPersonalQuietSub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="@font/manrope_medium"
+                            android:text="@string/deck_quiet_personal_subtitle"
+                            android:textColor="@color/text_dim"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textDeckPersonalFooter"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
                         android:ellipsize="end"
-                        android:fontFamily="sans-serif-medium"
-                        android:maxLines="2"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp" />
+                        android:fontFamily="@font/jetbrains_mono"
+                        android:gravity="end"
+                        android:letterSpacing="0.12"
+                        android:maxLines="1"
+                        android:textColor="@color/text_dim"
+                        android:textSize="9sp" />
+                </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/textHomeTrackArtist"
+                <!-- Work deck (Outlook vernacular) -->
+                <LinearLayout
+                    android:id="@+id/deckWork"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_deck"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="11dp">
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="6dp"
+                            android:layout_height="6dp"
+                            android:background="@color/outlook_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:fontFamily="@font/jetbrains_mono"
+                            android:includeFontPadding="false"
+                            android:letterSpacing="0.24"
+                            android:text="@string/deck_work"
+                            android:textAllCaps="true"
+                            android:textColor="@color/text_primary"
+                            android:textSize="10sp" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:id="@+id/textDeckWorkSub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/manrope_medium"
+                            android:includeFontPadding="false"
+                            android:text="Outlook"
+                            android:textColor="@color/text_dim"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@color/deck_hairline" />
+
+                    <LinearLayout
+                        android:id="@+id/deckWorkRows"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="3dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical" />
+
+                    <LinearLayout
+                        android:id="@+id/deckWorkQuiet"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <FrameLayout
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:background="@drawable/bg_quiet_ring">
+
+                            <TextView
+                                android:id="@+id/textDeckWorkGlyph"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:includeFontPadding="false"
+                                android:text="✓"
+                                android:textColor="@color/text_dim"
+                                android:textSize="17sp" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:id="@+id/textDeckWorkQuietTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="9dp"
+                            android:fontFamily="@font/manrope_semibold"
+                            android:text="@string/deck_quiet_work_title"
+                            android:textColor="@color/text_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/textDeckWorkQuietSub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="@font/manrope_medium"
+                            android:text="@string/deck_quiet_work_subtitle"
+                            android:textColor="@color/text_dim"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textDeckWorkFooter"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/jetbrains_mono"
+                        android:gravity="end"
+                        android:letterSpacing="0.12"
+                        android:maxLines="1"
+                        android:textColor="@color/text_dim"
+                        android:textSize="9sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Ambient supplements: unchanged layer, crossfades in when the
+                 dashboard goes idle. -->
+            <LinearLayout
+                android:id="@+id/homeAmbientRow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:alpha="0"
+                android:baselineAligned="false"
+                android:clipChildren="false"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    android:id="@+id/homeAmbientMusicCorner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingEnd="28dp"
+                    android:visibility="gone">
+
+                    <FrameLayout
+                        android:id="@+id/homeAmbientArtFrame"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:background="@drawable/bg_album_frame"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <ImageView
+                            android:id="@+id/imageAmbientAlbumArt"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:scaleType="centerCrop"
+                            android:visibility="gone" />
+
+                        <ImageView
+                            android:id="@+id/imageAmbientAlbumPlaceholder"
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_music_placeholder" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:id="@+id/textAmbientNowPlayingLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.18"
+                        android:text="@string/ambient_label_now_playing"
+                        android:textAllCaps="true"
+                        android:textColor="@color/accent_spotify"
+                        android:textSize="11sp"
+                        app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
+                        app:layout_constraintTop_toTopOf="@id/homeAmbientArtFrame" />
+
+                    <TextView
+                        android:id="@+id/textAmbientTrackTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
                         android:layout_marginTop="4dp"
                         android:ellipsize="end"
                         android:fontFamily="sans-serif"
                         android:maxLines="1"
+                        android:maxWidth="320dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="18sp"
+                        app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
+                        app:layout_constraintTop_toBottomOf="@id/textAmbientNowPlayingLabel" />
+
+                    <TextView
+                        android:id="@+id/textAmbientTrackArtist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:maxLines="1"
+                        android:maxWidth="320dp"
                         android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        android:textSize="13sp"
+                        app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
+                        app:layout_constraintTop_toBottomOf="@id/textAmbientTrackTitle" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <View
+                    android:id="@+id/homeAmbientDivider"
+                    android:layout_width="1dp"
+                    android:layout_height="72dp"
+                    android:background="#22FFFFFF"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/homeAmbientCluster"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:gravity="start|center_vertical"
+                    android:orientation="vertical"
+                    android:paddingStart="28dp">
+
+                    <LinearLayout
+                        android:id="@+id/homeAmbientNowGroup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="start"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/textAmbientNowLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:letterSpacing="0.18"
+                            android:text="@string/ambient_label_now"
+                            android:textAllCaps="true"
+                            android:textColor="@color/accent_spotify"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/textAmbientNowTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif-light"
+                            android:gravity="start"
+                            android:maxLines="2"
+                            android:maxWidth="420dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/homeAmbientNextGroup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="start"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/textAmbientNextLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:letterSpacing="0.18"
+                            android:text="@string/ambient_label_next"
+                            android:textAllCaps="true"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/textAmbientNextTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif-light"
+                            android:gravity="start"
+                            android:maxLines="2"
+                            android:maxWidth="420dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="18sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
 
-            <TextView
-                android:id="@+id/textHomeUpNext"
+    <!-- Compact now-playing pill; visible only when music plays while a live
+         meeting owns the stage. Sits clear of the centered page indicator. -->
+    <LinearLayout
+        android:id="@+id/homeMusicPill"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="2dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:id="@+id/homePillArtFrame"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:background="@drawable/bg_album_frame">
+
+            <ImageView
+                android:id="@+id/imageHomePillArt"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:ellipsize="end"
-                android:fontFamily="sans-serif-light"
-                android:maxLines="1"
-                android:textColor="@color/text_tertiary"
-                android:textSize="13sp"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
                 android:visibility="gone" />
-        </LinearLayout>
-        </LinearLayout>
 
-        <!-- Ambient supplements: a calm read-only summary that crossfades in
-             when the dashboard goes idle. Music sits to the LEFT of a thin
-             vertical divider, calendar sits to the RIGHT, both balanced into
-             equal-weight columns. This reads as a single horizontal strip
-             below the clock rather than two separately positioned widgets,
-             which is easier on the eye than the previous centered-cluster +
-             bottom-corner-chip arrangement. -->
+            <ImageView
+                android:id="@+id/imageHomePillPlaceholder"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_music_placeholder" />
+        </FrameLayout>
+
         <LinearLayout
-            android:id="@+id/homeAmbientRow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:alpha="0"
-            android:baselineAligned="false"
-            android:clipChildren="false"
-            android:gravity="center"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textHomePillTrack"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope_semibold"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:maxWidth="180dp"
+                android:textColor="@color/text_primary"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/textHomePillArtist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:ellipsize="end"
+                android:fontFamily="@font/manrope_medium"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:maxWidth="180dp"
+                android:textColor="@color/text_muted"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="10dp"
+            android:layout_marginStart="8dp"
+            android:gravity="bottom"
             android:orientation="horizontal">
 
-            <!-- Music column (LEFT). The art frame + three-line text column
-                 used to be a horizontal LinearLayout wrapping a vertical
-                 LinearLayout (two extra view-tree levels). Now flattened into
-                 a single ConstraintLayout — same visual result, two fewer
-                 nodes to measure on every layout pass. IDs are preserved so
-                 HomeScreenBinder doesn't need changes. -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                xmlns:app="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/homeAmbientMusicCorner"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingEnd="28dp"
-                android:visibility="gone">
-
-                <FrameLayout
-                    android:id="@+id/homeAmbientArtFrame"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:background="@drawable/bg_album_frame"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent">
-
-                    <ImageView
-                        android:id="@+id/imageAmbientAlbumArt"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:scaleType="centerCrop"
-                        android:visibility="gone" />
-
-                    <ImageView
-                        android:id="@+id/imageAmbientAlbumPlaceholder"
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_music_placeholder" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/textAmbientNowPlayingLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.18"
-                    android:text="@string/ambient_label_now_playing"
-                    android:textAllCaps="true"
-                    android:textColor="@color/accent_spotify"
-                    android:textSize="11sp"
-                    app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
-                    app:layout_constraintTop_toTopOf="@id/homeAmbientArtFrame" />
-
-                <TextView
-                    android:id="@+id/textAmbientTrackTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_marginTop="4dp"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif"
-                    android:maxLines="1"
-                    android:maxWidth="320dp"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
-                    app:layout_constraintTop_toBottomOf="@id/textAmbientNowPlayingLabel" />
-
-                <TextView
-                    android:id="@+id/textAmbientTrackArtist"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif-light"
-                    android:maxLines="1"
-                    android:maxWidth="320dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    app:layout_constraintStart_toEndOf="@id/homeAmbientArtFrame"
-                    app:layout_constraintTop_toBottomOf="@id/textAmbientTrackTitle" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- Slim divider between the two ambient columns. Translucent so it
-                 reads as a quiet seam, not a hard line. Hidden alongside the
-                 music column when nothing is playing so the calendar can
-                 centre itself naturally. -->
             <View
-                android:id="@+id/homeAmbientDivider"
-                android:layout_width="1dp"
-                android:layout_height="72dp"
-                android:background="#22FFFFFF"
-                android:visibility="gone" />
+                android:layout_width="2dp"
+                android:layout_height="5dp"
+                android:background="@drawable/bg_eq_bar" />
 
-            <!-- Calendar column (RIGHT). -->
-            <LinearLayout
-                android:id="@+id/homeAmbientCluster"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clipChildren="false"
-                android:gravity="start|center_vertical"
-                android:orientation="vertical"
-                android:paddingStart="28dp">
+            <View
+                android:layout_width="2dp"
+                android:layout_height="9dp"
+                android:layout_marginStart="2dp"
+                android:background="@drawable/bg_eq_bar" />
 
-                <LinearLayout
-                    android:id="@+id/homeAmbientNowGroup"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="start"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:id="@+id/textAmbientNowLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.18"
-                        android:text="@string/ambient_label_now"
-                        android:textAllCaps="true"
-                        android:textColor="@color/accent_spotify"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/textAmbientNowTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:ellipsize="end"
-                        android:fontFamily="sans-serif-light"
-                        android:gravity="start"
-                        android:maxLines="2"
-                        android:maxWidth="420dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="20sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/homeAmbientNextGroup"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:gravity="start"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:id="@+id/textAmbientNextLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.18"
-                        android:text="@string/ambient_label_next"
-                        android:textAllCaps="true"
-                        android:textColor="@color/text_tertiary"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/textAmbientNextTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:ellipsize="end"
-                        android:fontFamily="sans-serif-light"
-                        android:gravity="start"
-                        android:maxLines="2"
-                        android:maxWidth="420dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="18sp" />
-                </LinearLayout>
-            </LinearLayout>
+            <View
+                android:layout_width="2dp"
+                android:layout_height="6dp"
+                android:layout_marginStart="2dp"
+                android:background="@drawable/bg_eq_bar" />
         </LinearLayout>
-    </FrameLayout>
-</LinearLayout>
+    </LinearLayout>
+</FrameLayout>

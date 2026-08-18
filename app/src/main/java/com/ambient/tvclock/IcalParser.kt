@@ -4,13 +4,14 @@ object IcalParser {
 
     fun parse(icsBody: String, source: CalendarSource): List<CalendarEvent> {
         val unfolded = unfold(icsBody)
+        val vtimezones = parseVTimeZones(unfolded)
         val events = mutableListOf<CalendarEvent>()
         val blocks = unfolded.split("BEGIN:VEVENT")
         for (block in blocks.drop(1)) {
             val end = block.indexOf("END:VEVENT")
             val body = if (end >= 0) block.substring(0, end) else block
             try {
-                parseEvent(body, source)?.let { events.add(it) }
+                parseEvent(body, source, vtimezones)?.let { events.add(it) }
             } catch (_: Exception) {
                 // Skip malformed events; keep the rest of the feed.
             }
@@ -18,8 +19,39 @@ object IcalParser {
         return events.sortedBy { it.startMillis }
     }
 
-    private fun parseEvent(body: String, source: CalendarSource): CalendarEvent? {
+    /**
+     * Maps each VTIMEZONE's TZID to a GMT-offset zone ID, so TZIDs that Java doesn't
+     * recognize (e.g. Outlook's "Customized Time Zone") still resolve to a usable zone.
+     */
+    private fun parseVTimeZones(unfolded: String): Map<String, String> {
+        val map = mutableMapOf<String, String>()
+        for (block in unfolded.split("BEGIN:VTIMEZONE").drop(1)) {
+            val end = block.indexOf("END:VTIMEZONE")
+            val body = if (end >= 0) block.substring(0, end) else block
+            val tzid = lineValue(body, "TZID:") ?: continue
+            // Prefer the STANDARD offset; being an hour off during DST beats being off
+            // by the zone's whole UTC offset.
+            val standard = body.substringAfter("BEGIN:STANDARD", body)
+            val offset = lineValue(standard, "TZOFFSETTO:") ?: lineValue(body, "TZOFFSETTO:") ?: continue
+            IcalTimeZones.offsetToZoneId(offset)?.let { map[tzid] = it }
+        }
+        return map
+    }
+
+    private fun lineValue(body: String, prefix: String): String? =
+        body.lineSequence().firstOrNull { it.startsWith(prefix) }?.substring(prefix.length)?.trim()
+
+    private fun parseEvent(
+        body: String,
+        source: CalendarSource,
+        vtimezones: Map<String, String>
+    ): CalendarEvent? {
         val props = parseProperties(body)
+
+        // Cancelled events still appear in published feeds; never surface them.
+        if (props["STATUS"]?.value?.trim()?.uppercase() == "CANCELLED") {
+            return null
+        }
 
         val summary = props["SUMMARY"]?.value
             ?.replace("\\n", " ")
@@ -31,7 +63,10 @@ object IcalParser {
 
         val startProp = props["DTSTART"] ?: return null
         val endProp = props["DTEND"]
-        val tzId = startProp.param("TZID")
+        val tzId = IcalTimeZones.resolveId(startProp.param("TZID"), vtimezones)
+        val endTzId = endProp?.param("TZID")
+            ?.let { IcalTimeZones.resolveId(it, vtimezones) }
+            ?: tzId
         val allDay = startProp.param("VALUE") == "DATE" || startProp.value.length == 8
 
         val startMillis = if (allDay) {
@@ -41,9 +76,9 @@ object IcalParser {
         }
         val endMillis = when {
             endProp != null && (endProp.param("VALUE") == "DATE" || endProp.value.length == 8) ->
-                IcalDateTimes.parseDate(endProp.value, endOfDay = true, timeZoneId = endProp.param("TZID") ?: tzId)
+                IcalDateTimes.parseDate(endProp.value, endOfDay = true, timeZoneId = endTzId)
             endProp != null ->
-                IcalDateTimes.parseDateTime(endProp.value, timeZoneId = endProp.param("TZID") ?: tzId)
+                IcalDateTimes.parseDateTime(endProp.value, timeZoneId = endTzId)
             allDay -> startMillis + 24 * 60 * 60 * 1000L
             else -> startMillis + 60 * 60 * 1000L
         }
@@ -64,9 +99,71 @@ object IcalParser {
             location = location,
             source = source,
             timeZoneId = tzId,
-            rrule = rrule
+            rrule = rrule,
+            busyStatus = parseBusyStatus(props),
+            categories = parseCategories(props),
+            onlineMeetingUrl = findMeetingUrl(props, location),
+            organizer = parseOrganizer(props),
+            colorHex = parseColor(props)
         )
     }
+
+    private fun parseBusyStatus(props: Map<String, IcalProperty>): BusyStatus {
+        when (props["X-MICROSOFT-CDO-BUSYSTATUS"]?.value?.trim()?.uppercase()) {
+            "FREE" -> return BusyStatus.FREE
+            "TENTATIVE" -> return BusyStatus.TENTATIVE
+            "OOF" -> return BusyStatus.OOF
+            "BUSY" -> return BusyStatus.BUSY
+        }
+        if (props["STATUS"]?.value?.trim()?.uppercase() == "TENTATIVE") {
+            return BusyStatus.TENTATIVE
+        }
+        if (props["TRANSP"]?.value?.trim()?.uppercase() == "TRANSPARENT") {
+            return BusyStatus.FREE
+        }
+        return BusyStatus.BUSY
+    }
+
+    private fun parseCategories(props: Map<String, IcalProperty>): List<String> {
+        val raw = props["CATEGORIES"]?.value ?: return emptyList()
+        return raw.split(',')
+            .map { it.replace("\\,", ",").trim() }
+            .filter { it.isNotEmpty() }
+    }
+
+    private fun findMeetingUrl(props: Map<String, IcalProperty>, location: String): String? {
+        props["X-MICROSOFT-SKYPETEAMSMEETINGURL"]?.value?.trim()
+            ?.takeIf { it.startsWith("http") }
+            ?.let { return it }
+        val haystacks = listOfNotNull(
+            location,
+            props["DESCRIPTION"]?.value,
+            props["X-GOOGLE-CONFERENCE"]?.value,
+            props["URL"]?.value
+        )
+        for (text in haystacks) {
+            MEETING_URL_REGEX.find(text)?.let { return it.value.trimEnd('\\', '>', ')', '.') }
+        }
+        return null
+    }
+
+    private fun parseOrganizer(props: Map<String, IcalProperty>): String? {
+        val prop = props["ORGANIZER"] ?: return null
+        prop.param("CN")?.trim('"')?.takeIf { it.isNotBlank() }?.let { return it }
+        return prop.value.removePrefix("mailto:").takeIf { it.isNotBlank() }
+    }
+
+    private fun parseColor(props: Map<String, IcalProperty>): String? {
+        val raw = (props["X-APPLE-CALENDAR-COLOR"] ?: props["COLOR"])?.value?.trim()
+            ?: return null
+        // Accept #RRGGBB / #RRGGBBAA; CSS color names are not worth mapping.
+        if (!raw.startsWith("#") || raw.length < 7) return null
+        return raw.substring(0, 7)
+    }
+
+    private val MEETING_URL_REGEX = Regex(
+        "https://(?:[\\w.-]*teams\\.microsoft\\.com/l/meetup-join|meet\\.google\\.com|[\\w.-]*zoom\\.us/j)[^\\s\"'<>]*"
+    )
 
     private fun parseProperties(body: String): Map<String, IcalProperty> {
         val map = mutableMapOf<String, IcalProperty>()
