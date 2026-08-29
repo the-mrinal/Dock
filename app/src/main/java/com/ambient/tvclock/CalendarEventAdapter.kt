@@ -108,8 +108,8 @@ class CalendarEventAdapter(
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<Row>() {
             override fun areItemsTheSame(oldItem: Row, newItem: Row): Boolean {
-                return oldItem.event.startMillis == newItem.event.startMillis &&
-                    oldItem.event.title == newItem.event.title &&
+                return oldItem.event.uid == newItem.event.uid &&
+                    oldItem.event.startMillis == newItem.event.startMillis &&
                     oldItem.event.source == newItem.event.source
             }
 

@@ -66,9 +66,7 @@ class CalendarScreenBinder(private val root: View) {
             return
         }
 
-        if (CalendarPreferences.getPersonalUrl(context).isBlank() &&
-            CalendarPreferences.getWorkUrl(context).isBlank()
-        ) {
+        if (!MyLifePreferences.isConfigured(context)) {
             latestEvents = emptyList()
             adapter.submit(emptyList(), now)
             textFooter.text = context.getString(R.string.calendar_add_in_settings)

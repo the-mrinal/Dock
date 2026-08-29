@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
+import android.text.InputType
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -93,17 +94,30 @@ class SettingsActivity : AppCompatActivity() {
                     true
                 }
 
-            findPreference<EditTextPreference>(CalendarPreferences.KEY_PERSONAL_URL)
+            findPreference<EditTextPreference>(MyLifePreferences.KEY_URL)
                 ?.setOnPreferenceChangeListener { _, _ ->
                     CalendarPoller(requireContext()).publishNow()
                     true
                 }
 
-            findPreference<EditTextPreference>(CalendarPreferences.KEY_WORK_URL)
-                ?.setOnPreferenceChangeListener { _, _ ->
+            findPreference<EditTextPreference>(MyLifePreferences.KEY_KEY)?.apply {
+                // A secret: typed hidden, shown only as set / not set.
+                setOnBindEditTextListener { editText ->
+                    editText.inputType =
+                        InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                }
+                summaryProvider = Preference.SummaryProvider<EditTextPreference> { pref ->
+                    if (pref.text.isNullOrBlank()) {
+                        getString(R.string.pref_mylife_key_unset)
+                    } else {
+                        getString(R.string.pref_mylife_key_set)
+                    }
+                }
+                setOnPreferenceChangeListener { _, _ ->
                     CalendarPoller(requireContext()).publishNow()
                     true
                 }
+            }
 
             findPreference<Preference>("grant_notification_access")?.setOnPreferenceClickListener {
                 val context = requireContext()

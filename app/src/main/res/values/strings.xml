@@ -94,7 +94,7 @@
     <string name="home_up_next">Up next: %1$s — %2$s</string>
     <string name="home_nothing_playing">Nothing playing</string>
     <string name="calendar_no_events">No events today</string>
-    <string name="calendar_add_in_settings">Add your personal calendar URL in Settings</string>
+    <string name="calendar_add_in_settings">Connect my-life in Settings (URL and key)</string>
     <string name="calendar_more_today">+%1$d more today</string>
     <string name="calendar_happening_now">Now</string>
     <string name="calendar_all_day">All day</string>
@@ -117,7 +117,7 @@
     <string name="deck_quiet_work_subtitle">Your work calendar is clear</string>
     <string name="deck_quiet_personal_title">No plans today</string>
     <string name="deck_quiet_personal_subtitle">Your day is open</string>
-    <string name="deck_setup_hint">Add a calendar URL in Settings</string>
+    <string name="deck_setup_hint">Connect my-life in Settings</string>
     <string name="deck_next_preview">NEXT · %1$s · %2$s</string>
     <string name="deck_nothing_scheduled">NOTHING SCHEDULED THIS WEEK</string>
     <string name="deck_more_count">+%1$d MORE</string>
@@ -174,7 +174,7 @@
 
     <string name="pref_category_setup">Setup</string>
     <string name="pref_remote_setup_title">Set up from phone or laptop</string>
-    <string name="pref_remote_setup_summary">Edit calendar and dashboard URLs in a browser instead of the remote</string>
+    <string name="pref_remote_setup_summary">Edit the my-life connection and dashboard URLs in a browser instead of the remote</string>
     <string name="setup_title">Set up from your phone</string>
     <string name="setup_pin_label">Enter this PIN on the page:</string>
     <string name="setup_done">Done</string>
@@ -183,10 +183,12 @@
     <string name="pref_category_calendar">Calendar</string>
     <string name="pref_show_calendar_title">Show calendar</string>
     <string name="pref_show_calendar_summary">Display today\'s events on Home and Calendar screens</string>
-    <string name="pref_personal_calendar_url_title">Personal calendar URL</string>
-    <string name="pref_personal_calendar_url_summary">Google Calendar secret iCal link</string>
-    <string name="pref_work_calendar_url_title">Work calendar URL (optional)</string>
-    <string name="pref_work_calendar_url_summary">Outlook ICS link when available — leave empty for now</string>
+    <string name="pref_mylife_url_title" translatable="false">my-life URL</string>
+    <string name="pref_mylife_url_summary" translatable="false">The my-life API base the Dock reads your calendar from</string>
+    <string name="pref_mylife_key_title" translatable="false">my-life key</string>
+    <string name="pref_mylife_key_summary" translatable="false">DOCK_KEY from my-life — reads the calendar only</string>
+    <string name="pref_mylife_key_set" translatable="false">Set</string>
+    <string name="pref_mylife_key_unset" translatable="false">Not set</string>
 
     <string name="pref_category_now_playing">Now playing</string>
     <string name="pref_show_now_playing_title">Show media on dashboard</string>
