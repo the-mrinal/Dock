@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Dock dashboard networking (Spotify, calendar feeds). -->
+    <!-- Dock dashboard networking (Spotify, my-life). -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Receiver subsystem (inert until Phase 2 wires the settings toggle). -->

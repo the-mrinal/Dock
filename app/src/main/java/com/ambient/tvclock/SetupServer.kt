@@ -42,8 +42,12 @@ class SetupServer(
         fun onServerError(message: String)
     }
 
-    /** A settable field: preference key + human label shown in the form. */
-    private data class Field(val key: String, val label: String)
+    /**
+     * A settable field: preference key + human label shown in the form.
+     * A [secret] field is typed hidden, never echoed back into the form, and
+     * left untouched when submitted blank.
+     */
+    private data class Field(val key: String, val label: String, val secret: Boolean = false)
 
     private val running = AtomicBoolean(false)
     private val executor = Executors.newFixedThreadPool(2)
@@ -178,7 +182,7 @@ class SetupServer(
             ConfigImportSession.Verdict.OK -> { /* fall through */ }
         }
 
-        val touched = FIELDS.filter { it.key in fields }
+        val touched = FIELDS.filter { it.key in fields && !(it.secret && fields.getValue(it.key).isBlank()) }
         if (touched.isEmpty()) {
             writeStatus(output, 400, "Bad Request", "text/plain", "no known fields in body")
             return
@@ -190,7 +194,7 @@ class SetupServer(
         }
         editor.apply()
 
-        if (touched.any { it.key == CalendarPreferences.KEY_PERSONAL_URL || it.key == CalendarPreferences.KEY_WORK_URL }) {
+        if (touched.any { it.key == MyLifePreferences.KEY_URL || it.key == MyLifePreferences.KEY_KEY }) {
             CalendarRefresh.publishAsync(context)
         }
 
@@ -210,8 +214,13 @@ class SetupServer(
     private fun serveForm(output: OutputStream) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val inputs = FIELDS.joinToString("\n") { field ->
-            val value = htmlEscape(prefs.getString(field.key, "").orEmpty())
-            """<p><label>${field.label}<br><input name="${field.key}" type="url" value="$value" placeholder="https://…"></label></p>"""
+            if (field.secret) {
+                val state = if (prefs.getString(field.key, "").isNullOrBlank()) "not set" else "set — leave blank to keep"
+                """<p><label>${field.label} ($state)<br><input name="${field.key}" type="password" value="" autocomplete="off"></label></p>"""
+            } else {
+                val value = htmlEscape(prefs.getString(field.key, "").orEmpty())
+                """<p><label>${field.label}<br><input name="${field.key}" type="url" value="$value" placeholder="https://…"></label></p>"""
+            }
         }
         val html = """
             <!doctype html><meta charset="utf-8">
@@ -259,8 +268,8 @@ class SetupServer(
         private const val MAX_BODY_BYTES = 16 * 1024
 
         private val FIELDS = listOf(
-            Field(CalendarPreferences.KEY_PERSONAL_URL, "Personal calendar (iCal URL)"),
-            Field(CalendarPreferences.KEY_WORK_URL, "Work calendar (iCal URL)"),
+            Field(MyLifePreferences.KEY_URL, "my-life API URL"),
+            Field(MyLifePreferences.KEY_KEY, "my-life key (DOCK_KEY)", secret = true),
             Field(HomeLabPreferences.KEY_HOMELAB_URL, "Home Lab dashboard URL"),
             Field(AdBlockPreferences.KEY_DASHBOARD_URL, "Ad-block dashboard URL"),
         )

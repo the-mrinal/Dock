@@ -385,14 +385,9 @@ class HomeScreenBinder(private val root: View) {
     private fun renderDeck(source: CalendarSource, deck: DeckViews) {
         val context = root.context
         val now = System.currentTimeMillis()
-        val configured = when (source) {
-            CalendarSource.PERSONAL ->
-                CalendarPreferences.getPersonalUrl(context).isNotBlank() ||
-                    GoogleCalendarClient.isConfigured
-            CalendarSource.WORK -> CalendarPreferences.getWorkUrl(context).isNotBlank()
-        }
-
-        if (!CalendarPreferences.isEnabled(context) || !configured) {
+        // Both decks come from my-life; which calendars feed each is decided
+        // there (CAL_WORK_LABELS), so "configured" is one question, not two.
+        if (!CalendarPreferences.isEnabled(context) || !MyLifePreferences.isConfigured(context)) {
             showDeckQuiet(deck, glyph = "+", title = context.getString(R.string.deck_setup_hint), sub = null)
             deck.footer.text = ""
             return

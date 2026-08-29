@@ -52,7 +52,7 @@ A huge, thin, beautifully kerned time display — with seconds that quietly fade
 
 ### Your calendar, at the exact moment you need it
 
-The dashboard shows what's happening *now* and what's next. Walk past the screen and you instantly know: *"keep coding"* or *"stand up, meeting in five."* Tap into the **Calendar** page for the full timeline — personal + work feeds merged from your Google / Outlook iCal URLs, colour-tagged.
+The dashboard shows what's happening *now* and what's next. Walk past the screen and you instantly know: *"keep coding"* or *"stand up, meeting in five."* Tap into the **Calendar** page for the full timeline — personal + work calendars served by your [my-life](https://github.com/the-mrinal/my-life) API, colour-tagged. The TV never parses a feed; it renders what my-life returns.
 
 ### A remote control for Spotify, on your wall
 
@@ -149,13 +149,13 @@ The `firetv` build flavor is the default and targets `minSdk 25` (older Amazon F
 
 ### Calendar
 
-Google Calendar → your calendar → **Integrate calendar** → **Secret address in iCal format**. On the TV: **Settings → Personal calendar URL** — paste the link. Or, from your Mac:
+The Dock reads `GET /calendar/upcoming?days=8` from **my-life** (the one calendar integration in the house — feeds, Google Calendar API, recurrence, time zones all live there; see `openclaw-proposal/spec/my-life.md`). On the TV: **Settings → my-life URL** (defaults to `https://fix.mrinal.dev/api`) and **my-life key** — the `DOCK_KEY` from my-life's `.env`, a key that reads the calendar and nothing else. Or from your Mac:
 
 ```bash
-./scripts/set-calendar-urls.sh 192.168.1.4:5555 "https://calendar.google.com/calendar/ical/.../basic.ics"
+./scripts/set-mylife.sh 192.168.1.4:5555 https://fix.mrinal.dev/api "$DOCK_KEY"
 ```
 
-Work Outlook ICS goes under **Work calendar URL**.
+Or **Settings → Set up from phone or laptop** and paste both into the form. Which calendars feed the Personal and Work decks is decided in my-life (`CAL_URLS`, `CAL_WORK_LABELS`).
 
 ### Spotify
 
@@ -216,7 +216,7 @@ flowchart TD
     DP --> M[Music<br/>MusicScreenBinder]
     DP --> BG[BlurredBackgroundBinder<br/>AlbumArtBlur]
 
-    H --> CP[CalendarPoller<br/>IcalParser]
+    H --> CP[CalendarPoller<br/>MyLifeCalendarClient]
     CA --> CP
 
     H --> NP[NowPlayingPoller<br/>MediaSession]
@@ -232,7 +232,7 @@ flowchart TD
 - `MainActivity.kt` — dashboard pager, drift, ambient watchdog, input routing, streaming-overlay crossfade
 - `Home/Calendar/Music/StatusScreenBinder.kt` — per-page view binders
 - `BlurredBackgroundBinder.kt` + `AlbumArtBlur.kt` — full-bleed artwork wash (pyramid downsample + 3-pass box blur ≈ Gaussian, GPU `RenderEffect` pass on API 31+)
-- `CalendarPoller.kt` / `IcalParser.kt` — iCal feed polling, every 15 min
+- `CalendarPoller.kt` / `MyLifeCalendarClient.kt` — polls my-life's `/calendar/upcoming` every 15 min; no feed parsing on the TV
 - `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue / recently-played
 - `NowPlayingPoller.kt` — MediaSession bridge
 - `receiver/ReceiverService.kt` — foreground service hosting AirPlay / Google Cast / Miracast, plus the RTSP + MediaCodec pipeline for the AirPlay video stream

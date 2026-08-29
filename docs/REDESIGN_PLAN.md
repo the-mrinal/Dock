@@ -185,7 +185,7 @@ Each fragment shows: eyebrow ("CALENDAR FEEDS"), Manrope-200 56sp title, descrip
 
 | Fragment | Existing prefs (from `preferences.xml`) |
 |---|---|
-| `CalendarSettingsFragment` | iCal URL Personal/Work, refresh interval, two toggles, "Reset" danger row |
+| `CalendarSettingsFragment` | my-life URL + key, refresh interval, two toggles, "Reset" danger row |
 | `MusicSettingsFragment` | Notification access status, "Open Notification Access" action |
 | `PhoneMirroringSettingsFragment` | Master receiver toggle, per-protocol AirPlay/Cast/Miracast toggles, PIN, boot toggle |
 | `VpnSettingsFragment` | Toggle, status, "Receive config" action (launches `ConfigImportActivity`), Clear, killswitch, overlay pill |
