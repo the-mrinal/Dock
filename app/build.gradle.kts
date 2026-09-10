@@ -34,8 +34,8 @@ android {
         applicationId = "com.ambient.tvclock"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10300
-        versionName = "1.3.0"
+        versionCode = 10301
+        versionName = "1.3.1"
         buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$spotifyClientId\"")
         buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"$unsplashAccessKey\"")
         buildConfigField("String", "GOOGLE_OAUTH_CLIENT_ID", "\"$googleOauthClientId\"")

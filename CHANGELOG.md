@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/the-mrinal/Dock/compare/v1.3.0...v1.3.1) (2026-09-10)
+
+### Bug Fixes
+
+* keep the notice counter on the card that is actually showing ([#32](https://github.com/the-mrinal/Dock/issues/32)) ([e80cea7](https://github.com/the-mrinal/Dock/commit/e80cea7bc2c81e26430313f0d3c0967b5d6ab457))
+
 ## [1.3.0](https://github.com/the-mrinal/Dock/compare/v1.2.0...v1.3.0) (2026-09-10)
 
 ### Features
