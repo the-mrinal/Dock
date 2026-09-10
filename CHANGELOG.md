@@ -1,3 +1,22 @@
+## [1.3.0](https://github.com/the-mrinal/Dock/compare/v1.2.0...v1.3.0) (2026-09-10)
+
+### Features
+
+* add a notice board section fed by a feed you host ([#31](https://github.com/the-mrinal/Dock/issues/31)) ([8d2241c](https://github.com/the-mrinal/Dock/commit/8d2241cab6a6a6af50658f1246e30c6fcbb6edef))
+* **branding:** new launcher icon, TV banner, and ambient screen background ([d48bb04](https://github.com/the-mrinal/Dock/commit/d48bb04adcfb8924be31192fe9cf3afa73f274ca))
+* **calendar:** fetch the personal deck from the Google Calendar API ([4a1d36e](https://github.com/the-mrinal/Dock/commit/4a1d36ec6c189fed6fa85f6e8d6b668f79030d2c))
+* grainstorm wallpapers, and a screensaver that shows them ([2e5af4c](https://github.com/the-mrinal/Dock/commit/2e5af4c2ad2b89f754ff5b90f6342e221933a31f))
+* **home:** redesign homepage as Split Decks with per-provider calendar decks ([27478c3](https://github.com/the-mrinal/Dock/commit/27478c3e749e734570838e173aa365cf0599a4ff))
+* keep the dashboard readable, hand the photo the screen only in ambient ([2f5bc5b](https://github.com/the-mrinal/Dock/commit/2f5bc5bddfc13f581fec91f9b9dce30a7e2cb52f))
+* system screensaver (DreamService) ([a82ec8c](https://github.com/the-mrinal/Dock/commit/a82ec8c243fa8bcfaca3df7395c90fb0fdefe8e3))
+
+### Bug Fixes
+
+* anchor the ambient now/next block to the bottom-left corner ([f76645e](https://github.com/the-mrinal/Dock/commit/f76645e5df53bcc31f11c6e3b92b52f6dba12f7a))
+* **calendar:** ICS events from Outlook feeds shifted by the zone's full UTC offset ([0fede69](https://github.com/the-mrinal/Dock/commit/0fede695a903d0cbba3b8b91217622528c863810))
+* paint cached wallpapers instead of silently dropping them ([f59918c](https://github.com/the-mrinal/Dock/commit/f59918c1548d2d3dbabb9841983b99ed2ba8c872))
+* stop the next-up line landing on the wallpaper's quote ([3120271](https://github.com/the-mrinal/Dock/commit/3120271a6990e5627c756d1a5b0cbbf30a36e834))
+
 ## [1.2.0](https://github.com/the-mrinal/Dock/compare/v1.1.1...v1.2.0) (2026-08-15)
 
 ### Features
