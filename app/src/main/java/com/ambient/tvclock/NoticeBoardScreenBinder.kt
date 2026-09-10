@@ -47,6 +47,7 @@ class NoticeBoardScreenBinder(root: View) {
     private var renderedKey: Pair<List<Notice>, String>? = null
     private var index = 0
     private var pageVisible = false
+    private var restoreAttempts = 0
 
     private val advanceRunnable = object : Runnable {
         override fun run() {
@@ -82,6 +83,7 @@ class NoticeBoardScreenBinder(root: View) {
             null,
         )
         updateCounter()
+        applyIndex()
         scheduleAdvance()
     }
 
@@ -107,6 +109,7 @@ class NoticeBoardScreenBinder(root: View) {
 
     fun destroy() {
         handler.removeCallbacks(advanceRunnable)
+        handler.removeCallbacks(restoreRunnable)
         (webView.parent as? ViewGroup)?.removeView(webView)
         webView.destroy()
     }
@@ -115,17 +118,47 @@ class NoticeBoardScreenBinder(root: View) {
     private fun showIndex(target: Int) {
         if (notices.isEmpty()) {
             index = 0
+            updateCounter()
             return
         }
         index = Math.floorMod(target, notices.size)
-        scrollToIndex()
         updateCounter()
+        applyIndex()
     }
 
-    private fun scrollToIndex() {
-        val step = webView.height
-        // Before layout the height is 0; onPageFinished re-applies the scroll.
-        if (step > 0) webView.scrollTo(0, index * step)
+    /**
+     * Scroll the requested notice into view, retrying until it lands.
+     *
+     * A scroll is clamped to the content height the WebView has laid out so
+     * far, and a fresh document is not that tall yet — so the obvious "scroll
+     * once the page finishes" silently snaps back to the first card and leaves
+     * the counter claiming a card nobody can see. Retry until the scroll takes,
+     * and if the document truly cannot go that far, believe the screen and move
+     * the counter to the card actually showing.
+     */
+    private fun applyIndex() {
+        restoreAttempts = 0
+        handler.removeCallbacks(restoreRunnable)
+        handler.post(restoreRunnable)
+    }
+
+    private val restoreRunnable = object : Runnable {
+        override fun run() {
+            val step = webView.height
+            val target = index * step
+            if (step > 0) {
+                webView.scrollTo(0, target)
+                if (webView.scrollY == target) return
+            }
+            if (restoreAttempts++ < MAX_RESTORE_ATTEMPTS) {
+                handler.postDelayed(this, RESTORE_RETRY_MS)
+                return
+            }
+            if (step > 0 && notices.isNotEmpty()) {
+                index = (webView.scrollY / step).coerceIn(0, notices.size - 1)
+                updateCounter()
+            }
+        }
     }
 
     private fun updateCounter() {
@@ -165,8 +198,9 @@ class NoticeBoardScreenBinder(root: View) {
 
             override fun onPageFinished(view: WebView, url: String?) {
                 // A load resets the scroll to the top; put the reader back on
-                // the notice they were on.
-                view.post { scrollToIndex() }
+                // the notice they were on, once the document is tall enough to
+                // allow it.
+                applyIndex()
             }
         }
     }
@@ -175,5 +209,10 @@ class NoticeBoardScreenBinder(root: View) {
         // Long enough to read a notice, short enough that a second one on the
         // board is never effectively hidden.
         private const val AUTO_ADVANCE_MS = 30_000L
+
+        // A fresh document reaches its full height within a frame or two;
+        // roughly a second of retries covers a slow one without spinning.
+        private const val RESTORE_RETRY_MS = 80L
+        private const val MAX_RESTORE_ATTEMPTS = 12
     }
 }
