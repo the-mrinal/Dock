@@ -1,3 +1,9 @@
+## [1.3.2](https://github.com/the-mrinal/Dock/compare/v1.3.1...v1.3.2) (2026-09-10)
+
+### Bug Fixes
+
+* draw the notice the counter names, one card per document ([#33](https://github.com/the-mrinal/Dock/issues/33)) ([5ab07f0](https://github.com/the-mrinal/Dock/commit/5ab07f0749b780d9742a84a611f63a8396524e54))
+
 ## [1.3.1](https://github.com/the-mrinal/Dock/compare/v1.3.0...v1.3.1) (2026-09-10)
 
 ### Bug Fixes
