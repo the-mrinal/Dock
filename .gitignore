@@ -19,3 +19,9 @@ local.properties
 
 # Release tooling: pulled by `npm install`, not for source control.
 node_modules/
+
+# Ad-hoc device screenshots from verification runs
+.a.png
+.b.png
+.c.png
+.tv.png
