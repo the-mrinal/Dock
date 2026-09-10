@@ -194,6 +194,10 @@ class SetupServer(
             CalendarRefresh.publishAsync(context)
         }
 
+        if (touched.any { it.key == NoticePreferences.KEY_NOTICES_URL }) {
+            NoticeRefresh.publishAsync(context)
+        }
+
         val labels = touched.map { it.label }
         writeStatus(output, 200, "OK", "text/plain", "saved: ${labels.joinToString(", ")}")
         listener.onSettingsSaved(labels)
@@ -263,6 +267,7 @@ class SetupServer(
             Field(CalendarPreferences.KEY_WORK_URL, "Work calendar (iCal URL)"),
             Field(HomeLabPreferences.KEY_HOMELAB_URL, "Home Lab dashboard URL"),
             Field(AdBlockPreferences.KEY_DASHBOARD_URL, "Ad-block dashboard URL"),
+            Field(NoticePreferences.KEY_NOTICES_URL, "Notice board feed URL"),
         )
     }
 }

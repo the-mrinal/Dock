@@ -197,6 +197,7 @@ To activate, head to the **Connect** page and press **OK** on the VPN card. The 
 |---|---|---|
 | D-pad Left / Right | Anywhere | Switch between Connect, Home, Calendar, Music |
 | D-pad Up / Down | Calendar | Scroll the day |
+| D-pad Up / Down | Notices | Step between the notices that are up |
 | D-pad / OK | Music, Connect | Focus + activate transport, tracks, devices, AirPlay, VPN |
 | Media keys | Music | Play/pause, skip, previous (works with the Android TV remote media buttons) |
 | Menu | Anywhere | Settings |
@@ -233,6 +234,7 @@ flowchart TD
 - `Home/Calendar/Music/StatusScreenBinder.kt` — per-page view binders
 - `BlurredBackgroundBinder.kt` + `AlbumArtBlur.kt` — full-bleed artwork wash (pyramid downsample + 3-pass box blur ≈ Gaussian, GPU `RenderEffect` pass on API 31+)
 - `CalendarPoller.kt` / `IcalParser.kt` — iCal feed polling, every 15 min
+- `NoticeContract.kt` / `NoticeBoardScreenBinder.kt` — the notice board: HTML notices from a feed you host, shown only inside their own start/end window ([feed contract](docs/notice-board-feed.md))
 - `SpotifyApiClient.kt` / `SpotifyAuthActivity.kt` — OAuth PKCE + queue / recently-played
 - `NowPlayingPoller.kt` — MediaSession bridge
 - `receiver/ReceiverService.kt` — foreground service hosting AirPlay / Google Cast / Miracast, plus the RTSP + MediaCodec pipeline for the AirPlay video stream
