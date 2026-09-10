@@ -31,6 +31,7 @@
     <string name="page_status">Connect</string>
     <string name="page_homelab">Home Lab</string>
     <string name="page_adblock">Ad Block</string>
+    <string name="page_notices" translatable="false">Notices</string>
 
     <!-- Ad-block status card. Reads a summary from the homelab dashboard. -->
     <string name="adblock_card_title">Ad &amp; Telemetry Blocking</string>
@@ -43,6 +44,10 @@
     <string name="adblock_detail_unavailable">Can\'t reach the home lab dashboard. Check the URL in Settings.</string>
     <string name="adblock_action_open_dashboard">Open dashboard</string>
     <string name="adblock_footer">Filtering and debloating run on your home lab</string>
+
+    <!-- Notice board. Cards come from a feed the user hosts; the section only
+         exists while something on it is inside its start/end window. -->
+    <string name="notices_counter" translatable="false">%1$d of %2$d</string>
     <string name="airplay_action_turn_on">Turn on</string>
     <string name="airplay_action_turn_off">Turn off</string>
 
@@ -171,6 +176,12 @@
     <string name="pref_adblock_url_title">Dashboard URL</string>
     <string name="pref_adblock_url_summary">Address of the Fire TV de-bloat dashboard (e.g. http://homelab.local:8099)</string>
     <string name="homelab_retrying">Retrying automatically…</string>
+
+    <string name="pref_category_notices" translatable="false">Notice Board</string>
+    <string name="pref_show_notices_title" translatable="false">Show notice board</string>
+    <string name="pref_show_notices_summary" translatable="false">Add a section for temporary notices from your own feed. Hidden whenever nothing is posted.</string>
+    <string name="pref_notices_url_title" translatable="false">Notices feed URL</string>
+    <string name="pref_notices_url_summary" translatable="false">Address of the JSON feed (e.g. http://homelab.local:8099/api/notices)</string>
 
     <string name="pref_category_setup">Setup</string>
     <string name="pref_remote_setup_title">Set up from phone or laptop</string>

@@ -74,6 +74,24 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="category_notices"
+        android:title="@string/pref_category_notices">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="show_notices"
+            android:summary="@string/pref_show_notices_summary"
+            android:title="@string/pref_show_notices_title" />
+
+        <EditTextPreference
+            android:dependency="show_notices"
+            android:key="notices_url"
+            android:summary="@string/pref_notices_url_summary"
+            android:title="@string/pref_notices_url_title"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="category_now_playing"
         android:title="@string/pref_category_now_playing">
 

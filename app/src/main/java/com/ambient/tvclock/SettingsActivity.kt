@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -104,6 +106,19 @@ class SettingsActivity : AppCompatActivity() {
                     CalendarPoller(requireContext()).publishNow()
                     true
                 }
+
+            // The new value is persisted after the listener returns, so the
+            // refresh is posted to read the URL the user just typed rather
+            // than the one it replaced.
+            val refreshNotices = Preference.OnPreferenceChangeListener { pref, _ ->
+                val context = pref.context.applicationContext
+                Handler(Looper.getMainLooper()).post { NoticeRefresh.publishAsync(context) }
+                true
+            }
+            findPreference<SwitchPreferenceCompat>(NoticePreferences.KEY_SHOW_NOTICES)
+                ?.onPreferenceChangeListener = refreshNotices
+            findPreference<EditTextPreference>(NoticePreferences.KEY_NOTICES_URL)
+                ?.onPreferenceChangeListener = refreshNotices
 
             findPreference<Preference>("grant_notification_access")?.setOnPreferenceClickListener {
                 val context = requireContext()

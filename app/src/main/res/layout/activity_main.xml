@@ -208,6 +208,31 @@
                 android:textColor="@color/text_tertiary"
                 android:textSize="13sp" />
 
+            <!-- Notices is settings- and time-dependent: it only joins the
+                 page set while a notice is inside its window. -->
+            <TextView
+                android:id="@+id/dotPageNotices"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="·"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/textPageNotices"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-light"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="@string/page_notices"
+                android:textColor="@color/text_tertiary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
             <!-- Ad Block is a settings-dependent section; MainActivity toggles
                  the separator + label visibility with the page set. -->
             <TextView

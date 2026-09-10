@@ -48,6 +48,8 @@ class MainActivity : Activity() {
     private lateinit var dotPageHomeLab: TextView
     private lateinit var textPageAdblock: TextView
     private lateinit var dotPageAdblock: TextView
+    private lateinit var textPageNotices: TextView
+    private lateinit var dotPageNotices: TextView
     private lateinit var imageHomeBackground: ImageView
     private lateinit var textHomeBackgroundCredit: TextView
     private lateinit var backgroundBinder: BlurredBackgroundBinder
@@ -58,8 +60,10 @@ class MainActivity : Activity() {
     private var musicBinder: MusicScreenBinder? = null
     private var homeLabBinder: HomeLabScreenBinder? = null
     private var adBlockBinder: AdBlockScreenBinder? = null
+    private var noticeBinder: NoticeBoardScreenBinder? = null
 
-    /** Pages currently shown, in pager order. HOMELAB is settings-dependent. */
+    /** Pages currently shown, in pager order. ADBLOCK and HOMELAB are
+     *  settings-dependent; NOTICES is settings- and time-dependent. */
     private var pages: List<DashboardPage> = emptyList()
 
     /** Root view of each instantiated pager page, used to tell interior
@@ -99,7 +103,19 @@ class MainActivity : Activity() {
     private lateinit var nowPlayingPoller: NowPlayingPoller
     private lateinit var calendarPoller: CalendarPoller
     private lateinit var spotifyQueuePoller: SpotifyQueuePoller
+    private lateinit var noticePoller: NoticePoller
     private lateinit var soundbarKeepAlive: SoundbarKeepAlive
+
+    /** The live notices and feed URL last handed to the pager and the binder.
+     *  Null means the board has not been evaluated yet. */
+    private var renderedNoticeKey: Pair<List<Notice>, String>? = null
+
+    /** Minute the notice windows were last re-checked on. */
+    private var lastNoticeMinute = -1L
+
+    /** A notice opened or closed while ambient or mirroring owned the screen;
+     *  the page set catches up when the dashboard comes back. */
+    private var noticePageSetDirty = false
 
     private val nowPlayingListener: (NowPlayingInfo?) -> Unit = { info ->
         mainHandler.post { applyNowPlaying(info) }
@@ -111,6 +127,10 @@ class MainActivity : Activity() {
 
     private val queueListener: (SpotifyQueueSnapshot) -> Unit = { snapshot ->
         mainHandler.post { applyQueue(snapshot) }
+    }
+
+    private val noticeListener: (NoticeSnapshot) -> Unit = {
+        mainHandler.post { applyNotices() }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,6 +148,8 @@ class MainActivity : Activity() {
         dotPageHomeLab = findViewById(R.id.dotPageHomeLab)
         textPageAdblock = findViewById(R.id.textPageAdblock)
         dotPageAdblock = findViewById(R.id.dotPageAdblock)
+        textPageNotices = findViewById(R.id.textPageNotices)
+        dotPageNotices = findViewById(R.id.dotPageNotices)
         imageHomeBackground = findViewById(R.id.imageHomeBackground)
         textHomeBackgroundCredit = findViewById(R.id.textHomeBackgroundCredit)
         backgroundBinder = BlurredBackgroundBinder(imageHomeBackground)
@@ -156,6 +178,7 @@ class MainActivity : Activity() {
                 updatePageIndicator()
                 updateOnboardingVisibility()
                 setHomeLabOverlayVisible(currentPage == DashboardPage.HOMELAB)
+                if (currentPage != DashboardPage.NOTICES) noticeBinder?.onPageHidden()
                 when (currentPage) {
                     DashboardPage.MUSIC -> musicBinder?.requestControlFocus()
                     DashboardPage.CALENDAR -> calendarBinder?.requestScrollToCurrent()
@@ -172,6 +195,10 @@ class MainActivity : Activity() {
                             adBlockBinder?.actionButton?.requestFocus()
                         }
                     }
+                    DashboardPage.NOTICES -> {
+                        noticePoller.publishNow()
+                        noticeBinder?.onPageVisible()
+                    }
                     DashboardPage.HOME,
                     DashboardPage.HOMELAB -> { /* nothing extra */ }
                 }
@@ -183,6 +210,7 @@ class MainActivity : Activity() {
         nowPlayingPoller = NowPlayingPoller(this)
         calendarPoller = CalendarPoller(this)
         spotifyQueuePoller = SpotifyQueuePoller(this)
+        noticePoller = NoticePoller(this)
         soundbarKeepAlive = SoundbarKeepAlive(this)
 
         val restoredPage = savedInstanceState?.getString(KEY_PAGE)
@@ -207,6 +235,13 @@ class MainActivity : Activity() {
         add(DashboardPage.HOME)
         add(DashboardPage.CALENDAR)
         add(DashboardPage.MUSIC)
+        // The board earns its place only while something is actually posted:
+        // an empty section on a wall display is worse than no section.
+        if (NoticePreferences.isPageAvailable(this@MainActivity) &&
+            NoticeCenter.current.live(System.currentTimeMillis()).isNotEmpty()
+        ) {
+            add(DashboardPage.NOTICES)
+        }
         if (AdBlockPreferences.isPageAvailable(this@MainActivity)) {
             add(DashboardPage.ADBLOCK)
         }
@@ -320,6 +355,21 @@ class MainActivity : Activity() {
                     adBlockBinder?.actionButton?.post { adBlockBinder?.actionButton?.requestFocus() }
                 }
             }
+            DashboardPage.NOTICES -> {
+                if (isNew || noticeBinder == null) {
+                    noticeBinder?.destroy()
+                    noticeBinder = NoticeBoardScreenBinder(view)
+                }
+                val now = System.currentTimeMillis()
+                noticeBinder?.bind(
+                    NoticeCenter.current.live(now),
+                    NoticePreferences.getUrl(this),
+                    now,
+                )
+                if (currentPage == DashboardPage.NOTICES) {
+                    noticeBinder?.onPageVisible()
+                }
+            }
             DashboardPage.HOMELAB -> {
                 // Placeholder page — the dashboard renders in homeLabOverlay,
                 // shown/hidden from onPageSelected.
@@ -347,9 +397,11 @@ class MainActivity : Activity() {
         NowPlayingCenter.addListener(nowPlayingListener)
         CalendarCenter.addListener(calendarListener)
         SpotifyQueueCenter.addListener(queueListener)
+        NoticeCenter.addListener(noticeListener)
         nowPlayingPoller.start()
         calendarPoller.start()
         spotifyQueuePoller.start()
+        noticePoller.start()
         soundbarKeepAlive.start()
 
         ReceiverStateBus.setSurfaceProvider { streamingOverlay.currentSurface() }
@@ -407,11 +459,14 @@ class MainActivity : Activity() {
         nowPlayingPoller.stop()
         calendarPoller.stop()
         spotifyQueuePoller.stop()
+        noticePoller.stop()
         soundbarKeepAlive.stop()
         NowPlayingCenter.removeListener(nowPlayingListener)
         CalendarCenter.removeListener(calendarListener)
         SpotifyQueueCenter.removeListener(queueListener)
+        NoticeCenter.removeListener(noticeListener)
         homeLabBinder?.onPageHidden()
+        noticeBinder?.onPageHidden()
         backgroundController.onStop()
         super.onStop()
     }
@@ -422,15 +477,20 @@ class MainActivity : Activity() {
         NotificationAccess.requestListenerReconnect(this)
         nowPlayingPoller.publishNow()
         calendarPoller.publishNow()
+        noticePoller.publishNow()
         updateOnboardingVisibility()
         applyPageSetChange()
+        // Catches a settings edit that changed the feed URL without changing
+        // which notices are live (the base URL for a notice's images moved).
+        applyNotices()
     }
 
     /**
-     * The Home Lab section is the only settings-dependent page; recompute the
-     * page set after returning from SettingsActivity and rebuild the pager if
-     * it changed. The retained WebView survives the adapter swap via
-     * re-parenting in [HomeLabScreenBinder.attach].
+     * Recompute the page set — after returning from SettingsActivity, and
+     * whenever the notice board opens or closes — and rebuild the pager if it
+     * changed. The Home Lab WebView survives the adapter swap via re-parenting
+     * in [HomeLabScreenBinder.attach]; the notice board does not need to, its
+     * document is rendered locally and costs nothing to rebuild.
      */
     private fun applyPageSetChange() {
         val newPages = computePages()
@@ -445,6 +505,9 @@ class MainActivity : Activity() {
         if (DashboardPage.HOMELAB !in pages) {
             destroyHomeLab()
         }
+        // The old holder dies with the adapter; onPageReady builds a fresh
+        // binder if the board is still in the page set.
+        destroyNoticeBoard()
         pageRoots.clear()
         buildPagerAdapter()
         val target = if (currentPage in pages) currentPage else DashboardPage.HOME
@@ -516,6 +579,45 @@ class MainActivity : Activity() {
         calendarBinder?.bind(snapshot)
     }
 
+    /**
+     * The single place the board is re-evaluated: a new fetch, a minute
+     * boundary crossing, a settings change, or the screen coming back from
+     * ambient all land here.
+     *
+     * Everything downstream is keyed on the live notice list, so this is safe
+     * to call as often as the clock ticks — an unchanged board does nothing.
+     */
+    private fun applyNotices() {
+        val now = System.currentTimeMillis()
+        val key = NoticeCenter.current.live(now) to NoticePreferences.getUrl(this)
+        if (key == renderedNoticeKey) return
+        renderedNoticeKey = key
+
+        // Rebuilding the pager recreates the Home binder, which would drop the
+        // ambient styling the clock is currently wearing. Wait for the
+        // dashboard to come back rather than flicker the screensaver.
+        if (ambientMode || streamingActive) {
+            noticePageSetDirty = true
+            return
+        }
+
+        applyPageSetChange()
+        noticeBinder?.bind(key.first, key.second, now)
+    }
+
+    /** Re-run a page-set change that was held back while the screen was busy. */
+    private fun flushDeferredNoticeChange() {
+        if (!noticePageSetDirty) return
+        noticePageSetDirty = false
+        renderedNoticeKey = null
+        applyNotices()
+    }
+
+    private fun destroyNoticeBoard() {
+        noticeBinder?.destroy()
+        noticeBinder = null
+    }
+
     private fun applyQueue(snapshot: SpotifyQueueSnapshot) {
         homeBinder?.bindQueue(snapshot)
         musicBinder?.bindQueue(snapshot)
@@ -526,8 +628,13 @@ class MainActivity : Activity() {
         applyIndicatorStyle(textPageHome, DashboardPage.HOME)
         applyIndicatorStyle(textPageCalendar, DashboardPage.CALENDAR)
         applyIndicatorStyle(textPageMusic, DashboardPage.MUSIC)
+        applyIndicatorStyle(textPageNotices, DashboardPage.NOTICES)
         applyIndicatorStyle(textPageAdblock, DashboardPage.ADBLOCK)
         applyIndicatorStyle(textPageHomeLab, DashboardPage.HOMELAB)
+        val noticesVisibility =
+            if (DashboardPage.NOTICES in pages) View.VISIBLE else View.GONE
+        dotPageNotices.visibility = noticesVisibility
+        textPageNotices.visibility = noticesVisibility
         val adblockVisibility =
             if (DashboardPage.ADBLOCK in pages) View.VISIBLE else View.GONE
         dotPageAdblock.visibility = adblockVisibility
@@ -597,6 +704,13 @@ class MainActivity : Activity() {
             homeBinder?.updateClock()
             homeBinder?.refreshAmbient()
             calendarBinder?.updateDateLine()
+            // Notice windows turn over on the minute, so the board opens and
+            // closes on the exact minute rather than at the next poll.
+            val minute = System.currentTimeMillis() / oneMinuteMs
+            if (minute != lastNoticeMinute) {
+                lastNoticeMinute = minute
+                applyNotices()
+            }
             // Ambient mode never shows seconds; ticking at 1Hz just burns the
             // main thread. Sleep to the next minute boundary instead.
             val delay = if (ambientMode) nextMinuteBoundaryDelayMs() else 1_000L
@@ -672,6 +786,7 @@ class MainActivity : Activity() {
         // leave the second indicator stranded at full brightness.
         homeBinder?.setSecondsVisible(false)
         homeBinder?.setWidgetsAmbient(true)
+        noticeBinder?.onPageHidden()
         backgroundController.setAmbient(true)
         // Now the photo may own the screen, so hand it the layout.
         homeBinder?.setMinimalWallpaperMode(backgroundController.activePhoto() != null)
@@ -704,6 +819,7 @@ class MainActivity : Activity() {
 
         mainHandler.removeCallbacks(drifterRunnable)
         recenterContentDisplay()
+        flushDeferredNoticeChange()
 
         // Force the clock to repaint immediately on exit — the pending tick
         // could be up to 60s out from the ambient cadence.
@@ -826,7 +942,9 @@ class MainActivity : Activity() {
             nowPlayingPoller.stop()
             calendarPoller.stop()
             spotifyQueuePoller.stop()
+            noticePoller.stop()
             soundbarKeepAlive.stop()
+            noticeBinder?.onPageHidden()
 
             streamingOverlay.visibility = View.VISIBLE
             streamingOverlay.bringToFront()
@@ -863,9 +981,12 @@ class MainActivity : Activity() {
             nowPlayingPoller.start()
             calendarPoller.start()
             spotifyQueuePoller.start()
+            noticePoller.start()
             soundbarKeepAlive.start()
             setHomeLabOverlayVisible(currentPage == DashboardPage.HOMELAB)
+            if (currentPage == DashboardPage.NOTICES) noticeBinder?.onPageVisible()
             resetInactivityWatchdog()
+            flushDeferredNoticeChange()
         }
         updateOnboardingVisibility()
     }
@@ -925,6 +1046,11 @@ class MainActivity : Activity() {
                     resetInactivityWatchdog()
                     return true
                 }
+                if (currentPage == DashboardPage.NOTICES) {
+                    noticeBinder?.previous()
+                    resetInactivityWatchdog()
+                    return true
+                }
                 if (currentPage == DashboardPage.HOME &&
                     backgroundController.activePhoto() != null
                 ) {
@@ -941,6 +1067,11 @@ class MainActivity : Activity() {
                 }
                 if (currentPage == DashboardPage.HOMELAB) {
                     homeLabBinder?.scrollBy(calendarScrollStep)
+                    resetInactivityWatchdog()
+                    return true
+                }
+                if (currentPage == DashboardPage.NOTICES) {
+                    noticeBinder?.next()
                     resetInactivityWatchdog()
                     return true
                 }
@@ -1025,6 +1156,7 @@ class MainActivity : Activity() {
         streamingScope.cancel()
         homeLabBinder?.destroy()
         homeLabBinder = null
+        destroyNoticeBoard()
     }
 
     override fun onTrimMemory(level: Int) {
